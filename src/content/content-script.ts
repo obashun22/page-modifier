@@ -1,22 +1,289 @@
-// Content Script for Page Modifier Chrome Extension
-// This will be injected into web pages to execute plugin operations
+/**
+ * Page Modifier - Content Script
+ *
+ * Webページに注入されるメインスクリプト
+ * プラグインの自動実行、動的コンテンツの監視、Background Workerとの通信を担当
+ */
 
-console.log('Page Modifier: Content Script loaded');
+import { PluginEngine } from './plugin-engine';
+import type { Plugin } from '../shared/types';
+import { extractDomain } from '../utils/plugin-utils';
 
-// Listen for messages from the background worker
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  console.log('Page Modifier: Content Script received message', message);
+/**
+ * Content Scriptメインクラス
+ */
+class ContentScript {
+  private pluginEngine: PluginEngine;
+  private observer: MutationObserver | null = null;
+  private activePlugins: Map<string, Plugin> = new Map();
+  private initialized = false;
 
-  // Handle plugin execution requests
-  // Implementation will be added in Phase 3
+  constructor() {
+    this.pluginEngine = new PluginEngine();
+  }
 
-  sendResponse({ success: true });
-  return true;
-});
+  /**
+   * 初期化
+   */
+  async init(): Promise<void> {
+    if (this.initialized) {
+      console.warn('[PageModifier] Content script already initialized');
+      return;
+    }
 
-// Notify background worker that content script is ready
+    console.log('[PageModifier] Content script initializing...');
+
+    // DOM読み込み完了を待つ
+    if (document.readyState === 'loading') {
+      await new Promise<void>((resolve) => {
+        document.addEventListener('DOMContentLoaded', () => resolve());
+      });
+    }
+
+    // 現在のドメインを取得
+    const domain = extractDomain(location.href);
+    console.log(`[PageModifier] Current domain: ${domain}`);
+
+    // 該当ドメインのプラグインを取得
+    const plugins = await this.fetchPluginsForDomain(domain);
+    console.log(`[PageModifier] Found ${plugins.length} plugins for domain`);
+
+    // プラグインを実行
+    if (plugins.length > 0) {
+      await this.executePlugins(plugins);
+    }
+
+    // MutationObserver開始（動的コンテンツ監視）
+    this.startObserving();
+
+    // メッセージリスナー登録
+    this.setupMessageListeners();
+
+    this.initialized = true;
+    console.log('[PageModifier] Content script initialized');
+  }
+
+  /**
+   * ドメインに対応するプラグインを取得
+   */
+  private async fetchPluginsForDomain(domain: string): Promise<Plugin[]> {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_PLUGINS_FOR_DOMAIN',
+        domain,
+      });
+
+      return response?.plugins || [];
+    } catch (error) {
+      console.error('[PageModifier] Failed to fetch plugins:', error);
+      return [];
+    }
+  }
+
+  /**
+   * プラグインを実行
+   */
+  private async executePlugins(plugins: Plugin[]): Promise<void> {
+    // 優先度順にソート（既にsortPluginsByPriorityがあるが、ここでも念のため）
+    const sortedPlugins = [...plugins].sort((a, b) => b.priority - a.priority);
+
+    for (const plugin of sortedPlugins) {
+      // 自動適用フラグチェック
+      if (!plugin.autoApply) {
+        console.log(`[PageModifier] Skipping plugin ${plugin.id}: autoApply is false`);
+        continue;
+      }
+
+      // プラグイン実行
+      try {
+        console.log(`[PageModifier] Executing plugin: ${plugin.name} (${plugin.id})`);
+        const result = await this.pluginEngine.executePlugin(plugin);
+
+        if (result.success) {
+          console.log(`[PageModifier] ✅ Plugin ${plugin.id} executed successfully`);
+          this.activePlugins.set(plugin.id, plugin);
+
+          // 使用記録を通知
+          chrome.runtime.sendMessage({
+            type: 'RECORD_PLUGIN_USAGE',
+            pluginId: plugin.id,
+          }).catch(() => {
+            // エラーは無視（重要でない）
+          });
+        } else {
+          console.error(`[PageModifier] ❌ Plugin ${plugin.id} failed:`, result);
+        }
+      } catch (error) {
+        console.error(`[PageModifier] Failed to execute plugin ${plugin.id}:`, error);
+      }
+    }
+  }
+
+  /**
+   * MutationObserverで動的コンテンツを監視
+   *
+   * SPA等で動的にコンテンツが追加された場合に、プラグインを再実行
+   */
+  private startObserving(): void {
+    // スロットリング用のタイマー
+    let timeoutId: number | null = null;
+
+    this.observer = new MutationObserver((mutations) => {
+      // 大量の変更が発生した場合は、スロットリングして処理
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+
+      timeoutId = window.setTimeout(() => {
+        this.handleMutations(mutations);
+        timeoutId = null;
+      }, 500); // 500ms後に処理
+    });
+
+    this.observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    console.log('[PageModifier] MutationObserver started');
+  }
+
+  /**
+   * DOM変更を処理
+   */
+  private handleMutations(mutations: MutationRecord[]): void {
+    // 新しく追加されたノードがあるかチェック
+    let hasNewNodes = false;
+
+    for (const mutation of mutations) {
+      if (mutation.addedNodes.length > 0) {
+        hasNewNodes = true;
+        break;
+      }
+    }
+
+    if (!hasNewNodes) {
+      return;
+    }
+
+    // アクティブなプラグインを再実行
+    // （新しく追加された要素に対してプラグインを適用）
+    if (this.activePlugins.size > 0) {
+      console.log('[PageModifier] DOM changed, re-executing plugins...');
+      const plugins = Array.from(this.activePlugins.values());
+      this.executePlugins(plugins).catch((error) => {
+        console.error('[PageModifier] Failed to re-execute plugins:', error);
+      });
+    }
+  }
+
+  /**
+   * メッセージリスナー登録
+   */
+  private setupMessageListeners(): void {
+    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+      console.log('[PageModifier] Received message:', message);
+
+      switch (message.type) {
+        case 'EXECUTE_PLUGIN':
+          this.handleExecutePlugin(message.plugin)
+            .then((result) => sendResponse({ success: true, result }))
+            .catch((error) => sendResponse({ success: false, error: error.message }));
+          return true; // 非同期応答
+
+        case 'RELOAD_PLUGINS':
+          this.handleReloadPlugins()
+            .then(() => sendResponse({ success: true }))
+            .catch((error) => sendResponse({ success: false, error: error.message }));
+          return true; // 非同期応答
+
+        case 'CLEAR_PLUGINS':
+          this.handleClearPlugins();
+          sendResponse({ success: true });
+          break;
+
+        default:
+          console.warn('[PageModifier] Unknown message type:', message.type);
+          sendResponse({ success: false, error: 'Unknown message type' });
+      }
+
+      return false;
+    });
+  }
+
+  /**
+   * プラグインを手動実行
+   */
+  private async handleExecutePlugin(plugin: Plugin): Promise<any> {
+    console.log(`[PageModifier] Manually executing plugin: ${plugin.id}`);
+    const result = await this.pluginEngine.executePlugin(plugin);
+
+    if (result.success) {
+      this.activePlugins.set(plugin.id, plugin);
+    }
+
+    return result;
+  }
+
+  /**
+   * プラグインをリロード
+   */
+  private async handleReloadPlugins(): Promise<void> {
+    console.log('[PageModifier] Reloading plugins...');
+
+    // 現在のアクティブプラグインをクリア
+    this.activePlugins.clear();
+    this.pluginEngine.clearExecutedOperations();
+
+    // プラグインを再取得・実行
+    const domain = extractDomain(location.href);
+    const plugins = await this.fetchPluginsForDomain(domain);
+    await this.executePlugins(plugins);
+  }
+
+  /**
+   * プラグインをクリア
+   */
+  private handleClearPlugins(): void {
+    console.log('[PageModifier] Clearing plugins...');
+    this.activePlugins.clear();
+    this.pluginEngine.clearExecutedOperations();
+  }
+
+  /**
+   * クリーンアップ
+   */
+  destroy(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+
+    this.activePlugins.clear();
+    this.initialized = false;
+    console.log('[PageModifier] Content script destroyed');
+  }
+}
+
+// Content Scriptのインスタンスを作成・初期化
+const contentScript = new ContentScript();
+
+// ページ読み込み後に初期化
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    contentScript.init().catch((error) => {
+      console.error('[PageModifier] Failed to initialize:', error);
+    });
+  });
+} else {
+  contentScript.init().catch((error) => {
+    console.error('[PageModifier] Failed to initialize:', error);
+  });
+}
+
+// Background Workerに準備完了を通知
 chrome.runtime.sendMessage({ type: 'CONTENT_SCRIPT_READY' }).catch((error) => {
-  console.log('Page Modifier: Could not send ready message', error);
+  console.log('[PageModifier] Could not send ready message:', error);
 });
 
 export {};
