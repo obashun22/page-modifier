@@ -1,0 +1,48 @@
+{
+  "id": "simple-copy-button",
+  "name": "コピーボタン",
+  "version": "1.0.0",
+  "author": "Page Modifier",
+  "description": "コードブロックにコピーボタンを追加します",
+  "targetDomains": ["github.com"],
+  "autoApply": true,
+  "priority": 100,
+  "operations": [
+    {
+      "id": "op-1",
+      "description": "コードブロックにコピーボタンを追加",
+      "type": "insert",
+      "selector": ".highlight",
+      "position": "beforeend",
+      "element": {
+        "tag": "button",
+        "attributes": {
+          "class": "copy-btn",
+          "title": "コードをコピー"
+        },
+        "style": {
+          "position": "absolute",
+          "top": "8px",
+          "right": "8px",
+          "padding": "4px 8px",
+          "backgroundColor": "#238636",
+          "color": "white",
+          "border": "none",
+          "borderRadius": "6px",
+          "cursor": "pointer",
+          "fontSize": "12px"
+        },
+        "textContent": "📋 Copy",
+        "events": [
+          {
+            "type": "click",
+            "action": {
+              "type": "copyText",
+              "selector": "parent > code"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

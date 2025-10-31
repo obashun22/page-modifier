@@ -2,38 +2,38 @@
 
 **ステータス**: 🟨 進行中
 
-**進捗**: 0% ⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️
+**進捗**: 5% 🟩⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️⬜️
 
 最終更新: 2025-11-01
 
 ---
 
-## Phase 1: プロジェクトセットアップ (0/14)
+## Phase 1: プロジェクトセットアップ (14/14) ✅
 
 ### プロジェクト初期化
-- [ ] プロジェクトディレクトリ作成
-- [ ] package.json作成
-- [ ] 必要なパッケージのインストール
-- [ ] .gitignore作成
-- [ ] README.md作成
+- [x] プロジェクトディレクトリ作成
+- [x] package.json作成
+- [x] 必要なパッケージのインストール
+- [x] .gitignore作成
+- [x] README.md作成
 
 ### 設定ファイル作成
-- [ ] tsconfig.json作成
-- [ ] tsconfig.node.json作成
-- [ ] vite.config.ts作成
-- [ ] manifest.json作成
+- [x] tsconfig.json作成
+- [x] tsconfig.node.json作成
+- [x] vite.config.ts作成
+- [x] manifest.json作成
 
 ### ディレクトリ構造作成
-- [ ] src/ディレクトリ構造作成
-- [ ] public/ディレクトリ構造作成
+- [x] src/ディレクトリ構造作成
+- [x] public/ディレクトリ構造作成
 
 ### 基本ファイル作成
-- [ ] src/background/service-worker.ts
-- [ ] src/content/content-script.ts
-- [ ] src/sidepanel/index.html, App.tsx, main.tsx
+- [x] src/background/service-worker.ts
+- [x] src/content/content-script.ts
+- [x] src/sidepanel/index.html, App.tsx, main.tsx
 
 ### ビルド確認
-- [ ] npm run buildでビルド成功確認
+- [x] npm run buildでビルド成功確認
 
 ---
 
@@ -87,4 +87,10 @@
 
 ## 完了したタスク
 
-なし
+### 2025-11-01
+- ✅ Phase 1: プロジェクトセットアップ完了
+  - プロジェクト構造作成
+  - 設定ファイル（package.json, tsconfig.json, vite.config.ts, manifest.json）
+  - 基本ファイル作成（service-worker, content-script, sidepanel）
+  - ビルドシステム構築
+  - Git: commit 97a1972

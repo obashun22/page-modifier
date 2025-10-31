@@ -1,0 +1,120 @@
+{
+  "id": "enhanced-toolbar",
+  "name": "強化ツールバー",
+  "version": "1.0.0",
+  "author": "Page Modifier",
+  "description": "記事に便利なツールバーを追加します",
+  "targetDomains": ["*.example.com"],
+  "autoApply": true,
+  "priority": 200,
+  "operations": [
+    {
+      "id": "op-1",
+      "description": "ツールバーを追加",
+      "type": "insert",
+      "selector": "article",
+      "position": "afterbegin",
+      "element": {
+        "tag": "div",
+        "attributes": {
+          "class": "custom-toolbar",
+          "id": "page-modifier-toolbar"
+        },
+        "style": {
+          "display": "flex",
+          "gap": "8px",
+          "padding": "12px",
+          "backgroundColor": "#f6f8fa",
+          "borderBottom": "1px solid #d0d7de",
+          "borderRadius": "6px 6px 0 0"
+        },
+        "children": [
+          {
+            "tag": "button",
+            "attributes": {
+              "class": "toolbar-btn",
+              "title": "記事をコピー"
+            },
+            "style": {
+              "padding": "6px 12px",
+              "backgroundColor": "white",
+              "border": "1px solid #d0d7de",
+              "borderRadius": "6px",
+              "cursor": "pointer"
+            },
+            "textContent": "📋 Copy",
+            "events": [
+              {
+                "type": "click",
+                "action": {
+                  "type": "copyText",
+                  "selector": "parent.parent > p"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "button",
+            "attributes": {
+              "class": "toolbar-btn",
+              "title": "記事を共有"
+            },
+            "style": {
+              "padding": "6px 12px",
+              "backgroundColor": "white",
+              "border": "1px solid #d0d7de",
+              "borderRadius": "6px",
+              "cursor": "pointer"
+            },
+            "children": [
+              {
+                "tag": "span",
+                "attributes": {
+                  "class": "icon"
+                },
+                "textContent": "🔗 "
+              },
+              {
+                "tag": "span",
+                "textContent": "Share"
+              }
+            ],
+            "events": [
+              {
+                "type": "click",
+                "action": {
+                  "type": "custom",
+                  "code": "navigator.share({url: location.href}).catch(() => navigator.clipboard.writeText(location.href))"
+                }
+              }
+            ]
+          },
+          {
+            "tag": "button",
+            "attributes": {
+              "class": "toolbar-btn",
+              "title": "印刷"
+            },
+            "style": {
+              "padding": "6px 12px",
+              "backgroundColor": "white",
+              "border": "1px solid #d0d7de",
+              "borderRadius": "6px",
+              "cursor": "pointer"
+            },
+            "textContent": "🖨️ Print",
+            "events": [
+              {
+                "type": "click",
+                "action": {
+                  "type": "custom",
+                  "code": "window.print()"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
