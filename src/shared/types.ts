@@ -90,6 +90,9 @@ export interface Action {
   code?: string;               // カスタムコード
   url?: string;                // URL（navigate等）
   notification?: string;       // 通知メッセージ
+  method?: string;             // HTTPメソッド（apiCall用）
+  headers?: Record<string, string>; // HTTPヘッダー（apiCall用）
+  data?: any;                  // リクエストデータ（apiCall用）
 }
 
 // ==================== イベント ====================

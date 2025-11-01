@@ -12,6 +12,8 @@ import type {
   Action,
   Condition,
 } from '../shared/types';
+import { EventManager } from './event-manager';
+import { showNotification, replacePlaceholders } from './notification-utils';
 
 /** 操作結果 */
 interface OperationResult {
@@ -35,6 +37,8 @@ interface ExecutionResult {
  */
 export class PluginEngine {
   private executedOperations: Set<string> = new Set();
+  private eventManager: EventManager = new EventManager();
+  private currentPluginId: string = '';
 
   /**
    * プラグインを実行
@@ -42,6 +46,7 @@ export class PluginEngine {
   async executePlugin(plugin: Plugin): Promise<ExecutionResult> {
     console.log(`[PluginEngine] Executing plugin: ${plugin.name} (${plugin.id})`);
 
+    this.currentPluginId = plugin.id;
     const results: OperationResult[] = [];
 
     for (const operation of plugin.operations) {
@@ -234,16 +239,15 @@ export class PluginEngine {
     events: Event[],
     parentContext: HTMLElement
   ): void {
-    events.forEach((event) => {
-      element.addEventListener(event.type, (e) => {
-        // 条件チェック
-        if (event.condition && !this.checkCondition(event.condition)) {
-          return;
-        }
+    // EventManagerを使用してイベントリスナーを追跡
+    this.eventManager.attachEvents(element, events, this.currentPluginId, (event, eventObject) => {
+      // 条件チェック
+      if (event.condition && !this.checkCondition(event.condition)) {
+        return;
+      }
 
-        // アクション実行
-        this.executeAction(event.action, element, parentContext, e as any);
-      });
+      // アクション実行
+      this.executeAction(event.action, element, parentContext, eventObject as any);
     });
   }
 
@@ -427,25 +431,58 @@ export class PluginEngine {
    * テキストをコピー
    */
   private actionCopyText(action: Action, element: HTMLElement, parentContext: HTMLElement): void {
-    const targetEl = action.selector
-      ? this.resolveActionSelector(action.selector, element, parentContext)[0]
-      : element;
+    let text: string;
 
-    if (targetEl) {
-      const text = targetEl.textContent || '';
-      navigator.clipboard.writeText(text).then(() => {
-        console.log('[PluginEngine] Text copied to clipboard');
-      });
+    if (action.value) {
+      // 固定値を使用
+      text = action.value;
+
+      // プレースホルダー置換
+      text = replacePlaceholders(text);
+    } else if (action.selector) {
+      // セレクターで対象を取得
+      const targetEl = this.resolveActionSelector(action.selector, element, parentContext)[0];
+      if (!targetEl) {
+        console.error(`[PluginEngine] Target not found: ${action.selector}`);
+        return;
+      }
+      text = targetEl.textContent || '';
+    } else {
+      // 要素自身のテキスト
+      text = element.textContent || '';
     }
+
+    // クリップボードにコピー
+    navigator.clipboard.writeText(text).then(() => {
+      console.log('[PluginEngine] Text copied to clipboard');
+
+      // 通知表示
+      if (action.notification) {
+        showNotification(action.notification);
+      }
+    }).catch((error) => {
+      console.error('[PluginEngine] Failed to copy text:', error);
+      showNotification('コピーに失敗しました', 3000, 'error');
+    });
   }
 
   /**
    * ページ遷移
    */
   private actionNavigate(action: Action): void {
-    if (action.url) {
-      window.location.href = action.url;
+    if (!action.url) {
+      console.error('[PluginEngine] Navigate action requires url');
+      return;
     }
+
+    // セキュリティチェック: javascript:スキームを禁止
+    if (action.url.toLowerCase().startsWith('javascript:')) {
+      console.error('[PluginEngine] javascript: URLs are not allowed');
+      showNotification('セキュリティ上の理由により、このURLは開けません', 3000, 'error');
+      return;
+    }
+
+    window.location.href = action.url;
   }
 
   /**
@@ -504,11 +541,40 @@ export class PluginEngine {
     if (!action.code) return;
 
     try {
-      // 安全なコンテキストで実行
-      const func = new Function('element', 'event', action.code);
-      func(element, event);
+      // サンドボックス環境を構築
+      const sandbox = {
+        // 許可されたAPI
+        console,
+        element,
+        event,
+        document: {
+          querySelector: document.querySelector.bind(document),
+          querySelectorAll: document.querySelectorAll.bind(document),
+        },
+        window: {
+          location: {
+            href: window.location.href,
+            hostname: window.location.hostname,
+            pathname: window.location.pathname,
+          },
+        },
+        // 制限されたAPI（アクセス不可）
+        fetch: undefined,
+        XMLHttpRequest: undefined,
+        eval: undefined,
+      };
+
+      // withステートメントでサンドボックス内実行
+      const func = new Function('sandbox', `
+        with (sandbox) {
+          ${action.code}
+        }
+      `);
+
+      func(sandbox);
     } catch (error) {
       console.error('[PluginEngine] Custom action execution failed:', error);
+      showNotification('カスタムコードの実行に失敗しました', 3000, 'error');
     }
   }
 
@@ -516,12 +582,36 @@ export class PluginEngine {
    * 外部API呼び出し
    */
   private actionApiCall(action: Action): void {
-    if (action.url) {
-      fetch(action.url)
-        .then((res) => res.json())
-        .then((data) => console.log('[PluginEngine] API response:', data))
-        .catch((error) => console.error('[PluginEngine] API call failed:', error));
+    if (!action.url) {
+      console.error('[PluginEngine] apiCall requires url');
+      return;
     }
+
+    // セキュリティチェック: HTTPSのみ許可
+    if (!action.url.toLowerCase().startsWith('https://')) {
+      console.error('[PluginEngine] Only HTTPS URLs are allowed');
+      showNotification('セキュリティ上の理由により、HTTPS以外のURLは使用できません', 3000, 'error');
+      return;
+    }
+
+    fetch(action.url, {
+      method: action.method || 'GET',
+      headers: action.headers,
+      body: action.data ? JSON.stringify(action.data) : undefined,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log('[PluginEngine] API response:', data);
+
+        // 通知表示
+        if (action.notification) {
+          showNotification(action.notification);
+        }
+      })
+      .catch((error) => {
+        console.error('[PluginEngine] API call failed:', error);
+        showNotification('API呼び出しに失敗しました', 3000, 'error');
+      });
   }
 
   /**
@@ -555,5 +645,26 @@ export class PluginEngine {
    */
   clearExecutedOperations(): void {
     this.executedOperations.clear();
+  }
+
+  /**
+   * プラグインのイベントリスナーを削除
+   */
+  detachPluginEvents(pluginId: string): void {
+    this.eventManager.detachPluginEvents(pluginId);
+  }
+
+  /**
+   * 全てのイベントリスナーを削除
+   */
+  detachAllEvents(): void {
+    this.eventManager.detachAllEvents();
+  }
+
+  /**
+   * イベントマネージャーの統計情報を取得（デバッグ用）
+   */
+  getEventListenerCount(): number {
+    return this.eventManager.getListenerCount();
   }
 }
