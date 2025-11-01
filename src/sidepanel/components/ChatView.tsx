@@ -47,6 +47,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   const [isLoading, setIsLoading] = useState(false);
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
   const [existingPluginIds, setExistingPluginIds] = useState<Set<string>>(new Set());
+  const [isSelectingElement, setIsSelectingElement] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // メッセージリストの自動スクロール
@@ -98,6 +99,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         };
 
         setSelectedElement(elementInfo);
+        setIsSelectingElement(false);
         addMessage('assistant', `要素を選択しました: ${message.selector}`);
       }
     };
@@ -109,12 +111,21 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     };
   }, []);
 
-  // 要素選択モード開始
-  const startElementSelection = async () => {
+  // 要素選択モードのトグル
+  const toggleElementSelection = async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    if (tab.id) {
+    if (!tab.id) return;
+
+    if (isSelectingElement) {
+      // キャンセル
+      await chrome.tabs.sendMessage(tab.id, { type: 'STOP_ELEMENT_SELECTION' });
+      setIsSelectingElement(false);
+      addMessage('assistant', '要素選択をキャンセルしました。');
+    } else {
+      // 開始
       await chrome.tabs.sendMessage(tab.id, { type: 'START_ELEMENT_SELECTION' });
+      setIsSelectingElement(true);
       addMessage('assistant', '要素を選択してください。選択したい要素の上にマウスを移動し、クリックしてください。');
     }
   };
@@ -306,8 +317,8 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     }
   };
 
-  // Enterキーでメッセージ送信（Shift+Enterで改行）
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // Enterキーでメッセージ送信
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -428,15 +439,15 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
           <button
-            onClick={startElementSelection}
-            title="要素を選択"
+            onClick={toggleElementSelection}
+            title={isSelectingElement ? '要素選択をキャンセル' : '要素を選択'}
             style={{
               padding: '8px',
               fontSize: '13px',
-              backgroundColor: 'white',
-              color: '#24292f',
+              backgroundColor: isSelectingElement ? '#0969da' : 'white',
+              color: isSelectingElement ? 'white' : '#24292f',
               border: '1px solid #d0d7de',
               borderRadius: '6px',
               cursor: 'pointer',
@@ -444,28 +455,34 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 0.2s',
-              flexShrink: 0,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f6f8fa';
-              e.currentTarget.style.borderColor = '#0969da';
-              e.currentTarget.style.color = '#0969da';
+              if (!isSelectingElement) {
+                e.currentTarget.style.backgroundColor = '#f6f8fa';
+                e.currentTarget.style.borderColor = '#0969da';
+                e.currentTarget.style.color = '#0969da';
+              }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'white';
-              e.currentTarget.style.borderColor = '#d0d7de';
-              e.currentTarget.style.color = '#24292f';
+              if (!isSelectingElement) {
+                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.borderColor = '#d0d7de';
+                e.currentTarget.style.color = '#24292f';
+              }
             }}
           >
             <FiMousePointer size={18} />
           </button>
-          <textarea
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <input
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="メッセージを入力してください... (Shift+Enterで改行)"
+            onKeyPress={handleKeyPress}
+            placeholder="メッセージを入力してください..."
             disabled={isLoading}
-            rows={1}
             style={{
               flex: 1,
               padding: '8px 12px',
@@ -473,10 +490,6 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               border: '1px solid #d0d7de',
               borderRadius: '6px',
               outline: 'none',
-              resize: 'vertical',
-              minHeight: '38px',
-              maxHeight: '150px',
-              fontFamily: 'inherit',
             }}
           />
           <button
@@ -495,7 +508,6 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              flexShrink: 0,
             }}
           >
             <IoSend size={16} />

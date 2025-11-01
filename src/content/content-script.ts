@@ -232,6 +232,11 @@ class ContentScript {
           sendResponse({ success: true });
           break;
 
+        case 'STOP_ELEMENT_SELECTION':
+          this.handleStopElementSelection();
+          sendResponse({ success: true });
+          break;
+
         default:
           console.warn('[PageModifier] Unknown message type:', message.type);
           sendResponse({ success: false, error: 'Unknown message type' });
@@ -290,6 +295,14 @@ class ContentScript {
         console.error('[PageModifier] Failed to send element selection:', error);
       });
     });
+  }
+
+  /**
+   * 要素選択モードを停止
+   */
+  private handleStopElementSelection(): void {
+    console.log('[PageModifier] Stopping element selection mode...');
+    this.elementSelector.deactivate();
   }
 
   /**
