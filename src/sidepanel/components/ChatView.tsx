@@ -62,7 +62,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     });
 
     if (response.success) {
-      const ids = new Set(response.plugins.map((p: any) => p.plugin.id));
+      const ids = new Set<string>(response.plugins.map((p: any) => p.plugin.id));
       setExistingPluginIds(ids);
     }
   };
@@ -192,7 +192,6 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     try {
       // 既存プラグインかどうかを判定
       const isExistingPlugin = existingPluginIds.has(plugin.id);
-      const isEditingMode = selectedPluginForEdit !== null;
 
       // 確認ダイアログを表示
       let confirmMessage = '';

@@ -13,7 +13,7 @@ import type {
   Condition,
 } from '../shared/types';
 import { EventManager } from './event-manager';
-import { showNotification, replacePlaceholders } from './notification-utils';
+import { showNotification } from './notification-utils';
 
 /** 操作結果 */
 interface OperationResult {
