@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { IoSend } from 'react-icons/io5';
-import { FiMousePointer } from 'react-icons/fi';
+import { FiMousePointer, FiPlus } from 'react-icons/fi';
 import MessageItem from './MessageItem';
 import PluginCard from './PluginCard';
 import { chatWithAI } from '../services/ai-service';
@@ -34,15 +34,33 @@ interface ChatViewProps {
   onClearSelectedPlugin: () => void;
 }
 
-export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin }: ChatViewProps) {
-  const [messages, setMessages] = useState<Message[]>([
+const STORAGE_KEY = 'page_modifier_chat_history';
+
+const getInitialMessages = (): Message[] => {
+  return [
     {
       id: '0',
       role: 'assistant',
       content: 'こんにちは！Page Modifierへようこそ。\n\nWebページに機能を追加したい場合は具体的な要望を教えてください。使い方や機能について知りたい場合は、お気軽に質問してください。\n\n既存のプラグインを編集したい場合は、プラグイン一覧から「💬 チャットで編集」ボタンでこのチャットに持ってくることができます。\n要素を選択したい場合は下の「📍」ボタンをクリックしてください（キャンセルする場合は再度ボタンをクリック）。',
       timestamp: Date.now(),
     },
-  ]);
+  ];
+};
+
+export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin }: ChatViewProps) {
+  const [messages, setMessages] = useState<Message[]>(() => {
+    // localStorageから履歴を読み込む
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : getInitialMessages();
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+    }
+    return getInitialMessages();
+  });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
@@ -53,6 +71,15 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   // メッセージリストの自動スクロール
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // メッセージ履歴をlocalStorageに保存
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch (error) {
+      console.error('Failed to save chat history:', error);
+    }
   }, [messages]);
 
   // 既存のプラグインIDを読み込む
@@ -127,6 +154,17 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       await chrome.tabs.sendMessage(tab.id, { type: 'START_ELEMENT_SELECTION' });
       setIsSelectingElement(true);
       addMessage('assistant', '要素を選択してください。選択したい要素の上にマウスを移動し、クリックしてください。');
+    }
+  };
+
+  // 新しいチャットを開始
+  const startNewChat = () => {
+    const confirmed = confirm('新しいチャットを開始しますか？現在のチャット履歴はクリアされます。');
+    if (confirmed) {
+      setMessages(getInitialMessages());
+      setSelectedElement(null);
+      setIsSelectingElement(false);
+      onClearSelectedPlugin();
     }
   };
 
@@ -472,6 +510,34 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
             }}
           >
             <FiMousePointer size={18} />
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+          <button
+            onClick={startNewChat}
+            title="新しいチャット"
+            style={{
+              padding: '8px',
+              fontSize: '13px',
+              backgroundColor: 'transparent',
+              color: '#6e7781',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#24292f';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#6e7781';
+            }}
+          >
+            <FiPlus size={18} />
           </button>
         </div>
 
