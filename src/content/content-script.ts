@@ -155,13 +155,37 @@ class ContentScript {
    * DOM変更を処理
    */
   private handleMutations(mutations: MutationRecord[]): void {
-    // 新しく追加されたノードがあるかチェック
+    // プラグインによって挿入されたノード以外の新しいノードがあるかチェック
     let hasNewNodes = false;
 
     for (const mutation of mutations) {
       if (mutation.addedNodes.length > 0) {
-        hasNewNodes = true;
-        break;
+        // 追加されたノードをチェック
+        for (const node of mutation.addedNodes) {
+          // テキストノードは無視
+          if (node.nodeType !== Node.ELEMENT_NODE) {
+            continue;
+          }
+
+          const element = node as HTMLElement;
+
+          // プラグインが挿入した要素かチェック
+          // 1. data-plugin-operation属性を持つ要素
+          // 2. data-plugin-operation属性を持つ要素の子孫
+          const isPluginElement =
+            element.hasAttribute('data-plugin-operation') ||
+            element.querySelector('[data-plugin-operation]') !== null;
+
+          if (!isPluginElement) {
+            // プラグインによって挿入されたものではない新しいノード
+            hasNewNodes = true;
+            break;
+          }
+        }
+
+        if (hasNewNodes) {
+          break;
+        }
       }
     }
 

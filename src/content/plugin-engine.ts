@@ -411,8 +411,10 @@ export class PluginEngine {
   /**
    * 重複挿入チェック
    */
-  private isDuplicateInsert(target: HTMLElement, operationId: string): boolean {
-    return target.querySelector(`[data-plugin-operation="${operationId}"]`) !== null;
+  private isDuplicateInsert(_target: HTMLElement, operationId: string): boolean {
+    // documentレベルで既に同じoperation IDを持つ要素が存在するかチェック
+    // これにより、afterend/beforebegin等で挿入された兄弟要素も検出可能
+    return document.querySelector(`[data-plugin-operation="${operationId}"]`) !== null;
   }
 
   /**
