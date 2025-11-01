@@ -31,6 +31,28 @@ interface ExecutionResult {
 }
 
 /**
+ * テンプレート変数を展開
+ *
+ * 例: "{{location.href}}" -> "https://example.com"
+ *      "{{new Date().toLocaleDateString()}}" -> "2025/1/1"
+ */
+function resolveTemplateVariables(template: string): string {
+  if (!template || typeof template !== 'string') return template;
+
+  // {{...}} パターンを検索して置換
+  return template.replace(/\{\{(.+?)\}\}/g, (match, expression) => {
+    try {
+      // 安全なコンテキストで式を評価
+      const result = Function('"use strict"; return (' + expression + ')')();
+      return String(result);
+    } catch (error) {
+      console.warn(`[PluginEngine] Template variable evaluation failed: ${expression}`, error);
+      return match; // 失敗した場合は元の文字列を返す
+    }
+  });
+}
+
+/**
  * プラグインエンジン
  *
  * プラグイン定義に基づいてDOM操作を実行
@@ -205,14 +227,14 @@ export class PluginEngine {
       Object.assign(el.style, elementDef.style);
     }
 
-    // テキスト/HTML設定
+    // テキスト/HTML設定（テンプレート変数展開）
     if (elementDef.textContent) {
-      el.textContent = elementDef.textContent;
+      el.textContent = resolveTemplateVariables(elementDef.textContent);
     }
     if (elementDef.innerHTML) {
       // XSS警告: innerHTMLは潜在的なセキュリティリスク
       console.warn('[PluginEngine] Using innerHTML - ensure content is trusted');
-      el.innerHTML = elementDef.innerHTML;
+      el.innerHTML = resolveTemplateVariables(elementDef.innerHTML);
     }
 
     // 子要素を再帰的に生成
@@ -434,11 +456,8 @@ export class PluginEngine {
     let text: string;
 
     if (action.value) {
-      // 固定値を使用
-      text = action.value;
-
-      // プレースホルダー置換
-      text = replacePlaceholders(text);
+      // 固定値を使用（テンプレート変数展開）
+      text = resolveTemplateVariables(action.value);
     } else if (action.selector) {
       // セレクターで対象を取得
       const targetEl = this.resolveActionSelector(action.selector, element, parentContext)[0];
@@ -475,14 +494,17 @@ export class PluginEngine {
       return;
     }
 
+    // テンプレート変数展開
+    const url = resolveTemplateVariables(action.url);
+
     // セキュリティチェック: javascript:スキームを禁止
-    if (action.url.toLowerCase().startsWith('javascript:')) {
+    if (url.toLowerCase().startsWith('javascript:')) {
       console.error('[PluginEngine] javascript: URLs are not allowed');
       showNotification('セキュリティ上の理由により、このURLは開けません', 3000, 'error');
       return;
     }
 
-    window.location.href = action.url;
+    window.location.href = url;
   }
 
   /**
@@ -634,14 +656,17 @@ export class PluginEngine {
       return;
     }
 
+    // テンプレート変数展開
+    const url = resolveTemplateVariables(action.url);
+
     // セキュリティチェック: HTTPSのみ許可
-    if (!action.url.toLowerCase().startsWith('https://')) {
+    if (!url.toLowerCase().startsWith('https://')) {
       console.error('[PluginEngine] Only HTTPS URLs are allowed');
       showNotification('セキュリティ上の理由により、HTTPS以外のURLは使用できません', 3000, 'error');
       return;
     }
 
-    fetch(action.url, {
+    fetch(url, {
       method: action.method || 'GET',
       headers: action.headers,
       body: action.data ? JSON.stringify(action.data) : undefined,
