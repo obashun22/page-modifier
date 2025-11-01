@@ -18,7 +18,7 @@ interface Message {
   content: string;
   timestamp: number;
   plugin?: Plugin;  // プラグイン情報（オプション）
-  pluginMode?: 'preview' | 'editing';  // プラグイン表示モード
+  pluginMode?: 'preview' | 'editing' | 'applied';  // プラグイン表示モード
 }
 
 interface ElementInfo {
@@ -213,8 +213,14 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         plugin,
       });
 
-      // 承認されたメッセージを削除
-      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+      // 承認されたメッセージのpluginModeを'applied'に変更
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId
+            ? { ...msg, pluginMode: 'applied' as const }
+            : msg
+        )
+      );
 
       // 成功メッセージを追加
       addMessage(

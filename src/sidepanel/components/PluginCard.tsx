@@ -8,7 +8,7 @@ import { FaCheck, FaTimes } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import type { Plugin } from '../../shared/types';
 
-type PluginCardMode = 'preview' | 'editing';
+type PluginCardMode = 'preview' | 'editing' | 'applied';
 
 interface PluginCardProps {
   plugin: Plugin;
@@ -19,11 +19,24 @@ interface PluginCardProps {
 }
 
 export default function PluginCard({ plugin, mode, onApprove, onReject, onDismiss }: PluginCardProps) {
+  const getBorderColor = () => {
+    switch (mode) {
+      case 'preview':
+        return '#0969da';
+      case 'editing':
+        return '#d4a72c';
+      case 'applied':
+        return '#28a745';
+      default:
+        return '#d0d7de';
+    }
+  };
+
   return (
     <div
       style={{
         padding: '16px',
-        border: mode === 'preview' ? '2px solid #0969da' : '2px solid #d4a72c',
+        border: `2px solid ${getBorderColor()}`,
         borderRadius: '8px',
         backgroundColor: '#f6f8fa',
         maxHeight: '400px',
@@ -55,6 +68,20 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
               }}
             >
               編集中
+            </span>
+          )}
+          {mode === 'applied' && (
+            <span
+              style={{
+                padding: '2px 8px',
+                fontSize: '11px',
+                backgroundColor: '#d1f4dd',
+                color: '#0f5132',
+                borderRadius: '12px',
+                fontWeight: 600,
+              }}
+            >
+              適用済み
             </span>
           )}
         </div>
@@ -156,6 +183,22 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
       </div>
 
       {/* アクションボタン */}
+      {mode === 'applied' && (
+        <div
+          style={{
+            padding: '8px 12px',
+            backgroundColor: '#d1f4dd',
+            border: '1px solid #a3cfbb',
+            borderRadius: '6px',
+            fontSize: '13px',
+            color: '#0f5132',
+            textAlign: 'center',
+            fontWeight: 600,
+          }}
+        >
+          ✓ このプラグインは保存されました
+        </div>
+      )}
       {mode === 'preview' && onApprove && onReject && (
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
