@@ -132,10 +132,19 @@ export class SecurityAnalyzer {
    * カスタムJS使用を検出
    */
   private hasCustomJS(operation: Operation): boolean {
+    // executeタイプのoperationのcodeフィールドをチェック
+    if (operation.type === 'execute' && operation.code) {
+      return true;
+    }
+
+    // element.eventsの中のcustomアクションをチェック
     if (operation.element?.events) {
-      return operation.element.events.some(
+      const hasCustomAction = operation.element.events.some(
         (event) => event.action.type === 'custom' && event.action.code
       );
+      if (hasCustomAction) {
+        return true;
+      }
     }
 
     // 子要素も再帰的にチェック

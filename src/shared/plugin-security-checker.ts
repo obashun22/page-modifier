@@ -46,6 +46,11 @@ export function canExecutePlugin(plugin: Plugin, securityLevel: SecurityLevel): 
  */
 export function hasCustomJSAction(plugin: Plugin): boolean {
   for (const operation of plugin.operations) {
+    // executeタイプのoperationのcodeフィールドをチェック
+    if (operation.type === 'execute' && operation.code) {
+      return true;
+    }
+
     // operationのelementにeventsが含まれている
     if (operation.element?.events) {
       for (const event of operation.element.events) {
