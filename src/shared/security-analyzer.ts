@@ -5,15 +5,16 @@
  */
 
 import type { Plugin, Operation } from './types';
+import type { SecurityLevel } from './storage-types';
 
 /**
- * セキュリティレベル
+ * セキュリティレベルの値
  */
-export enum SecurityLevel {
-  SAFE = 'safe',         // 🟢 安全（自動適用可）
-  MODERATE = 'moderate', // 🟡 中程度（初回承認必要）
-  ADVANCED = 'advanced', // 🔴 高リスク（毎回承認必要）
-}
+const SecurityLevelValue = {
+  SAFE: 'safe' as const,         // 🟢 安全（自動適用可）
+  MODERATE: 'moderate' as const, // 🟡 中程度（初回承認必要）
+  ADVANCED: 'advanced' as const, // 🔴 高リスク（毎回承認必要）
+};
 
 /**
  * リスクタイプ
@@ -257,11 +258,11 @@ export class SecurityAnalyzer {
     const hasMediumRisk = risks.some((r) => r.severity === 'medium');
 
     if (hasHighRisk) {
-      return SecurityLevel.ADVANCED;
+      return SecurityLevelValue.ADVANCED;
     } else if (hasMediumRisk) {
-      return SecurityLevel.MODERATE;
+      return SecurityLevelValue.MODERATE;
     } else {
-      return SecurityLevel.SAFE;
+      return SecurityLevelValue.SAFE;
     }
   }
 
@@ -309,11 +310,11 @@ export class SecurityAnalyzer {
    */
   static getSecurityLevelLabel(level: SecurityLevel): string {
     switch (level) {
-      case SecurityLevel.SAFE:
+      case SecurityLevelValue.SAFE:
         return '🟢 安全';
-      case SecurityLevel.MODERATE:
+      case SecurityLevelValue.MODERATE:
         return '🟡 中程度';
-      case SecurityLevel.ADVANCED:
+      case SecurityLevelValue.ADVANCED:
         return '🔴 高リスク';
       default:
         return '不明';

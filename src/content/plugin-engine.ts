@@ -537,72 +537,85 @@ export class PluginEngine {
   /**
    * カスタムJS実行（サンドボックス化）
    */
-  private actionCustom(action: Action, element: HTMLElement, event?: UIEvent): void {
+  private async actionCustom(action: Action, _element: HTMLElement, event?: UIEvent): Promise<void> {
     if (!action.code) return;
 
+    // セキュリティレベルの確認
+    const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
+    
+    if (settings.settings?.securityLevel !== 'advanced') {
+      console.warn('[PluginEngine] Custom JS requires security level "advanced"');
+      showNotification(
+        'カスタムJSの実行にはセキュリティレベル「Advanced」が必要です',
+        5000,
+        'error'
+      );
+      throw new Error('Security level "advanced" required for custom JS execution');
+    }
+
     try {
-      // サンドボックス環境を構築
-      const sandbox = {
-        // 許可されたAPI
-        console,
-        element,
-        event,
-        // グローバルオブジェクト
-        Array,
-        Object,
-        String,
-        Number,
-        Boolean,
-        Date,
-        Math,
-        JSON,
-        Promise,
-        setTimeout,
-        clearTimeout,
-        setInterval,
-        clearInterval,
-        // Document API
-        document: {
-          querySelector: document.querySelector.bind(document),
-          querySelectorAll: document.querySelectorAll.bind(document),
-          getElementById: document.getElementById.bind(document),
-          getElementsByClassName: document.getElementsByClassName.bind(document),
-          getElementsByTagName: document.getElementsByTagName.bind(document),
-          createElement: document.createElement.bind(document),
-          createTextNode: document.createTextNode.bind(document),
-        },
-        // Navigator API (制限付き)
-        navigator: {
-          clipboard: navigator.clipboard,
-          userAgent: navigator.userAgent,
-        },
-        // Window API (制限付き)
-        window: {
-          location: {
-            href: window.location.href,
-            hostname: window.location.hostname,
-            pathname: window.location.pathname,
-            search: window.location.search,
-            hash: window.location.hash,
+      // リクエストIDを生成
+      const requestId = `custom-js-${Date.now()}-${Math.random()}`;
+
+      // MAIN Worldにメッセージを送信
+      window.postMessage(
+        {
+          type: 'EXECUTE_CUSTOM_JS',
+          requestId,
+          code: action.code,
+          selector: action.selector,
+          context: {
+            event: event
+              ? {
+                  type: event.type,
+                  target: event.target,
+                }
+              : null,
           },
         },
-        // 制限されたAPI（アクセス不可）
-        fetch: undefined,
-        XMLHttpRequest: undefined,
-        eval: undefined,
-      };
+        '*'
+      );
 
-      // withステートメントでサンドボックス内実行
-      const func = new Function('sandbox', `
-        with (sandbox) {
-          ${action.code}
-        }
-      `);
+      // MAIN Worldからのレスポンスを待つ
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          window.removeEventListener('message', handler);
+          reject(new Error('Custom JS execution timeout'));
+        }, 5000);
 
-      func(sandbox);
+        const handler = (messageEvent: MessageEvent) => {
+          if (messageEvent.source !== window) return;
+
+          const response = messageEvent.data;
+
+          if (response.type === 'CUSTOM_JS_RESULT' && response.requestId === requestId) {
+            clearTimeout(timeout);
+            window.removeEventListener('message', handler);
+
+            if (response.success) {
+              console.log('[PluginEngine] Custom JS executed successfully');
+              if (action.notification) {
+                showNotification(action.notification, 3000, 'success');
+              }
+              resolve();
+            } else {
+              console.error('[PluginEngine] Custom JS execution failed:', response.error);
+              showNotification(
+                `カスタムコードの実行に失敗しました: ${response.error}`,
+                5000,
+                'error'
+              );
+              reject(new Error(response.error));
+            }
+          }
+        };
+
+        window.addEventListener('message', handler);
+      });
     } catch (error) {
       console.error('[PluginEngine] Custom action execution failed:', error);
       showNotification('カスタムコードの実行に失敗しました', 3000, 'error');
+      throw error;
     }
   }
 

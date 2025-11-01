@@ -25,13 +25,29 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 // Install event
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('[PageModifier] Extension installed', details);
 
   // Initialize default settings
   pluginStorage.updateSettings(DEFAULT_SETTINGS).catch((error) => {
     console.error('[PageModifier] Failed to initialize settings:', error);
   });
+
+  // MAIN World Scriptを登録（カスタムJS実行用）
+  try {
+    await chrome.scripting.registerContentScripts([
+      {
+        id: 'page-modifier-main-world',
+        matches: ['<all_urls>'],
+        js: ['assets/main-world-script.js'],
+        world: 'MAIN',
+        runAt: 'document_start',
+      },
+    ]);
+    console.log('[PageModifier] MAIN World Script registered');
+  } catch (error) {
+    console.error('[PageModifier] Failed to register MAIN World Script:', error);
+  }
 
   // サンプルプラグインの読み込み（開発用）
   if (details.reason === 'install') {

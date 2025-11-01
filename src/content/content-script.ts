@@ -237,16 +237,8 @@ class ContentScript {
    * プラグインをリロード
    */
   private async handleReloadPlugins(): Promise<void> {
-    console.log('[PageModifier] Reloading plugins...');
-
-    // 現在のアクティブプラグインをクリア
-    this.activePlugins.clear();
-    this.pluginEngine.clearExecutedOperations();
-
-    // プラグインを再取得・実行
-    const domain = extractDomain(location.href);
-    const plugins = await this.fetchPluginsForDomain(domain);
-    await this.executePlugins(plugins);
+    // プラグインの変更を反映するため、ページをリロード
+    location.reload();
   }
 
   /**

@@ -8,8 +8,9 @@ import { useState, useEffect } from 'react';
 import PluginList from './PluginList';
 import PluginEditor from './PluginEditor';
 import SettingsPanel from './SettingsPanel';
-import type { PluginData } from '../../shared/storage-types';
+import type { PluginData, Settings } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
+import { canExecutePlugin, getSecurityLevelErrorMessage } from '../../shared/plugin-security-checker';
 
 type Tab = 'plugins' | 'settings';
 
@@ -61,6 +62,31 @@ export default function PluginManagementView() {
   };
 
   const handlePluginToggle = async (pluginId: string, enabled: boolean) => {
+    // 有効化しようとしている場合、セキュリティレベルをチェック
+    if (enabled) {
+      // 現在の設定を取得
+      const settingsResponse = await chrome.runtime.sendMessage({
+        type: 'GET_SETTINGS',
+      });
+
+      const settings: Settings = settingsResponse.settings;
+
+      // プラグインを取得
+      const pluginData = plugins.find((p) => p.plugin.id === pluginId);
+      if (!pluginData) return;
+
+      // セキュリティレベルをチェック
+      if (!canExecutePlugin(pluginData.plugin, settings.securityLevel)) {
+        const errorMessage = getSecurityLevelErrorMessage(
+          pluginData.plugin,
+          settings.securityLevel
+        );
+
+        alert(`⚠️ プラグインを有効化できません\n\n${errorMessage}\n\n設定タブからセキュリティレベルを変更してください。`);
+        return;
+      }
+    }
+
     await chrome.runtime.sendMessage({
       type: 'TOGGLE_PLUGIN',
       pluginId,
