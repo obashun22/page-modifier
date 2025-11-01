@@ -114,14 +114,6 @@ export class ElementSelector {
     this.deactivate();
   };
 
-  /**
-   * キーボードイベント
-   */
-  private onKeyDown = (e: KeyboardEvent): void => {
-    if (e.key === 'Escape') {
-      this.deactivate();
-    }
-  };
 
   /**
    * ハイライト表示を更新
@@ -253,7 +245,7 @@ export class ElementSelector {
         font-size: 14px;
         pointer-events: none;
       ">
-        📍 要素を選択してください（ESCでキャンセル）
+        📍 要素を選択してください（キャンセルするには要素選択ボタンを再度クリック）
       </div>
     `;
 
@@ -276,7 +268,6 @@ export class ElementSelector {
   private attachEventListeners(): void {
     document.addEventListener('mousemove', this.onMouseMove, { passive: true });
     document.addEventListener('click', this.onClick, { capture: true });
-    document.addEventListener('keydown', this.onKeyDown);
   }
 
   /**
@@ -285,7 +276,6 @@ export class ElementSelector {
   private detachEventListeners(): void {
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('click', this.onClick, { capture: true });
-    document.removeEventListener('keydown', this.onKeyDown);
   }
 
   /**
