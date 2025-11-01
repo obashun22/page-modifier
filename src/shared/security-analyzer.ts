@@ -71,6 +71,16 @@ export class SecurityAnalyzer {
         });
       }
 
+      // カスタム条件検出
+      if (operation.condition?.type === 'custom' && operation.condition.code) {
+        risks.push({
+          type: 'custom_js',
+          severity: 'high',
+          description: 'カスタム条件判定コードが含まれています',
+          location: `operation[${index}].condition`,
+        });
+      }
+
       // innerHTML使用検出
       if (operation.element?.innerHTML) {
         risks.push({
@@ -162,7 +172,12 @@ export class SecurityAnalyzer {
    */
   private hasCustomJSInElement(element: any): boolean {
     if (element.events) {
+      // アクションのカスタムJSをチェック
       if (element.events.some((event: any) => event.action.type === 'custom')) {
+        return true;
+      }
+      // イベント条件のカスタムコードをチェック
+      if (element.events.some((event: any) => event.condition?.type === 'custom' && event.condition.code)) {
         return true;
       }
     }

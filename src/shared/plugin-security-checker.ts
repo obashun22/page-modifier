@@ -51,10 +51,20 @@ export function hasCustomJSAction(plugin: Plugin): boolean {
       return true;
     }
 
+    // operationのconditionをチェック
+    if (operation.condition?.type === 'custom' && operation.condition.code) {
+      return true;
+    }
+
     // operationのelementにeventsが含まれている
     if (operation.element?.events) {
       for (const event of operation.element.events) {
+        // アクションのカスタムJSをチェック
         if (event.action.type === 'custom' && event.action.code) {
+          return true;
+        }
+        // イベント条件のカスタムコードをチェック
+        if (event.condition?.type === 'custom' && event.condition.code) {
           return true;
         }
       }
@@ -77,7 +87,12 @@ function hasCustomJSInChildren(children: any[]): boolean {
   for (const child of children) {
     if (child.events) {
       for (const event of child.events) {
+        // アクションのカスタムJSをチェック
         if (event.action.type === 'custom' && event.action.code) {
+          return true;
+        }
+        // イベント条件のカスタムコードをチェック
+        if (event.condition?.type === 'custom' && event.condition.code) {
           return true;
         }
       }
