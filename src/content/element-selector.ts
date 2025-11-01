@@ -52,12 +52,6 @@ export class ElementSelector {
     // メッセージ削除
     this.removeInstructionMessage();
 
-    // フォーカスをbodyに移してSide Panelのボタンへのフォーカスを防ぐ
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    document.body.focus();
-
     console.log('[Element Selector] Deactivated');
   }
 
@@ -125,8 +119,6 @@ export class ElementSelector {
    */
   private onKeyDown = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
       this.deactivate();
     }
   };
@@ -284,7 +276,7 @@ export class ElementSelector {
   private attachEventListeners(): void {
     document.addEventListener('mousemove', this.onMouseMove, { passive: true });
     document.addEventListener('click', this.onClick, { capture: true });
-    document.addEventListener('keydown', this.onKeyDown, { capture: true });
+    document.addEventListener('keydown', this.onKeyDown);
   }
 
   /**
@@ -293,7 +285,7 @@ export class ElementSelector {
   private detachEventListeners(): void {
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('click', this.onClick, { capture: true });
-    document.removeEventListener('keydown', this.onKeyDown, { capture: true });
+    document.removeEventListener('keydown', this.onKeyDown);
   }
 
   /**
