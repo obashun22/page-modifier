@@ -4,37 +4,15 @@
  * 設定パネルコンポーネント
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Settings } from '../../shared/storage-types';
 
 export default function SettingsPanel() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const isInitialLoadRef = useRef(true);
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  // 設定が変更されたら自動保存（初回ロード時は除く）
-  useEffect(() => {
-    if (settings && !isInitialLoad) {
-      autoSave();
-    }
-  }, [settings]);
-
-  const loadSettings = async () => {
-    const response = await chrome.runtime.sendMessage({
-      type: 'GET_SETTINGS',
-    });
-
-    if (response.success) {
-      setSettings(response.settings);
-      setIsInitialLoad(false);
-    }
-  };
-
-  const autoSave = async () => {
+  const autoSave = useCallback(async () => {
     if (!settings) return;
 
     try {
@@ -48,7 +26,30 @@ export default function SettingsPanel() {
     } catch (error) {
       setMessage('設定の保存に失敗しました');
     }
+  }, [settings]);
+
+  const loadSettings = async () => {
+    const response = await chrome.runtime.sendMessage({
+      type: 'GET_SETTINGS',
+    });
+
+    if (response.success) {
+      // 初回ロードフラグをfalseにしてから設定をセット
+      isInitialLoadRef.current = false;
+      setSettings(response.settings);
+    }
   };
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  // 設定が変更されたら自動保存（初回ロード時は除く）
+  useEffect(() => {
+    if (settings && !isInitialLoadRef.current) {
+      autoSave();
+    }
+  }, [settings, autoSave]);
 
   if (!settings) {
     return <div style={{ padding: '20px' }}>読み込み中...</div>;
