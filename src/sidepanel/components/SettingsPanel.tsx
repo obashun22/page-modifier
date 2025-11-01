@@ -9,7 +9,6 @@ import type { Settings } from '../../shared/storage-types';
 
 export default function SettingsPanel() {
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const isInitialLoadRef = useRef(true);
 
   const autoSave = useCallback(async () => {
@@ -20,11 +19,8 @@ export default function SettingsPanel() {
         type: 'UPDATE_SETTINGS',
         settings,
       });
-
-      setMessage('設定を保存しました');
-      setTimeout(() => setMessage(null), 2000);
     } catch (error) {
-      setMessage('設定の保存に失敗しました');
+      console.error('設定の保存に失敗しました', error);
     }
   }, [settings]);
 
@@ -58,22 +54,6 @@ export default function SettingsPanel() {
   return (
     <div style={{ padding: '16px' }}>
       <h2 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>設定</h2>
-
-      {message && (
-        <div
-          style={{
-            padding: '12px',
-            marginBottom: '16px',
-            backgroundColor: '#d1e7dd',
-            border: '1px solid #badbcc',
-            borderRadius: '6px',
-            color: '#0f5132',
-            fontSize: '13px',
-          }}
-        >
-          {message}
-        </div>
-      )}
 
       <div style={{ marginBottom: '20px' }}>
         <label
