@@ -9,12 +9,19 @@ import type { Settings } from '../../shared/storage-types';
 
 export default function SettingsPanel() {
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // 設定が変更されたら自動保存（初回ロード時は除く）
+  useEffect(() => {
+    if (settings && !isInitialLoad) {
+      autoSave();
+    }
+  }, [settings]);
 
   const loadSettings = async () => {
     const response = await chrome.runtime.sendMessage({
@@ -23,14 +30,12 @@ export default function SettingsPanel() {
 
     if (response.success) {
       setSettings(response.settings);
+      setIsInitialLoad(false);
     }
   };
 
-  const handleSave = async () => {
+  const autoSave = async () => {
     if (!settings) return;
-
-    setSaving(true);
-    setMessage(null);
 
     try {
       await chrome.runtime.sendMessage({
@@ -39,11 +44,9 @@ export default function SettingsPanel() {
       });
 
       setMessage('設定を保存しました');
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => setMessage(null), 2000);
     } catch (error) {
       setMessage('設定の保存に失敗しました');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -196,24 +199,6 @@ export default function SettingsPanel() {
           チャットでプラグインを生成するために必要です
         </p>
       </div>
-
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        style={{
-          padding: '8px 16px',
-          fontSize: '14px',
-          backgroundColor: '#28a745',
-          color: 'white',
-          border: 'none',
-          borderRadius: '6px',
-          cursor: saving ? 'not-allowed' : 'pointer',
-          fontWeight: 600,
-          opacity: saving ? 0.6 : 1,
-        }}
-      >
-        {saving ? '保存中...' : '設定を保存'}
-      </button>
     </div>
   );
 }
