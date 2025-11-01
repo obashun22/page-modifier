@@ -23,6 +23,21 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
 
   useEffect(() => {
     loadPlugins();
+
+    // chrome.storageの変更を監視してプラグイン一覧を自動更新
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      // プラグインデータが変更された場合
+      if (changes['page_modifier_plugins']) {
+        console.log('[PluginManagementView] Plugins updated in storage, reloading...');
+        loadPlugins();
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
   }, []);
 
   const loadPlugins = async () => {
