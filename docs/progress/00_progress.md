@@ -2,7 +2,7 @@
 
 **ステータス**: 🟨 進行中
 
-**進捗**: 85% 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️⬜️⬜️
+**進捗**: 89% 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️⬜️
 
 最終更新: 2025-11-01
 
@@ -46,9 +46,9 @@
 
 ---
 
-## Phase 3: Content Script実装 (1/3) 🟨
+## Phase 3: Content Script実装 (2/3) 🟨
 
-- [ ] 要素選択UI（05_element_selector.md）
+- [x] 要素選択UI（05_element_selector.md）
 - [ ] イベント処理（06_event_handling.md）
 - [x] Content Scriptメイン（07_content_script.md）
 
@@ -138,3 +138,12 @@
   - エラーハンドリング（401/429/500）
   - APIキー管理（Settings画面で設定可能）
   - Git: commit 1e2da70
+
+- ✅ Phase 3: 要素選択UI実装完了
+  - ElementSelectorクラス実装
+  - マウスオーバーでハイライト表示
+  - クリックで要素選択、ESCでキャンセル
+  - セレクター生成（ID/クラス/data属性/構造的パス）
+  - ツールチップ・説明メッセージ表示
+  - Content Script統合
+  - Git: commit d49fa32
