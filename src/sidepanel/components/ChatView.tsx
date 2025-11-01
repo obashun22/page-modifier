@@ -477,7 +477,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', justifyContent: 'space-between' }}>
           <button
             onClick={toggleElementSelection}
             title={isSelectingElement ? '要素選択をキャンセル' : '要素を選択'}
@@ -511,9 +511,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           >
             <FiMousePointer size={18} />
           </button>
-        </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
           <button
             onClick={startNewChat}
             title="新しいチャット"
