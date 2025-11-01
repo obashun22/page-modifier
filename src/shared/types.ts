@@ -25,7 +25,8 @@ export type OperationType =
   | 'show'     // 要素を表示
   | 'style'    // スタイルを適用
   | 'modify'   // 属性/コンテンツを変更
-  | 'replace'; // 要素を置換
+  | 'replace'  // 要素を置換
+  | 'executeScript'; // カスタムスクリプトを実行
 
 /** 挿入位置 */
 export type InsertPosition =
@@ -124,12 +125,15 @@ export interface Operation {
   id: string;                  // 操作の一意識別子
   description?: string;        // 操作の説明
   type: OperationType;         // 操作タイプ
-  selector: SelectorString;    // CSSセレクター
+  selector?: SelectorString;   // CSSセレクター（executeScript以外では必須）
   position?: InsertPosition;   // 挿入位置（insertの場合）
   element?: Element;           // 要素定義
   style?: StyleObject;         // スタイル定義
   attributes?: AttributeObject;// 属性定義
   condition?: Condition;       // 実行条件
+  code?: string;               // 実行するコード（executeScriptの場合）
+  waitFor?: string;            // 要素の出現を待つセレクター（executeScriptの場合）
+  delay?: number;              // 実行前の遅延時間（ミリ秒、executeScriptの場合）
 }
 
 // ==================== プラグイン ====================

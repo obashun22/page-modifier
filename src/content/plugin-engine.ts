@@ -162,7 +162,21 @@ export class PluginEngine {
   private async executeOperation(operation: Operation): Promise<OperationResult> {
     console.log(`[PluginEngine] Executing operation: ${operation.id} (${operation.type})`);
 
+    // executeScriptは別処理
+    if (operation.type === 'executeScript') {
+      await this.handleExecuteScript(operation);
+      return {
+        operationId: operation.id,
+        success: true,
+        elementsAffected: 0,
+      };
+    }
+
     // セレクターで対象要素を取得
+    if (!operation.selector) {
+      throw new Error(`Operation ${operation.id} requires selector field`);
+    }
+
     const targets = this.resolveSelector(operation.selector);
 
     if (targets.length === 0) {
@@ -791,5 +805,68 @@ export class PluginEngine {
    */
   getEventListenerCount(): number {
     return this.eventManager.getListenerCount();
+  }
+
+  /**
+   * カスタムスクリプトを実行（executeScript operation）
+   */
+  private async handleExecuteScript(operation: Operation): Promise<void> {
+    if (!operation.code) {
+      throw new Error('executeScript operation requires code field');
+    }
+
+    console.log(`[PluginEngine] Executing script: ${operation.id}`);
+
+    // waitForが指定されていれば要素の出現を待つ
+    if (operation.waitFor) {
+      console.log(`[PluginEngine] Waiting for element: ${operation.waitFor}`);
+      await this.waitForElement(operation.waitFor);
+    }
+
+    // delayが指定されていれば待機
+    if (operation.delay && operation.delay > 0) {
+      console.log(`[PluginEngine] Delaying execution by ${operation.delay}ms`);
+      await new Promise(resolve => setTimeout(resolve, operation.delay));
+    }
+
+    // actionCustomと同じロジックでスクリプト実行
+    await this.actionCustom(
+      { type: 'custom', code: operation.code },
+      document.body
+    );
+
+    console.log(`[PluginEngine] Script executed: ${operation.id}`);
+  }
+
+  /**
+   * 要素が出現するまで待機（MutationObserver使用）
+   */
+  private async waitForElement(selector: string, timeout: number = 10000): Promise<HTMLElement> {
+    // 既に存在する場合
+    const existingElement = document.querySelector<HTMLElement>(selector);
+    if (existingElement) {
+      return existingElement;
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        observer.disconnect();
+        reject(new Error(`Timeout waiting for element: ${selector}`));
+      }, timeout);
+
+      const observer = new MutationObserver(() => {
+        const element = document.querySelector<HTMLElement>(selector);
+        if (element) {
+          clearTimeout(timeoutId);
+          observer.disconnect();
+          resolve(element);
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    });
   }
 }

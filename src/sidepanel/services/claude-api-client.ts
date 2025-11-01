@@ -186,13 +186,16 @@ interface Plugin {
 interface Operation {
   id: string;                    // 操作ID
   description?: string;          // 操作の説明
-  type: 'insert' | 'remove' | 'hide' | 'show' | 'style' | 'modify' | 'replace';
-  selector: string;              // CSSセレクター
+  type: 'insert' | 'remove' | 'hide' | 'show' | 'style' | 'modify' | 'replace' | 'executeScript';
+  selector?: string;             // CSSセレクター（executeScript以外では必須）
   position?: 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';  // insert時
   element?: Element;             // 挿入する要素（insert/replace時）
   style?: Record<string, string>;  // スタイル変更（style時）
   textContent?: string;          // テキスト変更（modify時）
   condition?: Condition;         // 実行条件
+  code?: string;                 // 実行するJavaScriptコード（executeScript時）
+  waitFor?: string;              // 要素の出現を待つセレクター（executeScript時）
+  delay?: number;                // 実行前の遅延時間（ミリ秒、executeScript時）
 }
 
 interface Element {
@@ -254,6 +257,11 @@ interface Condition {
 6. **id**: 新規作成時はidフィールドを省略してください（システムが自動的にUUIDを生成します）。編集時は既存のidをそのまま使用してください。
 7. versionは常に"1.0.0"から開始
 8. priorityは通常500（標準的な優先度）
+9. **executeScript**: ページ読み込み時に自動実行したいスクリプトがある場合に使用します。セキュリティレベル「Advanced」が必要です。
+   - code: 実行するJavaScriptコード（必須）
+   - waitFor: スクリプト実行前に特定の要素が存在するまで待つ場合に指定（オプション）
+   - delay: スクリプト実行前に遅延させる時間（ミリ秒、オプション）
+   - selector: executeScriptでは不要です
 
 ## 良い例（新規作成）
 
@@ -301,6 +309,46 @@ interface Condition {
           }
         ]
       }
+    }
+  ]
+}
+\`\`\`
+
+## executeScriptの使用例
+
+リアルタイムで更新される時刻表示など、定期的にJavaScriptを実行する必要がある場合：
+
+\`\`\`json
+{
+  "name": "リアルタイム時刻表示",
+  "version": "1.0.0",
+  "description": "ヘッダー下に現在時刻を1秒ごとに更新して表示",
+  "author": "AI Generated",
+  "targetDomains": ["example.com"],
+  "autoApply": true,
+  "priority": 500,
+  "operations": [
+    {
+      "id": "insert-time-display",
+      "type": "insert",
+      "selector": "header",
+      "position": "afterend",
+      "element": {
+        "tag": "div",
+        "attributes": { "id": "time-display" },
+        "style": {
+          "padding": "10px",
+          "textAlign": "center",
+          "backgroundColor": "#f0f0f0"
+        },
+        "textContent": "読み込み中..."
+      }
+    },
+    {
+      "id": "update-time",
+      "type": "executeScript",
+      "waitFor": "#time-display",
+      "code": "function updateTime() { const el = document.getElementById('time-display'); if (el) { el.textContent = new Date().toLocaleString('ja-JP'); } } updateTime(); setInterval(updateTime, 1000);"
     }
   ]
 }

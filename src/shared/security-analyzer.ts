@@ -93,7 +93,7 @@ export class SecurityAnalyzer {
       }
 
       // 危険なセレクター検出
-      if (this.isDangerousSelector(operation.selector)) {
+      if (operation.selector && this.isDangerousSelector(operation.selector)) {
         risks.push({
           type: 'dangerous_selector',
           severity: 'low',

@@ -16,9 +16,11 @@ interface PluginCardProps {
   onApprove?: (plugin: Plugin) => void;
   onReject?: () => void;
   onDismiss?: () => void;
+  onUndo?: () => void; // 適用を取り消す
+  isConfirmed?: boolean; // 編集参照が確定済みかどうか
 }
 
-export default function PluginCard({ plugin, mode, onApprove, onReject, onDismiss }: PluginCardProps) {
+export default function PluginCard({ plugin, mode, onApprove, onReject, onDismiss, onUndo, isConfirmed }: PluginCardProps) {
   const getBorderColor = () => {
     switch (mode) {
       case 'preview':
@@ -184,19 +186,43 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
 
       {/* アクションボタン */}
       {mode === 'applied' && (
-        <div
-          style={{
-            padding: '8px 12px',
-            backgroundColor: '#d1f4dd',
-            border: '1px solid #a3cfbb',
-            borderRadius: '6px',
-            fontSize: '13px',
-            color: '#0f5132',
-            textAlign: 'center',
-            fontWeight: 600,
-          }}
-        >
-          ✓ このプラグインは保存されました
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div
+            style={{
+              padding: '8px 12px',
+              backgroundColor: '#d1f4dd',
+              border: '1px solid #a3cfbb',
+              borderRadius: '6px',
+              fontSize: '13px',
+              color: '#0f5132',
+              textAlign: 'center',
+              fontWeight: 600,
+            }}
+          >
+            ✓ このプラグインは保存されました
+          </div>
+          {onUndo && (
+            <button
+              onClick={onUndo}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                backgroundColor: 'white',
+                color: '#24292f',
+                border: '1px solid #d0d7de',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+              }}
+            >
+              <FaTimes size={14} />
+              元に戻す
+            </button>
+          )}
         </div>
       )}
       {mode === 'preview' && onApprove && onReject && (
@@ -246,29 +272,48 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
         </div>
       )}
 
-      {mode === 'editing' && onDismiss && (
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={onDismiss}
-            style={{
-              flex: 1,
-              padding: '8px 16px',
-              fontSize: '14px',
-              backgroundColor: 'white',
-              color: '#24292f',
-              border: '1px solid #d0d7de',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-            }}
-          >
-            <IoClose size={18} />
-            閉じる
-          </button>
+      {mode === 'editing' && (
+        <div>
+          {isConfirmed ? (
+            <div
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#fff8c5',
+                border: '1px solid #d4a72c',
+                borderRadius: '6px',
+                fontSize: '13px',
+                color: '#9a6700',
+                textAlign: 'center',
+                fontWeight: 600,
+              }}
+            >
+              編集のために参照されました
+            </div>
+          ) : (
+            onDismiss && (
+              <button
+                onClick={onDismiss}
+                style={{
+                  width: '100%',
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                  color: '#24292f',
+                  border: '1px solid #d0d7de',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                }}
+              >
+                <IoClose size={18} />
+                削除
+              </button>
+            )
+          )}
         </div>
       )}
     </div>

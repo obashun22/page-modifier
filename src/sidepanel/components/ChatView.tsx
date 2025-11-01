@@ -19,6 +19,7 @@ interface Message {
   timestamp: number;
   plugin?: Plugin;  // プラグイン情報（オプション）
   pluginMode?: 'preview' | 'editing' | 'applied';  // プラグイン表示モード
+  isConfirmed?: boolean;  // 編集参照が確定済みかどうか
 }
 
 interface ElementInfo {
@@ -134,6 +135,15 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
+    // メッセージ送信時に、editing モードのメッセージを確定済みにする
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.pluginMode === 'editing' && !msg.isConfirmed
+          ? { ...msg, isConfirmed: true }
+          : msg
+      )
+    );
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -192,13 +202,13 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   // プラグイン承認
   const handleApprove = async (plugin: Plugin, messageId: string) => {
     try {
-      // 既存プラグインかどうかを判定
+      // IDが重複しているかどうかで既存プラグインかどうかを判定
       const isExistingPlugin = existingPluginIds.has(plugin.id);
 
       // 確認ダイアログを表示
       let confirmMessage = '';
       if (isExistingPlugin) {
-        confirmMessage = `プラグイン「${plugin.name}」は既に存在します。\n\n上書き保存しますか？`;
+        confirmMessage = `プラグイン「${plugin.name}」は既に存在します（ID: ${plugin.id}）。\n\n上書き保存しますか？`;
       } else {
         confirmMessage = `プラグイン「${plugin.name}」を新規作成しますか？`;
       }
@@ -208,6 +218,15 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         return;
       }
 
+      // 既存プラグイン（IDが重複）の場合は先に削除してから保存
+      if (isExistingPlugin) {
+        await chrome.runtime.sendMessage({
+          type: 'DELETE_PLUGIN',
+          pluginId: plugin.id,
+        });
+      }
+
+      // 新しいプラグインを保存
       await chrome.runtime.sendMessage({
         type: 'SAVE_PLUGIN',
         plugin,
@@ -255,6 +274,38 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     onClearSelectedPlugin();
   };
 
+  // プラグイン適用を元に戻す
+  const handleUndo = async (plugin: Plugin, messageId: string) => {
+    try {
+      const confirmed = confirm(`プラグイン「${plugin.name}」を削除して、適用前の状態に戻しますか？`);
+      if (!confirmed) {
+        return;
+      }
+
+      // プラグインを削除
+      await chrome.runtime.sendMessage({
+        type: 'DELETE_PLUGIN',
+        pluginId: plugin.id,
+      });
+
+      // メッセージの状態を 'preview' に戻す
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId
+            ? { ...msg, pluginMode: 'preview' as const }
+            : msg
+        )
+      );
+
+      addMessage('assistant', `プラグイン「${plugin.name}」を削除しました。`);
+
+      // プラグインIDリストを再読み込み
+      await loadExistingPluginIds();
+    } catch (error) {
+      addMessage('assistant', `プラグインの削除に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
   // Enterキーでメッセージ送信
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -266,7 +317,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* メッセージリスト */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#ffffff' }}>
         {messages.map((message) => (
           <div key={message.id}>
             <MessageItem message={message} />
@@ -279,6 +330,8 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
                   onApprove={message.pluginMode === 'preview' ? (plugin) => handleApprove(plugin, message.id) : undefined}
                   onReject={message.pluginMode === 'preview' ? () => handleReject(message.id) : undefined}
                   onDismiss={message.pluginMode === 'editing' ? () => handleDismissEdit(message.id) : undefined}
+                  onUndo={message.pluginMode === 'applied' ? () => handleUndo(message.plugin!, message.id) : undefined}
+                  isConfirmed={message.isConfirmed}
                 />
               </div>
             )}

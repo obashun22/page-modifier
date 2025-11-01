@@ -102,14 +102,43 @@ export const ElementSchema: z.ZodType<Element> = z.lazy(() =>
 export const OperationSchema = z.object({
   id: z.string().min(1),
   description: z.string().optional(),
-  type: z.enum(['insert', 'remove', 'hide', 'show', 'style', 'modify', 'replace']),
-  selector: z.string().min(1),
+  type: z.enum(['insert', 'remove', 'hide', 'show', 'style', 'modify', 'replace', 'executeScript']),
+  selector: z.string().optional(),
   position: z.enum(['beforebegin', 'afterbegin', 'beforeend', 'afterend']).optional(),
   element: ElementSchema.optional(),
   style: StyleObjectSchema.optional(),
   attributes: AttributeObjectSchema.optional(),
   condition: ConditionSchema.optional(),
-}) satisfies z.ZodType<Operation>;
+  code: z.string().optional(),
+  waitFor: z.string().optional(),
+  delay: z.number().min(0).optional(),
+})
+  .refine(
+    (data) => {
+      // executeScriptの場合はcodeが必須
+      if (data.type === 'executeScript') {
+        return data.code !== undefined && data.code.length > 0;
+      }
+      return true;
+    },
+    {
+      message: 'executeScript操作にはcodeフィールドが必須です',
+      path: ['code'],
+    }
+  )
+  .refine(
+    (data) => {
+      // executeScript以外の場合はselectorが必須
+      if (data.type !== 'executeScript') {
+        return data.selector !== undefined && data.selector.length > 0;
+      }
+      return true;
+    },
+    {
+      message: 'この操作にはselectorフィールドが必須です',
+      path: ['selector'],
+    }
+  ) satisfies z.ZodType<Operation>;
 
 // ==================== プラグインスキーマ ====================
 

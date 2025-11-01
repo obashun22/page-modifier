@@ -1,7 +1,7 @@
 /**
  * Page Modifier - Message Item Component
  *
- * チャットメッセージ表示コンポーネント
+ * チャットメッセージ表示コンポーネント（吹き出し形式）
  */
 
 interface Message {
@@ -22,33 +22,63 @@ export default function MessageItem({ message }: MessageItemProps) {
     <div
       style={{
         display: 'flex',
-        flexDirection: 'column',
-        padding: '12px 16px',
-        backgroundColor: isUser ? '#f6f8fa' : 'white',
-        borderBottom: '1px solid #d0d7de',
+        flexDirection: isUser ? 'row-reverse' : 'row',
+        gap: '8px',
+        padding: '8px 16px',
+        alignItems: 'flex-start',
       }}
     >
+      {/* アバター */}
       <div
         style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          backgroundColor: isUser ? '#0969da' : '#6e7781',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          marginBottom: '6px',
+          justifyContent: 'center',
+          fontSize: '16px',
+          flexShrink: 0,
         }}
       >
-        <span
+        {isUser ? '👤' : '🤖'}
+      </div>
+
+      {/* メッセージ吹き出し */}
+      <div
+        style={{
+          maxWidth: '75%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          alignItems: isUser ? 'flex-end' : 'flex-start',
+        }}
+      >
+        {/* メッセージバブル */}
+        <div
           style={{
+            padding: '10px 14px',
+            borderRadius: '18px',
+            backgroundColor: isUser ? '#0969da' : '#f6f8fa',
+            color: isUser ? '#ffffff' : '#24292f',
             fontSize: '14px',
-            fontWeight: 600,
-            color: isUser ? '#0969da' : '#6e7781',
+            lineHeight: '1.5',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
           }}
         >
-          {isUser ? '👤 You' : '🤖 Assistant'}
-        </span>
+          {message.content}
+        </div>
+
+        {/* タイムスタンプ */}
         <span
           style={{
             fontSize: '11px',
             color: '#6e7781',
+            paddingLeft: isUser ? '0' : '8px',
+            paddingRight: isUser ? '8px' : '0',
           }}
         >
           {new Date(message.timestamp).toLocaleTimeString('ja-JP', {
@@ -56,17 +86,6 @@ export default function MessageItem({ message }: MessageItemProps) {
             minute: '2-digit',
           })}
         </span>
-      </div>
-      <div
-        style={{
-          fontSize: '14px',
-          lineHeight: '1.5',
-          color: '#24292f',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-        }}
-      >
-        {message.content}
       </div>
     </div>
   );
