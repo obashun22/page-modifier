@@ -6,6 +6,7 @@
  */
 
 import { PluginEngine } from './plugin-engine';
+import { ElementSelector } from './element-selector';
 import type { Plugin } from '../shared/types';
 import { extractDomain } from '../utils/plugin-utils';
 
@@ -14,12 +15,14 @@ import { extractDomain } from '../utils/plugin-utils';
  */
 class ContentScript {
   private pluginEngine: PluginEngine;
+  private elementSelector: ElementSelector;
   private observer: MutationObserver | null = null;
   private activePlugins: Map<string, Plugin> = new Map();
   private initialized = false;
 
   constructor() {
     this.pluginEngine = new PluginEngine();
+    this.elementSelector = new ElementSelector();
   }
 
   /**
@@ -202,6 +205,11 @@ class ContentScript {
           sendResponse({ success: true });
           break;
 
+        case 'START_ELEMENT_SELECTION':
+          this.handleStartElementSelection();
+          sendResponse({ success: true });
+          break;
+
         default:
           console.warn('[PageModifier] Unknown message type:', message.type);
           sendResponse({ success: false, error: 'Unknown message type' });
@@ -251,6 +259,26 @@ class ContentScript {
   }
 
   /**
+   * 要素選択モードを開始
+   */
+  private handleStartElementSelection(): void {
+    console.log('[PageModifier] Starting element selection mode...');
+
+    this.elementSelector.activate((selector, elementInfo) => {
+      console.log('[PageModifier] Element selected:', selector, elementInfo);
+
+      // Side Panelに選択結果を送信
+      chrome.runtime.sendMessage({
+        type: 'ELEMENT_SELECTED',
+        selector,
+        ...elementInfo,
+      }).catch((error) => {
+        console.error('[PageModifier] Failed to send element selection:', error);
+      });
+    });
+  }
+
+  /**
    * クリーンアップ
    */
   destroy(): void {
@@ -259,6 +287,7 @@ class ContentScript {
       this.observer = null;
     }
 
+    this.elementSelector.deactivate();
     this.activePlugins.clear();
     this.initialized = false;
     console.log('[PageModifier] Content script destroyed');
