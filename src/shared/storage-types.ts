@@ -52,5 +52,5 @@ export const DEFAULT_SETTINGS: Settings = {
   autoApplyPlugins: true,
   showNotifications: true,
   theme: 'auto',
-  securityLevel: 'moderate',
+  securityLevel: 'advanced',
 };
