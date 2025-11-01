@@ -133,9 +133,6 @@ export class PluginEngine {
         // 操作実行
         const result = await this.executeOperation(operation);
         results.push(result);
-
-        // 実行済みとしてマーク
-        this.executedOperations.add(operation.id);
       } catch (error) {
         console.error(`[PluginEngine] Failed to execute operation ${operation.id}:`, error);
         results.push({
@@ -164,7 +161,19 @@ export class PluginEngine {
 
     // executeScriptは別処理
     if (operation.type === 'executeScript') {
+      // executeScriptは一度だけ実行（既に実行済みの場合はスキップ）
+      const operationKey = `${this.currentPluginId}-${operation.id}`;
+      if (this.executedOperations.has(operationKey)) {
+        console.log(`[PluginEngine] Skipping executeScript ${operation.id}: already executed`);
+        return {
+          operationId: operation.id,
+          success: true,
+          elementsAffected: 0,
+        };
+      }
+
       await this.handleExecuteScript(operation);
+      this.executedOperations.add(operationKey);
       return {
         operationId: operation.id,
         success: true,
