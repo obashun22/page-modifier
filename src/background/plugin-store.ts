@@ -47,7 +47,7 @@ export class PluginStorage {
         updatedAt: now,
       };
     } else {
-      // 新規プラグインは配列の最後に追加
+      // 新規プラグインは配列の最初に追加（最高優先度）
       const pluginData: PluginData = {
         plugin,
         enabled: true,
@@ -55,7 +55,7 @@ export class PluginStorage {
         updatedAt: now,
         usageCount: 0,
       };
-      plugins.push(pluginData);
+      plugins.unshift(pluginData);
     }
 
     await chrome.storage.local.set({
