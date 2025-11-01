@@ -2,7 +2,7 @@
 
 **ステータス**: 🟨 進行中
 
-**進捗**: 81% 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️⬜️⬜️⬜️
+**進捗**: 85% 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩⬜️⬜️⬜️⬜️
 
 最終更新: 2025-11-01
 
@@ -67,9 +67,9 @@
 
 ---
 
-## Phase 6: AI統合 (0/1)
+## Phase 6: AI統合 (1/1) ✅
 
-- [ ] Claude API統合（10_ai_integration.md）
+- [x] Claude API統合（10_ai_integration.md）
 
 ---
 
@@ -129,3 +129,12 @@
   - AI serviceモック実装（Phase 6で本実装予定）
   - ナビゲーション統合
   - Git: commit 3533279
+
+- ✅ Phase 6: Claude API統合完了
+  - ClaudeAPIClientクラス実装
+  - Anthropic SDKを使用したClaude API統合
+  - プロンプトエンジニアリング（システム/ユーザープロンプト）
+  - JSON抽出・バリデーション
+  - エラーハンドリング（401/429/500）
+  - APIキー管理（Settings画面で設定可能）
+  - Git: commit 1e2da70
