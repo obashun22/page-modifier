@@ -5,6 +5,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { v4 as uuidv4 } from 'uuid';
 import { PluginSchema } from '../../shared/plugin-schema';
 import type { Plugin } from '../../shared/types';
 
@@ -89,7 +90,8 @@ class ClaudeAPIClient {
       // JSONが含まれているかチェック
       if (this.containsPluginJSON(text)) {
         // プラグイン生成レスポンス
-        const plugin = this.extractPluginJSON(text);
+        const isEditMode = selectedPlugin !== null;
+        const plugin = this.extractPluginJSON(text, isEditMode);
         const validatedPlugin = PluginSchema.parse(plugin);
         return { type: 'plugin', plugin: validatedPlugin };
       } else {
@@ -249,15 +251,14 @@ interface Condition {
 3. イベントハンドラーはシンプルに保つ
 4. customアクションは最小限に（セキュリティリスクのため）
 5. セキュリティを考慮（XSS対策: textContentを優先、innerHTMLは最小限）
-6. idはkebab-caseで生成（例: "copy-button", "hide-ads"）
+6. **id**: 新規作成時はidフィールドを省略してください（システムが自動的にUUIDを生成します）。編集時は既存のidをそのまま使用してください。
 7. versionは常に"1.0.0"から開始
 8. priorityは通常500（標準的な優先度）
 
-## 良い例
+## 良い例（新規作成）
 
 \`\`\`json
 {
-  "id": "simple-copy-button",
   "name": "シンプルコピーボタン",
   "version": "1.0.0",
   "description": "ページURLをコピーするボタンを追加",
@@ -380,24 +381,33 @@ JSONのみを出力してください（説明文は不要）。
   /**
    * レスポンスからJSONを抽出
    */
-  private extractPluginJSON(text: string): any {
+  private extractPluginJSON(text: string, isEditMode: boolean): any {
     // ```json ... ``` 形式を抽出
     const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
 
+    let pluginData: any;
+
     if (jsonMatch) {
       try {
-        return JSON.parse(jsonMatch[1]);
+        pluginData = JSON.parse(jsonMatch[1]);
       } catch (error) {
         throw new Error('JSONのパースに失敗しました');
       }
+    } else {
+      // JSONブロックがない場合、全体をパース
+      try {
+        pluginData = JSON.parse(text);
+      } catch (error) {
+        throw new Error('有効なJSONを抽出できませんでした。レスポンス形式が不正です。');
+      }
     }
 
-    // JSONブロックがない場合、全体をパース
-    try {
-      return JSON.parse(text);
-    } catch (error) {
-      throw new Error('有効なJSONを抽出できませんでした。レスポンス形式が不正です。');
+    // 新規作成時（編集モードでない場合）、IDがなければUUIDを生成
+    if (!isEditMode && !pluginData.id) {
+      pluginData.id = uuidv4();
     }
+
+    return pluginData;
   }
 }
 

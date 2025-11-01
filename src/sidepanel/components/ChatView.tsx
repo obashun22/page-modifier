@@ -43,12 +43,29 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
+  const [existingPluginIds, setExistingPluginIds] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // メッセージリストの自動スクロール
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // 既存のプラグインIDを読み込む
+  useEffect(() => {
+    loadExistingPluginIds();
+  }, []);
+
+  const loadExistingPluginIds = async () => {
+    const response = await chrome.runtime.sendMessage({
+      type: 'GET_ALL_PLUGINS',
+    });
+
+    if (response.success) {
+      const ids = new Set(response.plugins.map((p: any) => p.plugin.id));
+      setExistingPluginIds(ids);
+    }
+  };
 
   // プラグイン一覧から編集対象プラグインが持ち込まれた時
   useEffect(() => {
@@ -173,12 +190,27 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   // プラグイン承認
   const handleApprove = async (plugin: Plugin, messageId: string) => {
     try {
+      // 既存プラグインかどうかを判定
+      const isExistingPlugin = existingPluginIds.has(plugin.id);
+      const isEditingMode = selectedPluginForEdit !== null;
+
+      // 確認ダイアログを表示
+      let confirmMessage = '';
+      if (isExistingPlugin) {
+        confirmMessage = `プラグイン「${plugin.name}」は既に存在します。\n\n上書き保存しますか？`;
+      } else {
+        confirmMessage = `プラグイン「${plugin.name}」を新規作成しますか？`;
+      }
+
+      const confirmed = confirm(confirmMessage);
+      if (!confirmed) {
+        return;
+      }
+
       await chrome.runtime.sendMessage({
         type: 'SAVE_PLUGIN',
         plugin,
       });
-
-      const isEditing = selectedPluginForEdit !== null;
 
       // 承認されたメッセージを削除
       setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
@@ -186,13 +218,16 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       // 成功メッセージを追加
       addMessage(
         'assistant',
-        isEditing
+        isExistingPlugin
           ? `プラグイン「${plugin.name}」を更新しました。`
           : `プラグイン「${plugin.name}」を保存しました。有効化して使用してください。`
       );
 
       setSelectedElement(null);
       onClearSelectedPlugin();
+
+      // プラグインIDリストを再読み込み
+      await loadExistingPluginIds();
     } catch (error) {
       addMessage('assistant', `プラグインの保存に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
     }
