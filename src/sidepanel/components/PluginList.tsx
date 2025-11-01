@@ -18,6 +18,7 @@ interface PluginListProps {
   onPluginExport: (pluginId: string) => void;
   onPluginEdit: (plugin: Plugin) => void;
   onPluginMove: (pluginId: string, newIndex: number) => void;
+  togglingPlugins: Set<string>;
 }
 
 export default function PluginList({
@@ -28,6 +29,7 @@ export default function PluginList({
   onPluginExport,
   onPluginEdit,
   onPluginMove,
+  togglingPlugins,
 }: PluginListProps) {
   const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(new Set());
 
@@ -134,18 +136,26 @@ export default function PluginList({
               {/* トグルボタン */}
               <button
                 onClick={() => onPluginToggle(pluginData.plugin.id, !pluginData.enabled)}
+                disabled={togglingPlugins.has(pluginData.plugin.id)}
                 style={{
                   padding: 0,
                   width: '48px',
                   height: '28px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  cursor: 'pointer',
+                  cursor: togglingPlugins.has(pluginData.plugin.id) ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  opacity: togglingPlugins.has(pluginData.plugin.id) ? 0.5 : 1,
                 }}
-                title={pluginData.enabled ? '無効化' : '有効化'}
+                title={
+                  togglingPlugins.has(pluginData.plugin.id)
+                    ? '処理中...'
+                    : pluginData.enabled
+                    ? '無効化'
+                    : '有効化'
+                }
               >
                 {pluginData.enabled ? (
                   <MdToggleOn size={48} color="#28a745" />

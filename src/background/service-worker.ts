@@ -216,11 +216,15 @@ async function handleGetSettings(): Promise<any> {
  * 設定を更新
  */
 async function handleUpdateSettings(newSettings: Settings): Promise<void> {
+  console.log('[PageModifier] handleUpdateSettings called with:', newSettings);
+
   // 現在の設定を取得
   const currentSettings = await pluginStorage.getSettings();
+  console.log('[PageModifier] Current settings:', currentSettings);
 
   // 設定を更新
   await pluginStorage.updateSettings(newSettings);
+  console.log('[PageModifier] Settings updated');
 
   // セキュリティレベルが変更された場合、プラグインをチェック
   if (currentSettings.securityLevel !== newSettings.securityLevel) {
@@ -230,14 +234,20 @@ async function handleUpdateSettings(newSettings: Settings): Promise<void> {
 
     // 全プラグインを取得
     const allPlugins = await pluginStorage.getAllPlugins();
+    console.log(`[PageModifier] Found ${allPlugins.length} total plugins`);
 
     // 新しいセキュリティレベルで実行できないプラグインを無効化
     let disabledCount = 0;
     for (const pluginData of allPlugins) {
+      console.log(`[PageModifier] Checking plugin ${pluginData.plugin.id}, enabled: ${pluginData.enabled}`);
+
       // 有効なプラグインのみチェック
       if (pluginData.enabled) {
         // 新しいセキュリティレベルで実行可能かチェック
-        if (!canExecutePlugin(pluginData.plugin, newSettings.securityLevel)) {
+        const canExecute = canExecutePlugin(pluginData.plugin, newSettings.securityLevel);
+        console.log(`[PageModifier] Can execute ${pluginData.plugin.id}: ${canExecute}`);
+
+        if (!canExecute) {
           console.log(
             `[PageModifier] Disabling plugin ${pluginData.plugin.id} (requires higher security level)`
           );
@@ -249,7 +259,11 @@ async function handleUpdateSettings(newSettings: Settings): Promise<void> {
 
     if (disabledCount > 0) {
       console.log(`[PageModifier] Disabled ${disabledCount} plugin(s) due to security level change`);
+    } else {
+      console.log('[PageModifier] No plugins needed to be disabled');
     }
+  } else {
+    console.log('[PageModifier] Security level unchanged, skipping plugin check');
   }
 }
 
