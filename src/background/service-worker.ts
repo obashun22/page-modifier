@@ -9,6 +9,21 @@ import { DEFAULT_SETTINGS } from '../shared/storage-types';
 
 console.log('[PageModifier] Service Worker loaded');
 
+// Action (toolbar icon) click event - Open side panel
+chrome.action.onClicked.addListener(async (tab) => {
+  console.log('[PageModifier] Action clicked, opening side panel');
+
+  if (tab.id) {
+    try {
+      // Chrome 114以降でサポート
+      await chrome.sidePanel.open({ tabId: tab.id });
+      console.log('[PageModifier] Side panel opened');
+    } catch (error) {
+      console.error('[PageModifier] Failed to open side panel:', error);
+    }
+  }
+});
+
 // Install event
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('[PageModifier] Extension installed', details);

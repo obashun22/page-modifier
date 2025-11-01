@@ -14,23 +14,30 @@ export default defineConfig({
       },
       output: {
         entryFileNames: (chunkInfo) => {
-          // Background worker and content script should be in their respective directories
-          if (chunkInfo.name === 'background') {
-            return 'src/background/service-worker.js';
-          }
           if (chunkInfo.name === 'content') {
             return 'src/content/content-script.js';
           }
+          if (chunkInfo.name === 'background') {
+            return 'src/background/service-worker.js';
+          }
+          if (chunkInfo.name === 'sidepanel') {
+            return 'src/sidepanel/sidepanel.js';
+          }
           return 'src/[name]/[name].js';
         },
-        chunkFileNames: 'chunks/[name]-[hash].js',
+        chunkFileNames: (chunkInfo) => {
+          // Don't create chunks for content script dependencies
+          return 'chunks/[name]-[hash].js';
+        },
         assetFileNames: (assetInfo) => {
-          // HTML files should stay in their directories
           if (assetInfo.name?.endsWith('.html')) {
             return 'src/sidepanel/[name][extname]';
           }
           return 'assets/[name]-[hash][extname]';
         },
+        format: 'es',
+        inlineDynamicImports: false,
+        manualChunks: undefined, // Disable automatic chunking - each entry is self-contained
       },
     },
     outDir: 'dist',
