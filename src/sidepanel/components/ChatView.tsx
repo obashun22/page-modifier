@@ -15,6 +15,8 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  plugin?: Plugin;  // プラグイン情報（オプション）
+  pluginMode?: 'preview' | 'editing';  // プラグイン表示モード
 }
 
 interface ElementInfo {
@@ -41,7 +43,6 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
-  const [previewPlugin, setPreviewPlugin] = useState<Plugin | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // メッセージリストの自動スクロール
@@ -52,10 +53,15 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   // プラグイン一覧から編集対象プラグインが持ち込まれた時
   useEffect(() => {
     if (selectedPluginForEdit) {
-      addMessage(
-        'assistant',
-        `プラグイン「${selectedPluginForEdit.name}」を編集モードで開きました。このプラグインをどのように編集しますか？`
-      );
+      const message: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `プラグイン「${selectedPluginForEdit.name}」を編集モードで開きました。このプラグインをどのように編集しますか？`,
+        timestamp: Date.now(),
+        plugin: selectedPluginForEdit,
+        pluginMode: 'editing',
+      };
+      setMessages((prev) => [...prev, message]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPluginForEdit?.id]); // IDが変わった時のみ実行
@@ -144,12 +150,11 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
             ? `プラグイン「${response.plugin.name}」を編集しました。以下の内容を確認して、適用してください。`
             : `プラグイン「${response.plugin.name}」を生成しました。以下の内容を確認して、適用してください。`,
           timestamp: Date.now(),
+          plugin: response.plugin,
+          pluginMode: 'preview',
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
-
-        // プレビュー表示
-        setPreviewPlugin(response.plugin);
       }
     } catch (error) {
       const errorMessage: Message = {
@@ -166,7 +171,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   };
 
   // プラグイン承認
-  const handleApprove = async (plugin: Plugin) => {
+  const handleApprove = async (plugin: Plugin, messageId: string) => {
     try {
       await chrome.runtime.sendMessage({
         type: 'SAVE_PLUGIN',
@@ -174,13 +179,18 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       });
 
       const isEditing = selectedPluginForEdit !== null;
+
+      // 承認されたメッセージを削除
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+
+      // 成功メッセージを追加
       addMessage(
         'assistant',
         isEditing
           ? `プラグイン「${plugin.name}」を更新しました。`
           : `プラグイン「${plugin.name}」を保存しました。有効化して使用してください。`
       );
-      setPreviewPlugin(null);
+
       setSelectedElement(null);
       onClearSelectedPlugin();
     } catch (error) {
@@ -189,9 +199,18 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   };
 
   // プラグイン拒否
-  const handleReject = () => {
+  const handleReject = (messageId: string) => {
+    // 拒否されたメッセージを削除
+    setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+
     addMessage('assistant', 'プラグインの生成をキャンセルしました。別の要望があればお聞かせください。');
-    setPreviewPlugin(null);
+  };
+
+  // 編集モード終了
+  const handleDismissEdit = (messageId: string) => {
+    // 編集モードのメッセージを削除
+    setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+    onClearSelectedPlugin();
   };
 
   // Enterキーでメッセージ送信
@@ -207,7 +226,21 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       {/* メッセージリスト */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {messages.map((message) => (
-          <MessageItem key={message.id} message={message} />
+          <div key={message.id}>
+            <MessageItem message={message} />
+            {/* プラグイン情報があればカード表示 */}
+            {message.plugin && message.pluginMode && (
+              <div style={{ padding: '0 16px 12px 16px' }}>
+                <PluginCard
+                  plugin={message.plugin}
+                  mode={message.pluginMode}
+                  onApprove={message.pluginMode === 'preview' ? (plugin) => handleApprove(plugin, message.id) : undefined}
+                  onReject={message.pluginMode === 'preview' ? () => handleReject(message.id) : undefined}
+                  onDismiss={message.pluginMode === 'editing' ? () => handleDismissEdit(message.id) : undefined}
+                />
+              </div>
+            )}
+          </div>
         ))}
 
         {isLoading && (
@@ -225,25 +258,6 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
 
         <div ref={messagesEndRef} />
       </div>
-
-      {/* 編集対象プラグインカード */}
-      {selectedPluginForEdit && !previewPlugin && (
-        <PluginCard
-          plugin={selectedPluginForEdit}
-          mode="editing"
-          onDismiss={onClearSelectedPlugin}
-        />
-      )}
-
-      {/* プラグインプレビュー（新規生成または編集後） */}
-      {previewPlugin && (
-        <PluginCard
-          plugin={previewPlugin}
-          mode="preview"
-          onApprove={handleApprove}
-          onReject={handleReject}
-        />
-      )}
 
       {/* 入力エリア */}
       <div

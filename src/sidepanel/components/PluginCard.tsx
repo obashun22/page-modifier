@@ -21,9 +21,10 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
     <div
       style={{
         padding: '16px',
-        borderTop: mode === 'preview' ? '2px solid #0969da' : '2px solid #d4a72c',
+        border: mode === 'preview' ? '2px solid #0969da' : '2px solid #d4a72c',
+        borderRadius: '8px',
         backgroundColor: '#f6f8fa',
-        maxHeight: '300px',
+        maxHeight: '400px',
         overflowY: 'auto',
       }}
     >
