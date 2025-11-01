@@ -547,15 +547,43 @@ export class PluginEngine {
         console,
         element,
         event,
+        // グローバルオブジェクト
+        Array,
+        Object,
+        String,
+        Number,
+        Boolean,
+        Date,
+        Math,
+        JSON,
+        Promise,
+        setTimeout,
+        clearTimeout,
+        setInterval,
+        clearInterval,
+        // Document API
         document: {
           querySelector: document.querySelector.bind(document),
           querySelectorAll: document.querySelectorAll.bind(document),
+          getElementById: document.getElementById.bind(document),
+          getElementsByClassName: document.getElementsByClassName.bind(document),
+          getElementsByTagName: document.getElementsByTagName.bind(document),
+          createElement: document.createElement.bind(document),
+          createTextNode: document.createTextNode.bind(document),
         },
+        // Navigator API (制限付き)
+        navigator: {
+          clipboard: navigator.clipboard,
+          userAgent: navigator.userAgent,
+        },
+        // Window API (制限付き)
         window: {
           location: {
             href: window.location.href,
             hostname: window.location.hostname,
             pathname: window.location.pathname,
+            search: window.location.search,
+            hash: window.location.hash,
           },
         },
         // 制限されたAPI（アクセス不可）
