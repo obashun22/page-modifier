@@ -52,6 +52,12 @@ export class ElementSelector {
     // メッセージ削除
     this.removeInstructionMessage();
 
+    // フォーカスをbodyに移してSide Panelのボタンへのフォーカスを防ぐ
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    document.body.focus();
+
     console.log('[Element Selector] Deactivated');
   }
 
