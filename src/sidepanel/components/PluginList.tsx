@@ -18,7 +18,6 @@ interface PluginListProps {
   onPluginExport: (pluginId: string) => void;
   onPluginEdit: (plugin: Plugin) => void;
   onPluginMove: (pluginId: string, newIndex: number) => void;
-  togglingPlugins: Set<string>;
 }
 
 export default function PluginList({
@@ -29,7 +28,6 @@ export default function PluginList({
   onPluginExport,
   onPluginEdit,
   onPluginMove,
-  togglingPlugins,
 }: PluginListProps) {
   const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(new Set());
 
@@ -85,6 +83,11 @@ export default function PluginList({
                 <span>{pluginData.plugin.operations.length} operations</span>
               </div>
               <div style={{ marginTop: '6px', fontSize: '12px', color: '#888' }}>
+                <span style={{ fontFamily: 'monospace', backgroundColor: '#f0f0f0', padding: '2px 6px', borderRadius: '4px' }}>
+                  ID: {pluginData.plugin.id}
+                </span>
+              </div>
+              <div style={{ marginTop: '6px', fontSize: '12px', color: '#888' }}>
                 Domains: {pluginData.plugin.targetDomains.join(', ')}
               </div>
             </div>
@@ -136,26 +139,18 @@ export default function PluginList({
               {/* トグルボタン */}
               <button
                 onClick={() => onPluginToggle(pluginData.plugin.id, !pluginData.enabled)}
-                disabled={togglingPlugins.has(pluginData.plugin.id)}
                 style={{
                   padding: 0,
                   width: '48px',
                   height: '28px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  cursor: togglingPlugins.has(pluginData.plugin.id) ? 'not-allowed' : 'pointer',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: togglingPlugins.has(pluginData.plugin.id) ? 0.5 : 1,
                 }}
-                title={
-                  togglingPlugins.has(pluginData.plugin.id)
-                    ? '処理中...'
-                    : pluginData.enabled
-                    ? '無効化'
-                    : '有効化'
-                }
+                title={pluginData.enabled ? '無効化' : '有効化'}
               >
                 {pluginData.enabled ? (
                   <MdToggleOn size={48} color="#28a745" />
