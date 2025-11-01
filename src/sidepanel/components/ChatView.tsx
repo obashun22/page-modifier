@@ -35,6 +35,7 @@ interface ChatViewProps {
 }
 
 const STORAGE_KEY = 'page_modifier_chat_history';
+const SCROLL_POSITION_KEY = 'page_modifier_chat_scroll_position';
 
 const getInitialMessages = (): Message[] => {
   return [
@@ -67,8 +68,23 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   const [existingPluginIds, setExistingPluginIds] = useState<Set<string>>(new Set());
   const [isSelectingElement, setIsSelectingElement] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // メッセージリストの自動スクロール
+  // スクロール位置を復元（初回マウント時のみ）
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      try {
+        const savedPosition = localStorage.getItem(SCROLL_POSITION_KEY);
+        if (savedPosition) {
+          messagesContainerRef.current.scrollTop = parseInt(savedPosition, 10);
+        }
+      } catch (error) {
+        console.error('Failed to restore scroll position:', error);
+      }
+    }
+  }, []);
+
+  // メッセージリストの自動スクロール（新しいメッセージが追加された時のみ）
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -81,6 +97,23 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       console.error('Failed to save chat history:', error);
     }
   }, [messages]);
+
+  // スクロール位置をlocalStorageに保存
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      try {
+        localStorage.setItem(SCROLL_POSITION_KEY, container.scrollTop.toString());
+      } catch (error) {
+        console.error('Failed to save scroll position:', error);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // 既存のプラグインIDを読み込む
   useEffect(() => {
@@ -366,7 +399,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* メッセージリスト */}
-      <div style={{ flex: 1, overflowY: 'auto', backgroundColor: '#ffffff' }}>
+      <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', backgroundColor: '#ffffff' }}>
         {messages.map((message) => (
           <div key={message.id}>
             <MessageItem message={message} />
