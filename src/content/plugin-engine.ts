@@ -31,24 +31,75 @@ interface ExecutionResult {
 }
 
 /**
- * テンプレート変数を展開
+ * テンプレート変数を展開（MAIN Worldで評価）
  *
  * 例: "{{location.href}}" -> "https://example.com"
  *      "{{new Date().toLocaleDateString()}}" -> "2025/1/1"
  */
-function resolveTemplateVariables(template: string): string {
+async function resolveTemplateVariables(template: string): Promise<string> {
   if (!template || typeof template !== 'string') return template;
 
-  // {{...}} パターンを検索して置換
-  return template.replace(/\{\{(.+?)\}\}/g, (match, expression) => {
+  // {{...}} パターンを抽出
+  const matches = Array.from(template.matchAll(/\{\{(.+?)\}\}/g));
+
+  if (matches.length === 0) return template;
+
+  let result = template;
+
+  // 各テンプレート変数を順番に評価
+  for (const match of matches) {
+    const fullMatch = match[0];
+    const expression = match[1];
+
     try {
-      // 安全なコンテキストで式を評価
-      const result = Function('"use strict"; return (' + expression + ')')();
-      return String(result);
+      // MAIN Worldに評価を依頼
+      const evaluatedValue = await evaluateTemplateInMainWorld(expression);
+      result = result.replace(fullMatch, evaluatedValue);
     } catch (error) {
       console.warn(`[PluginEngine] Template variable evaluation failed: ${expression}`, error);
-      return match; // 失敗した場合は元の文字列を返す
+      // 失敗した場合は元のテンプレート変数をそのまま残す
     }
+  }
+
+  return result;
+}
+
+/**
+ * MAIN Worldでテンプレート式を評価
+ */
+function evaluateTemplateInMainWorld(expression: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const requestId = `eval-${Date.now()}-${Math.random()}`;
+
+    // レスポンスを受信
+    const listener = (event: MessageEvent) => {
+      if (event.source !== window) return;
+      if (event.data.type !== 'EVAL_TEMPLATE_RESULT') return;
+      if (event.data.requestId !== requestId) return;
+
+      window.removeEventListener('message', listener);
+
+      if (event.data.success) {
+        resolve(event.data.result);
+      } else {
+        reject(new Error(event.data.error || 'Evaluation failed'));
+      }
+    };
+
+    window.addEventListener('message', listener);
+
+    // MAIN Worldにリクエスト送信
+    window.postMessage({
+      type: 'EVAL_TEMPLATE',
+      requestId,
+      expression,
+    }, '*');
+
+    // タイムアウト設定（5秒）
+    setTimeout(() => {
+      window.removeEventListener('message', listener);
+      reject(new Error('Template evaluation timeout'));
+    }, 5000);
   });
 }
 
@@ -123,7 +174,7 @@ export class PluginEngine {
     // 操作タイプに応じた処理
     switch (operation.type) {
       case 'insert':
-        elementsAffected = this.handleInsert(targets, operation);
+        elementsAffected = await this.handleInsert(targets, operation);
         break;
       case 'remove':
         elementsAffected = this.handleRemove(targets);
@@ -141,7 +192,7 @@ export class PluginEngine {
         elementsAffected = this.handleModify(targets, operation);
         break;
       case 'replace':
-        elementsAffected = this.handleReplace(targets, operation);
+        elementsAffected = await this.handleReplace(targets, operation);
         break;
       default:
         throw new Error(`Unknown operation type: ${operation.type}`);
@@ -212,7 +263,7 @@ export class PluginEngine {
   /**
    * 要素を生成（階層構造対応）
    */
-  private createElement(elementDef: Element, _parentContext?: HTMLElement): HTMLElement {
+  private async createElement(elementDef: Element, _parentContext?: HTMLElement): Promise<HTMLElement> {
     const el = document.createElement(elementDef.tag);
 
     // 属性設定
@@ -229,25 +280,25 @@ export class PluginEngine {
 
     // テキスト/HTML設定（テンプレート変数展開）
     if (elementDef.textContent) {
-      el.textContent = resolveTemplateVariables(elementDef.textContent);
+      el.textContent = await resolveTemplateVariables(elementDef.textContent);
     }
     if (elementDef.innerHTML) {
       // XSS警告: innerHTMLは潜在的なセキュリティリスク
       console.warn('[PluginEngine] Using innerHTML - ensure content is trusted');
-      el.innerHTML = resolveTemplateVariables(elementDef.innerHTML);
+      el.innerHTML = await resolveTemplateVariables(elementDef.innerHTML);
     }
 
     // 子要素を再帰的に生成
     if (elementDef.children) {
-      elementDef.children.forEach((childDef) => {
-        const childEl = this.createElement(childDef, el);
+      for (const childDef of elementDef.children) {
+        const childEl = await this.createElement(childDef, el);
         el.appendChild(childEl);
 
         // 子要素のイベントも登録
         if (childDef.events) {
           this.attachEvents(childEl, childDef.events, el);
         }
-      });
+      }
     }
 
     return el;
@@ -262,33 +313,33 @@ export class PluginEngine {
     parentContext: HTMLElement
   ): void {
     // EventManagerを使用してイベントリスナーを追跡
-    this.eventManager.attachEvents(element, events, this.currentPluginId, (event, eventObject) => {
+    this.eventManager.attachEvents(element, events, this.currentPluginId, async (event, eventObject) => {
       // 条件チェック
       if (event.condition && !this.checkCondition(event.condition)) {
         return;
       }
 
       // アクション実行
-      this.executeAction(event.action, element, parentContext, eventObject as any);
+      await this.executeAction(event.action, element, parentContext, eventObject as any);
     });
   }
 
   /**
    * アクションを実行
    */
-  private executeAction(
+  private async executeAction(
     action: Action,
     element: HTMLElement,
     parentContext: HTMLElement,
     event?: UIEvent
-  ): void {
+  ): Promise<void> {
     try {
       switch (action.type) {
         case 'copyText':
-          this.actionCopyText(action, element, parentContext);
+          await this.actionCopyText(action, element, parentContext);
           break;
         case 'navigate':
-          this.actionNavigate(action);
+          await this.actionNavigate(action);
           break;
         case 'toggleClass':
           this.actionToggleClass(action, element);
@@ -309,7 +360,7 @@ export class PluginEngine {
           this.actionCustom(action, element, event);
           break;
         case 'apiCall':
-          this.actionApiCall(action);
+          await this.actionApiCall(action);
           break;
         default:
           console.warn(`[PluginEngine] Unknown action type: ${action.type}`);
@@ -324,21 +375,21 @@ export class PluginEngine {
   /**
    * insert操作: 要素を挿入
    */
-  private handleInsert(targets: HTMLElement[], operation: Operation): number {
+  private async handleInsert(targets: HTMLElement[], operation: Operation): Promise<number> {
     if (!operation.element) {
       throw new Error('Insert operation requires element definition');
     }
 
     let count = 0;
 
-    targets.forEach((target) => {
+    for (const target of targets) {
       // 重複チェック（同じoperation IDを持つ要素が既に存在するか）
       if (this.isDuplicateInsert(target, operation.id)) {
         console.warn(`[PluginEngine] Duplicate insert detected for operation ${operation.id}`);
-        return;
+        continue;
       }
 
-      const newElement = this.createElement(operation.element!, target);
+      const newElement = await this.createElement(operation.element!, target);
 
       // data属性で追跡可能にする
       newElement.dataset.pluginOperation = operation.id;
@@ -352,7 +403,7 @@ export class PluginEngine {
       const position = operation.position || 'beforeend';
       target.insertAdjacentElement(position, newElement);
       count++;
-    });
+    }
 
     return count;
   }
@@ -425,15 +476,15 @@ export class PluginEngine {
   /**
    * replace操作: 要素を置換
    */
-  private handleReplace(targets: HTMLElement[], operation: Operation): number {
+  private async handleReplace(targets: HTMLElement[], operation: Operation): Promise<number> {
     if (!operation.element) {
       throw new Error('Replace operation requires element definition');
     }
 
     let count = 0;
 
-    targets.forEach((target) => {
-      const newElement = this.createElement(operation.element!, target.parentElement || undefined);
+    for (const target of targets) {
+      const newElement = await this.createElement(operation.element!, target.parentElement || undefined);
 
       // イベント登録
       if (operation.element!.events) {
@@ -442,7 +493,7 @@ export class PluginEngine {
 
       target.replaceWith(newElement);
       count++;
-    });
+    }
 
     return count;
   }
@@ -452,12 +503,12 @@ export class PluginEngine {
   /**
    * テキストをコピー
    */
-  private actionCopyText(action: Action, element: HTMLElement, parentContext: HTMLElement): void {
+  private async actionCopyText(action: Action, element: HTMLElement, parentContext: HTMLElement): Promise<void> {
     let text: string;
 
     if (action.value) {
       // 固定値を使用（テンプレート変数展開）
-      text = resolveTemplateVariables(action.value);
+      text = await resolveTemplateVariables(action.value);
     } else if (action.selector) {
       // セレクターで対象を取得
       const targetEl = this.resolveActionSelector(action.selector, element, parentContext)[0];
@@ -488,14 +539,14 @@ export class PluginEngine {
   /**
    * ページ遷移
    */
-  private actionNavigate(action: Action): void {
+  private async actionNavigate(action: Action): Promise<void> {
     if (!action.url) {
       console.error('[PluginEngine] Navigate action requires url');
       return;
     }
 
     // テンプレート変数展開
-    const url = resolveTemplateVariables(action.url);
+    const url = await resolveTemplateVariables(action.url);
 
     // セキュリティチェック: javascript:スキームを禁止
     if (url.toLowerCase().startsWith('javascript:')) {
@@ -650,14 +701,14 @@ export class PluginEngine {
   /**
    * 外部API呼び出し
    */
-  private actionApiCall(action: Action): void {
+  private async actionApiCall(action: Action): Promise<void> {
     if (!action.url) {
       console.error('[PluginEngine] apiCall requires url');
       return;
     }
 
     // テンプレート変数展開
-    const url = resolveTemplateVariables(action.url);
+    const url = await resolveTemplateVariables(action.url);
 
     // セキュリティチェック: HTTPSのみ許可
     if (!url.toLowerCase().startsWith('https://')) {

@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { FiUpload } from 'react-icons/fi';
 import PluginList from './PluginList';
 import PluginEditor from './PluginEditor';
 import type { PluginData, Settings } from '../../shared/storage-types';
@@ -177,8 +178,12 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
                 cursor: importing ? 'not-allowed' : 'pointer',
                 fontWeight: 600,
                 opacity: importing ? 0.6 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
             >
+              <FiUpload size={16} />
               {importing ? 'インポート中...' : 'プラグインをインポート'}
             </button>
           </div>

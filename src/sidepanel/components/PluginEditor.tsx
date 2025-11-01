@@ -5,6 +5,8 @@
  */
 
 import { useState } from 'react';
+import { FaSave } from 'react-icons/fa';
+import { IoClose } from 'react-icons/io5';
 import type { Plugin } from '../../shared/types';
 import type { PluginData } from '../../shared/storage-types';
 
@@ -83,8 +85,12 @@ export default function PluginEditor({ pluginData, onSave, onCancel }: PluginEdi
             borderRadius: '6px',
             cursor: 'pointer',
             fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
+          <FaSave size={14} />
           保存
         </button>
         <button
@@ -97,8 +103,12 @@ export default function PluginEditor({ pluginData, onSave, onCancel }: PluginEdi
             border: '1px solid #d0d7de',
             borderRadius: '6px',
             cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
           }}
         >
+          <IoClose size={16} />
           キャンセル
         </button>
       </div>

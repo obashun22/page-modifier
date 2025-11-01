@@ -5,6 +5,8 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { IoSend } from 'react-icons/io5';
+import { HiLocationMarker } from 'react-icons/hi';
 import MessageItem from './MessageItem';
 import PluginCard from './PluginCard';
 import { chatWithAI } from '../services/ai-service';
@@ -379,9 +381,13 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
           >
-            📍 要素を選択
+            <HiLocationMarker size={16} />
+            要素を選択
           </button>
         </div>
 
@@ -415,8 +421,12 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               cursor: !input.trim() || isLoading ? 'not-allowed' : 'pointer',
               fontWeight: 600,
               opacity: !input.trim() || isLoading ? 0.6 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
           >
+            <IoSend size={16} />
             送信
           </button>
         </div>

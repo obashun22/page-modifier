@@ -4,6 +4,8 @@
  * プラグイン一覧表示コンポーネント
  */
 
+import { FiMessageSquare, FiEdit3, FiDownload, FiTrash2 } from 'react-icons/fi';
+import { MdToggleOn, MdToggleOff } from 'react-icons/md';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
 
@@ -26,7 +28,7 @@ export default function PluginList({
 }: PluginListProps) {
   if (plugins.length === 0) {
     return (
-      <div style={{ padding: '40px 20px', textAlign: 'center', color: '#666' }}>
+      <div style={{ padding: '40px 20px', textAlign: 'center', color: '#666', flex: 1, overflowY: 'auto' }}>
         <p>プラグインがありません</p>
         <p style={{ fontSize: '14px', marginTop: '8px' }}>
           チャットでプラグインを作成するか、JSONファイルをインポートしてください
@@ -36,7 +38,7 @@ export default function PluginList({
   }
 
   return (
-    <div style={{ padding: '12px' }}>
+    <div style={{ padding: '12px', flex: 1, overflowY: 'auto' }}>
       {plugins.map((pluginData) => (
         <div
           key={pluginData.plugin.id}
@@ -87,7 +89,7 @@ export default function PluginList({
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
             <button
               onClick={() => onPluginEdit(pluginData.plugin)}
               style={{
@@ -99,9 +101,13 @@ export default function PluginList({
                 borderRadius: '6px',
                 cursor: 'pointer',
                 fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
               }}
             >
-              💬 チャットで編集
+              <FiMessageSquare size={14} />
+              チャットで編集
             </button>
             <button
               onClick={() => onPluginSelect(pluginData)}
@@ -113,9 +119,13 @@ export default function PluginList({
                 border: '1px solid #d0d7de',
                 borderRadius: '6px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
               }}
             >
-              📝 JSON編集
+              <FiEdit3 size={14} />
+              JSON編集
             </button>
             <button
               onClick={() => onPluginToggle(pluginData.plugin.id, !pluginData.enabled)}
@@ -127,9 +137,22 @@ export default function PluginList({
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
               }}
             >
-              {pluginData.enabled ? '無効化' : '有効化'}
+              {pluginData.enabled ? (
+                <>
+                  <MdToggleOff size={16} />
+                  無効化
+                </>
+              ) : (
+                <>
+                  <MdToggleOn size={16} />
+                  有効化
+                </>
+              )}
             </button>
             <button
               onClick={() => onPluginExport(pluginData.plugin.id)}
@@ -141,8 +164,12 @@ export default function PluginList({
                 border: '1px solid #d0d7de',
                 borderRadius: '6px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
               }}
             >
+              <FiDownload size={14} />
               エクスポート
             </button>
             <button
@@ -155,8 +182,12 @@ export default function PluginList({
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
               }}
             >
+              <FiTrash2 size={14} />
               削除
             </button>
           </div>

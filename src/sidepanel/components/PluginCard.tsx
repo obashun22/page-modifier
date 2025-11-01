@@ -4,6 +4,8 @@
  * プラグインカードコンポーネント（新規/編集の統一表示）
  */
 
+import { FaCheck, FaTimes } from 'react-icons/fa';
+import { IoClose } from 'react-icons/io5';
 import type { Plugin } from '../../shared/types';
 
 type PluginCardMode = 'preview' | 'editing';
@@ -168,9 +170,14 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
               borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
             }}
           >
-            ✅ 適用する
+            <FaCheck size={14} />
+            適用する
           </button>
           <button
             onClick={onReject}
@@ -184,9 +191,14 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
               borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
             }}
           >
-            ❌ キャンセル
+            <FaTimes size={14} />
+            キャンセル
           </button>
         </div>
       )}
@@ -205,9 +217,14 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
               borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
             }}
           >
-            ✕ 閉じる
+            <IoClose size={18} />
+            閉じる
           </button>
         </div>
       )}
