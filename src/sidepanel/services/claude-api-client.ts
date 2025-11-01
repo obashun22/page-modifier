@@ -50,19 +50,20 @@ class ClaudeAPIClient {
   }
 
   /**
-   * チャット（通常の会話またはプラグイン生成）
+   * チャット（通常の会話またはプラグイン生成/編集）
    */
   async chat(
     userRequest: string,
     selectedElement?: ElementInfo | null,
-    currentUrl?: string
+    currentUrl?: string,
+    selectedPlugin?: Plugin | null
   ): Promise<AIResponse> {
     if (!this.client) {
       throw new Error('APIキーが設定されていません。設定画面でClaude APIキーを入力してください。');
     }
 
-    const systemPrompt = this.buildSystemPrompt();
-    const userPrompt = this.buildUserPrompt(userRequest, selectedElement, currentUrl);
+    const systemPrompt = this.buildSystemPrompt(selectedPlugin);
+    const userPrompt = this.buildUserPrompt(userRequest, selectedElement, currentUrl, selectedPlugin);
 
     try {
       const response = await this.client.messages.create({
@@ -117,7 +118,9 @@ class ClaudeAPIClient {
   /**
    * システムプロンプトを構築
    */
-  private buildSystemPrompt(): string {
+  private buildSystemPrompt(selectedPlugin?: Plugin | null): string {
+    const isEditMode = selectedPlugin !== null;
+
     return `あなたは「Page Modifier」という Chrome拡張機能のAIアシスタントです。
 
 ## あなたの役割
@@ -128,9 +131,9 @@ class ClaudeAPIClient {
    - プラグインの概念を説明する
    - 一般的な相談に対応する
 
-2. **プラグイン生成**
+2. **プラグイン生成${isEditMode ? '・編集' : ''}**
    - ユーザーがWebページに機能を追加したい場合のみ、プラグインJSONを生成する
-   - 明確にWebページの改変を要求された場合にのみ、JSON形式で応答する
+   - 明確にWebページの改変を要求された場合にのみ、JSON形式で応答する${isEditMode ? '\n   - **編集モード**: 既存のプラグインを修正・改善する（ユーザーが選択したプラグインを編集）' : ''}
 
 ## Page Modifierについて
 
@@ -309,12 +312,30 @@ interface Condition {
   private buildUserPrompt(
     userRequest: string,
     selectedElement?: ElementInfo | null,
-    currentUrl?: string
+    currentUrl?: string,
+    selectedPlugin?: Plugin | null
   ): string {
-    let prompt = `以下の要望に基づいてプラグインJSONを生成してください。
+    const isEditMode = selectedPlugin !== null;
+
+    let prompt = '';
+
+    if (isEditMode) {
+      prompt = `以下の既存プラグインを、ユーザーの要望に基づいて編集してください。
+
+【既存プラグイン】
+\`\`\`json
+${JSON.stringify(selectedPlugin, null, 2)}
+\`\`\`
+
+【編集要望】
+${userRequest}
+`;
+    } else {
+      prompt = `以下の要望に基づいてプラグインJSONを生成してください。
 
 要望: ${userRequest}
 `;
+    }
 
     if (currentUrl) {
       const url = new URL(currentUrl);
@@ -334,9 +355,16 @@ interface Condition {
 `;
     }
 
-    prompt += `
+    if (isEditMode) {
+      prompt += `
+編集されたプラグインの完全なJSONを出力してください（説明文は不要）。
+IDは元のプラグインと同じものを使用してください: "${selectedPlugin!.id}"
+必ず\`\`\`json\`\`\`で囲んで出力してください。`;
+    } else {
+      prompt += `
 JSONのみを出力してください（説明文は不要）。
 必ず\`\`\`json\`\`\`で囲んで出力してください。`;
+    }
 
     return prompt;
   }

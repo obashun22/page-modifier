@@ -9,6 +9,7 @@ import MessageItem from './MessageItem';
 import PluginPreview from './PluginPreview';
 import { chatWithAI } from '../services/ai-service';
 import type { Plugin } from '../../shared/types';
+import type { PluginData } from '../../shared/storage-types';
 
 interface Message {
   id: string;
@@ -29,13 +30,15 @@ export default function ChatView() {
     {
       id: '0',
       role: 'assistant',
-      content: 'こんにちは！Page Modifierへようこそ。\n\nWebページに機能を追加したい場合は具体的な要望を教えてください。使い方や機能について知りたい場合は、お気軽に質問してください。\n\n要素を選択したい場合は「📍 要素を選択」ボタンをクリックしてください。',
+      content: 'こんにちは！Page Modifierへようこそ。\n\nWebページに機能を追加したい場合は具体的な要望を教えてください。使い方や機能について知りたい場合は、お気軽に質問してください。\n\n既存のプラグインを編集したい場合は「📝 プラグインを選択」ボタンから選択してください。\n要素を選択したい場合は「📍 要素を選択」ボタンをクリックしてください。',
       timestamp: Date.now(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
+  const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
+  const [availablePlugins, setAvailablePlugins] = useState<PluginData[]>([]);
   const [previewPlugin, setPreviewPlugin] = useState<Plugin | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +46,21 @@ export default function ChatView() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // プラグインリストを読み込む
+  useEffect(() => {
+    loadPlugins();
+  }, []);
+
+  const loadPlugins = async () => {
+    const response = await chrome.runtime.sendMessage({
+      type: 'GET_ALL_PLUGINS',
+    });
+
+    if (response.success) {
+      setAvailablePlugins(response.plugins);
+    }
+  };
 
   // 要素選択の結果を受信
   useEffect(() => {
@@ -105,8 +123,8 @@ export default function ChatView() {
     setIsLoading(true);
 
     try {
-      // AI APIを呼び出してチャット
-      const response = await chatWithAI(input, selectedElement);
+      // AI APIを呼び出してチャット（選択したプラグインを渡す）
+      const response = await chatWithAI(input, selectedElement, selectedPlugin);
 
       if (response.type === 'text') {
         // 通常のテキスト応答
@@ -120,10 +138,13 @@ export default function ChatView() {
         setMessages((prev) => [...prev, assistantMessage]);
       } else if (response.type === 'plugin') {
         // プラグイン生成レスポンス
+        const isEditing = selectedPlugin !== null;
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `プラグイン「${response.plugin.name}」を生成しました。以下の内容を確認して、適用してください。`,
+          content: isEditing
+            ? `プラグイン「${response.plugin.name}」を編集しました。以下の内容を確認して、適用してください。`
+            : `プラグイン「${response.plugin.name}」を生成しました。以下の内容を確認して、適用してください。`,
           timestamp: Date.now(),
         };
 
@@ -154,9 +175,19 @@ export default function ChatView() {
         plugin,
       });
 
-      addMessage('assistant', `プラグイン「${plugin.name}」を保存しました。有効化して使用してください。`);
+      const isEditing = selectedPlugin !== null;
+      addMessage(
+        'assistant',
+        isEditing
+          ? `プラグイン「${plugin.name}」を更新しました。`
+          : `プラグイン「${plugin.name}」を保存しました。有効化して使用してください。`
+      );
       setPreviewPlugin(null);
       setSelectedElement(null);
+      setSelectedPlugin(null);
+
+      // プラグインリストを再読み込み
+      await loadPlugins();
     } catch (error) {
       addMessage('assistant', `プラグインの保存に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -217,6 +248,39 @@ export default function ChatView() {
           backgroundColor: '#f6f8fa',
         }}
       >
+        {selectedPlugin && (
+          <div
+            style={{
+              padding: '8px 12px',
+              marginBottom: '8px',
+              backgroundColor: '#fff8c5',
+              border: '1px solid #d4a72c',
+              borderRadius: '6px',
+              fontSize: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <span>
+              編集中: <strong>{selectedPlugin.name}</strong>
+            </span>
+            <button
+              onClick={() => setSelectedPlugin(null)}
+              style={{
+                padding: '2px 8px',
+                fontSize: '12px',
+                backgroundColor: 'transparent',
+                color: '#9a6700',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {selectedElement && (
           <div
             style={{
@@ -251,6 +315,35 @@ export default function ChatView() {
         )}
 
         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+          <select
+            value={selectedPlugin?.id || ''}
+            onChange={(e) => {
+              const pluginData = availablePlugins.find((p) => p.plugin.id === e.target.value);
+              if (pluginData) {
+                setSelectedPlugin(pluginData.plugin);
+                addMessage('assistant', `プラグイン「${pluginData.plugin.name}」を選択しました。このプラグインをどのように編集しますか？`);
+              } else {
+                setSelectedPlugin(null);
+              }
+            }}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              fontSize: '13px',
+              backgroundColor: 'white',
+              color: '#24292f',
+              border: '1px solid #d0d7de',
+              borderRadius: '6px',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="">📝 プラグインを選択...</option>
+            {availablePlugins.map((pluginData) => (
+              <option key={pluginData.plugin.id} value={pluginData.plugin.id}>
+                {pluginData.plugin.name}
+              </option>
+            ))}
+          </select>
           <button
             onClick={startElementSelection}
             style={{

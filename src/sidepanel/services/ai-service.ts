@@ -5,6 +5,7 @@
  */
 
 import { claudeAPIClient, type AIResponse } from './claude-api-client';
+import type { Plugin } from '../../shared/types';
 
 interface ElementInfo {
   selector: string;
@@ -14,11 +15,12 @@ interface ElementInfo {
 }
 
 /**
- * AIとチャット（通常の会話またはプラグイン生成）
+ * AIとチャット（通常の会話またはプラグイン生成/編集）
  */
 export async function chatWithAI(
   userRequest: string,
-  selectedElement: ElementInfo | null
+  selectedElement: ElementInfo | null,
+  selectedPlugin: Plugin | null = null
 ): Promise<AIResponse> {
   // Claude API クライアントを初期化
   await claudeAPIClient.init();
@@ -27,8 +29,8 @@ export async function chatWithAI(
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const currentUrl = tab.url;
 
-  // Claude APIでチャット
-  return await claudeAPIClient.chat(userRequest, selectedElement, currentUrl);
+  // Claude APIでチャット（プラグイン編集モードの場合はselectedPluginを渡す）
+  return await claudeAPIClient.chat(userRequest, selectedElement, currentUrl, selectedPlugin);
 }
 
 /**
