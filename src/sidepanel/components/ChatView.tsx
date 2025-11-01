@@ -306,8 +306,8 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     }
   };
 
-  // Enterキーでメッセージ送信
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Enterキーでメッセージ送信（Shift+Enterで改行）
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -428,7 +428,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
           <button
             onClick={startElementSelection}
             title="要素を選択"
@@ -444,6 +444,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 0.2s',
+              flexShrink: 0,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#f6f8fa';
@@ -458,16 +459,13 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           >
             <FiMousePointer size={18} />
           </button>
-        </div>
-
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="text"
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="メッセージを入力してください..."
+            onKeyDown={handleKeyDown}
+            placeholder="メッセージを入力してください... (Shift+Enterで改行)"
             disabled={isLoading}
+            rows={1}
             style={{
               flex: 1,
               padding: '8px 12px',
@@ -475,6 +473,10 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               border: '1px solid #d0d7de',
               borderRadius: '6px',
               outline: 'none',
+              resize: 'vertical',
+              minHeight: '38px',
+              maxHeight: '150px',
+              fontFamily: 'inherit',
             }}
           />
           <button
@@ -493,6 +495,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
+              flexShrink: 0,
             }}
           >
             <IoSend size={16} />
