@@ -119,6 +119,8 @@ export class ElementSelector {
    */
   private onKeyDown = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
       this.deactivate();
     }
   };
@@ -276,7 +278,7 @@ export class ElementSelector {
   private attachEventListeners(): void {
     document.addEventListener('mousemove', this.onMouseMove, { passive: true });
     document.addEventListener('click', this.onClick, { capture: true });
-    document.addEventListener('keydown', this.onKeyDown);
+    document.addEventListener('keydown', this.onKeyDown, { capture: true });
   }
 
   /**
@@ -285,7 +287,7 @@ export class ElementSelector {
   private detachEventListeners(): void {
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('click', this.onClick, { capture: true });
-    document.removeEventListener('keydown', this.onKeyDown);
+    document.removeEventListener('keydown', this.onKeyDown, { capture: true });
   }
 
   /**
