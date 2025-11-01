@@ -4,9 +4,8 @@
   "description": "AIを活用してWebページの機能を柔軟に拡張できるChrome Extension",
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch --mode development && npm run copy:manifest",
-    "build": "tsc && vite build && npm run copy:manifest",
-    "copy:manifest": "cp manifest.json dist/",
+    "dev": "vite",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:unit": "vitest run",
@@ -19,6 +18,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@crxjs/vite-plugin": "^2.2.1",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@types/chrome": "^0.0.270",
