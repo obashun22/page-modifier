@@ -5,8 +5,8 @@
  */
 
 interface NavigationBarProps {
-  currentView: 'chat' | 'plugins';
-  onViewChange: (view: 'chat' | 'plugins') => void;
+  currentView: 'chat' | 'plugins' | 'settings';
+  onViewChange: (view: 'chat' | 'plugins' | 'settings') => void;
 }
 
 export default function NavigationBar({ currentView, onViewChange }: NavigationBarProps) {
@@ -49,6 +49,22 @@ export default function NavigationBar({ currentView, onViewChange }: NavigationB
         }}
       >
         🔧 プラグイン
+      </button>
+      <button
+        onClick={() => onViewChange('settings')}
+        style={{
+          flex: 1,
+          padding: '12px',
+          fontSize: '14px',
+          fontWeight: 500,
+          backgroundColor: currentView === 'settings' ? 'white' : '#f6f8fa',
+          color: currentView === 'settings' ? '#0969da' : '#24292f',
+          border: 'none',
+          borderBottom: currentView === 'settings' ? '2px solid #0969da' : '2px solid transparent',
+          cursor: 'pointer',
+        }}
+      >
+        ⚙️ 設定
       </button>
     </div>
   );

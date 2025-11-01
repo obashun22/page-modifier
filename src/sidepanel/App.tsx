@@ -8,8 +8,9 @@ import { useState } from 'react';
 import NavigationBar from './components/NavigationBar';
 import ChatView from './components/ChatView';
 import PluginManagementView from './components/PluginManagementView';
+import SettingsPanel from './components/SettingsPanel';
 
-type View = 'chat' | 'plugins';
+type View = 'chat' | 'plugins' | 'settings';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('chat');
@@ -37,6 +38,7 @@ function App() {
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {currentView === 'chat' && <ChatView />}
         {currentView === 'plugins' && <PluginManagementView />}
+        {currentView === 'settings' && <SettingsPanel />}
       </div>
     </div>
   );

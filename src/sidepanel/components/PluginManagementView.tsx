@@ -7,15 +7,11 @@
 import { useState, useEffect } from 'react';
 import PluginList from './PluginList';
 import PluginEditor from './PluginEditor';
-import SettingsPanel from './SettingsPanel';
 import type { PluginData, Settings } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
 import { canExecutePlugin, getSecurityLevelErrorMessage } from '../../shared/plugin-security-checker';
 
-type Tab = 'plugins' | 'settings';
-
 export default function PluginManagementView() {
-  const [currentTab, setCurrentTab] = useState<Tab>('plugins');
   const [plugins, setPlugins] = useState<PluginData[]>([]);
   const [selectedPluginData, setSelectedPluginData] = useState<PluginData | null>(null);
   const [importing, setImporting] = useState(false);
@@ -149,99 +145,48 @@ export default function PluginManagementView() {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Tabs */}
-      <div
-        style={{
-          display: 'flex',
-          borderBottom: '1px solid #d0d7de',
-          backgroundColor: 'white',
-        }}
-      >
-        <button
-          onClick={() => setCurrentTab('plugins')}
-          style={{
-            flex: 1,
-            padding: '12px',
-            fontSize: '14px',
-            fontWeight: 500,
-            backgroundColor: currentTab === 'plugins' ? 'white' : '#f6f8fa',
-            color: currentTab === 'plugins' ? '#0969da' : '#24292f',
-            border: 'none',
-            borderBottom: currentTab === 'plugins' ? '2px solid #0969da' : '2px solid transparent',
-            cursor: 'pointer',
-          }}
-        >
-          プラグイン
-        </button>
-        <button
-          onClick={() => setCurrentTab('settings')}
-          style={{
-            flex: 1,
-            padding: '12px',
-            fontSize: '14px',
-            fontWeight: 500,
-            backgroundColor: currentTab === 'settings' ? 'white' : '#f6f8fa',
-            color: currentTab === 'settings' ? '#0969da' : '#24292f',
-            border: 'none',
-            borderBottom: currentTab === 'settings' ? '2px solid #0969da' : '2px solid transparent',
-            cursor: 'pointer',
-          }}
-        >
-          設定
-        </button>
-      </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        {currentTab === 'plugins' && (
-          <>
-            {selectedPluginData ? (
-              <PluginEditor
-                pluginData={selectedPluginData}
-                onSave={handlePluginSave}
-                onCancel={() => setSelectedPluginData(null)}
-              />
-            ) : (
-              <>
-                <div
-                  style={{
-                    padding: '12px',
-                    borderBottom: '1px solid #d0d7de',
-                    backgroundColor: '#f6f8fa',
-                  }}
-                >
-                  <button
-                    onClick={handleImport}
-                    disabled={importing}
-                    style={{
-                      padding: '8px 16px',
-                      fontSize: '14px',
-                      backgroundColor: '#0969da',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: importing ? 'not-allowed' : 'pointer',
-                      fontWeight: 600,
-                      opacity: importing ? 0.6 : 1,
-                    }}
-                  >
-                    {importing ? 'インポート中...' : 'プラグインをインポート'}
-                  </button>
-                </div>
-                <PluginList
-                  plugins={plugins}
-                  onPluginSelect={handlePluginSelect}
-                  onPluginDelete={handlePluginDelete}
-                  onPluginToggle={handlePluginToggle}
-                  onPluginExport={handlePluginExport}
-                />
-              </>
-            )}
-          </>
-        )}
-
-        {currentTab === 'settings' && <SettingsPanel />}
-      </div>
+      {selectedPluginData ? (
+        <PluginEditor
+          pluginData={selectedPluginData}
+          onSave={handlePluginSave}
+          onCancel={() => setSelectedPluginData(null)}
+        />
+      ) : (
+        <>
+          <div
+            style={{
+              padding: '12px',
+              borderBottom: '1px solid #d0d7de',
+              backgroundColor: '#f6f8fa',
+            }}
+          >
+            <button
+              onClick={handleImport}
+              disabled={importing}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                backgroundColor: '#0969da',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: importing ? 'not-allowed' : 'pointer',
+                fontWeight: 600,
+                opacity: importing ? 0.6 : 1,
+              }}
+            >
+              {importing ? 'インポート中...' : 'プラグインをインポート'}
+            </button>
+          </div>
+          <PluginList
+            plugins={plugins}
+            onPluginSelect={handlePluginSelect}
+            onPluginDelete={handlePluginDelete}
+            onPluginToggle={handlePluginToggle}
+            onPluginExport={handlePluginExport}
+          />
+        </>
+      )}
     </div>
   );
 }
