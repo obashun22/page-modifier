@@ -6,6 +6,8 @@
 
 import { pluginStorage } from './plugin-store';
 import { DEFAULT_SETTINGS } from '../shared/storage-types';
+import type { Settings } from '../shared/storage-types';
+import { canExecutePlugin } from '../shared/plugin-security-checker';
 
 console.log('[PageModifier] Service Worker loaded');
 
@@ -213,8 +215,42 @@ async function handleGetSettings(): Promise<any> {
 /**
  * 設定を更新
  */
-async function handleUpdateSettings(settings: any): Promise<void> {
-  await pluginStorage.updateSettings(settings);
+async function handleUpdateSettings(newSettings: Settings): Promise<void> {
+  // 現在の設定を取得
+  const currentSettings = await pluginStorage.getSettings();
+
+  // 設定を更新
+  await pluginStorage.updateSettings(newSettings);
+
+  // セキュリティレベルが変更された場合、プラグインをチェック
+  if (currentSettings.securityLevel !== newSettings.securityLevel) {
+    console.log(
+      `[PageModifier] Security level changed from ${currentSettings.securityLevel} to ${newSettings.securityLevel}`
+    );
+
+    // 全プラグインを取得
+    const allPlugins = await pluginStorage.getAllPlugins();
+
+    // 新しいセキュリティレベルで実行できないプラグインを無効化
+    let disabledCount = 0;
+    for (const pluginData of allPlugins) {
+      // 有効なプラグインのみチェック
+      if (pluginData.enabled) {
+        // 新しいセキュリティレベルで実行可能かチェック
+        if (!canExecutePlugin(pluginData.plugin, newSettings.securityLevel)) {
+          console.log(
+            `[PageModifier] Disabling plugin ${pluginData.plugin.id} (requires higher security level)`
+          );
+          await pluginStorage.togglePlugin(pluginData.plugin.id, false);
+          disabledCount++;
+        }
+      }
+    }
+
+    if (disabledCount > 0) {
+      console.log(`[PageModifier] Disabled ${disabledCount} plugin(s) due to security level change`);
+    }
+  }
 }
 
 /**
