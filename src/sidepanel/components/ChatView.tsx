@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import MessageItem from './MessageItem';
 import PluginPreview from './PluginPreview';
-import { generatePluginWithAI } from '../services/ai-service';
+import { chatWithAI } from '../services/ai-service';
 import type { Plugin } from '../../shared/types';
 
 interface Message {
@@ -29,7 +29,7 @@ export default function ChatView() {
     {
       id: '0',
       role: 'assistant',
-      content: 'こんにちは！Webページに追加したい機能を教えてください。要素を選択する場合は「📍 要素を選択」ボタンをクリックしてください。',
+      content: 'こんにちは！Page Modifierへようこそ。\n\nWebページに機能を追加したい場合は具体的な要望を教えてください。使い方や機能について知りたい場合は、お気軽に質問してください。\n\n要素を選択したい場合は「📍 要素を選択」ボタンをクリックしてください。',
       timestamp: Date.now(),
     },
   ]);
@@ -105,21 +105,33 @@ export default function ChatView() {
     setIsLoading(true);
 
     try {
-      // AI APIを呼び出してプラグイン生成
-      const plugin = await generatePluginWithAI(input, selectedElement);
+      // AI APIを呼び出してチャット
+      const response = await chatWithAI(input, selectedElement);
 
-      // アシスタントメッセージ
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `プラグイン「${plugin.name}」を生成しました。以下の内容を確認して、適用してください。`,
-        timestamp: Date.now(),
-      };
+      if (response.type === 'text') {
+        // 通常のテキスト応答
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: response.content,
+          timestamp: Date.now(),
+        };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else if (response.type === 'plugin') {
+        // プラグイン生成レスポンス
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `プラグイン「${response.plugin.name}」を生成しました。以下の内容を確認して、適用してください。`,
+          timestamp: Date.now(),
+        };
 
-      // プレビュー表示
-      setPreviewPlugin(plugin);
+        setMessages((prev) => [...prev, assistantMessage]);
+
+        // プレビュー表示
+        setPreviewPlugin(response.plugin);
+      }
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -262,7 +274,7 @@ export default function ChatView() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="プラグインの機能を説明してください..."
+            placeholder="メッセージを入力してください..."
             disabled={isLoading}
             style={{
               flex: 1,

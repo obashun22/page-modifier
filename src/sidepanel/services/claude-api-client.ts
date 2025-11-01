@@ -15,6 +15,10 @@ interface ElementInfo {
   id?: string;
 }
 
+export type AIResponse =
+  | { type: 'text'; content: string }
+  | { type: 'plugin'; plugin: Plugin };
+
 class ClaudeAPIClient {
   private client: Anthropic | null = null;
   private apiKey: string | null = null;
@@ -46,13 +50,13 @@ class ClaudeAPIClient {
   }
 
   /**
-   * プラグインを生成
+   * チャット（通常の会話またはプラグイン生成）
    */
-  async generatePlugin(
+  async chat(
     userRequest: string,
     selectedElement?: ElementInfo | null,
     currentUrl?: string
-  ): Promise<Plugin> {
+  ): Promise<AIResponse> {
     if (!this.client) {
       throw new Error('APIキーが設定されていません。設定画面でClaude APIキーを入力してください。');
     }
@@ -73,20 +77,26 @@ class ClaudeAPIClient {
         ],
       });
 
-      // レスポンスからJSONを抽出
+      // レスポンスからテキストを取得
       const content = response.content[0];
       if (content.type !== 'text') {
         throw new Error('予期しないレスポンス形式です');
       }
 
-      const plugin = this.extractPluginJSON(content.text);
+      const text = content.text;
 
-      // バリデーション
-      const validatedPlugin = PluginSchema.parse(plugin);
-
-      return validatedPlugin;
+      // JSONが含まれているかチェック
+      if (this.containsPluginJSON(text)) {
+        // プラグイン生成レスポンス
+        const plugin = this.extractPluginJSON(text);
+        const validatedPlugin = PluginSchema.parse(plugin);
+        return { type: 'plugin', plugin: validatedPlugin };
+      } else {
+        // 通常のテキストレスポンス
+        return { type: 'text', content: text };
+      }
     } catch (error) {
-      console.error('プラグイン生成に失敗:', error);
+      console.error('AI応答の取得に失敗:', error);
 
       if (error instanceof Error) {
         // APIエラーの詳細を提供
@@ -97,10 +107,10 @@ class ClaudeAPIClient {
         } else if (error.message.includes('500')) {
           throw new Error('Claude APIでエラーが発生しました。後ほど再試行してください。');
         }
-        throw new Error(`プラグイン生成に失敗しました: ${error.message}`);
+        throw new Error(`AI応答の取得に失敗しました: ${error.message}`);
       }
 
-      throw new Error('プラグイン生成中に予期しないエラーが発生しました');
+      throw new Error('AI応答の取得中に予期しないエラーが発生しました');
     }
   }
 
@@ -108,9 +118,50 @@ class ClaudeAPIClient {
    * システムプロンプトを構築
    */
   private buildSystemPrompt(): string {
-    return `あなたはWebページ機能拡張プラグインのJSON生成アシスタントです。
+    return `あなたは「Page Modifier」という Chrome拡張機能のAIアシスタントです。
 
-ユーザーの要望を受け取り、以下のスキーマに従ったプラグインJSONを生成してください。
+## あなたの役割
+
+1. **通常の会話対応**
+   - ユーザーの質問に答える
+   - Page Modifierの機能や使い方を説明する
+   - プラグインの概念を説明する
+   - 一般的な相談に対応する
+
+2. **プラグイン生成**
+   - ユーザーがWebページに機能を追加したい場合のみ、プラグインJSONを生成する
+   - 明確にWebページの改変を要求された場合にのみ、JSON形式で応答する
+
+## Page Modifierについて
+
+Page Modifierは、AIを活用してWebページの機能を柔軟に拡張できるChrome拡張機能です。
+ユーザーは自然言語でWebページの改変要望を伝えるだけで、AIがプラグインを自動生成します。
+
+主な機能：
+- ボタンやUIの追加
+- 不要な要素の非表示
+- ページスタイルのカスタマイズ
+- イベントハンドラーの追加
+- APIとの連携
+
+## 応答ルール
+
+### 通常の会話の場合
+ユーザーが以下のような質問をした場合は、**テキストで応答**してください：
+- 「この拡張機能は何ができますか？」
+- 「プラグインとは何ですか？」
+- 「使い方を教えて」
+- 「こんにちは」
+- その他、Webページ改変の具体的な要求でない質問
+
+### プラグイン生成の場合
+ユーザーが以下のような要求をした場合は、**JSONで応答**してください：
+- 「このページに○○ボタンを追加して」
+- 「広告を非表示にして」
+- 「ページの背景色を変更して」
+- その他、Webページの具体的な改変要求
+
+JSONで応答する場合は、以下のスキーマに従ってください：
 
 ## プラグインスキーマ
 
@@ -288,6 +339,14 @@ JSONのみを出力してください（説明文は不要）。
 必ず\`\`\`json\`\`\`で囲んで出力してください。`;
 
     return prompt;
+  }
+
+  /**
+   * JSONが含まれているかチェック
+   */
+  private containsPluginJSON(text: string): boolean {
+    // ```json ... ``` 形式があるか、またはJSON構造があるかチェック
+    return text.includes('```json') || (text.includes('{') && text.includes('"id"') && text.includes('"operations"'));
   }
 
   /**
