@@ -558,6 +558,7 @@ export class PluginEngine {
       const requestId = `custom-js-${Date.now()}-${Math.random()}`;
 
       // MAIN Worldにメッセージを送信
+      // 注意: postMessage()はシリアライズ可能なデータのみ送信可能
       window.postMessage(
         {
           type: 'EXECUTE_CUSTOM_JS',
@@ -568,7 +569,12 @@ export class PluginEngine {
             event: event
               ? {
                   type: event.type,
-                  target: event.target,
+                  // HTMLElementはクローン不可能なので、基本情報のみ送信
+                  target: event.target ? {
+                    tagName: (event.target as HTMLElement).tagName,
+                    id: (event.target as HTMLElement).id,
+                    className: (event.target as HTMLElement).className,
+                  } : null,
                 }
               : null,
           },
