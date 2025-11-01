@@ -122,21 +122,7 @@ export default function PluginManagementView() {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <div
-        style={{
-          padding: '16px',
-          borderBottom: '1px solid #d0d7de',
-          backgroundColor: '#f6f8fa',
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>Page Modifier</h1>
-        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
-          プラグイン管理
-        </p>
-      </div>
-
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Tabs */}
       <div
         style={{
