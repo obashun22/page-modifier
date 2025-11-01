@@ -9,7 +9,23 @@ import type { Settings } from '../../shared/storage-types';
 
 export default function SettingsPanel() {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [previousSettings, setPreviousSettings] = useState<Settings | null>(null);
   const isInitialLoadRef = useRef(true);
+
+  const reloadActiveTabs = useCallback(async () => {
+    try {
+      const tabs = await chrome.tabs.query({ active: true });
+      for (const tab of tabs) {
+        if (tab.id) {
+          await chrome.tabs.sendMessage(tab.id, { type: 'RELOAD_PLUGINS' }).catch(() => {
+            // タブにContent Scriptが注入されていない場合はエラーを無視
+          });
+        }
+      }
+    } catch (error) {
+      console.error('タブのリロードに失敗しました', error);
+    }
+  }, []);
 
   const autoSave = useCallback(async () => {
     if (!settings) return;
@@ -19,10 +35,24 @@ export default function SettingsPanel() {
         type: 'UPDATE_SETTINGS',
         settings,
       });
+
+      // セキュリティレベルまたは自動適用設定が変更された場合、アクティブなタブをリロード
+      if (previousSettings) {
+        const needsReload =
+          settings.securityLevel !== previousSettings.securityLevel ||
+          settings.autoApplyPlugins !== previousSettings.autoApplyPlugins;
+
+        if (needsReload) {
+          await reloadActiveTabs();
+        }
+      }
+
+      // 現在の設定を保存
+      setPreviousSettings(settings);
     } catch (error) {
       console.error('設定の保存に失敗しました', error);
     }
-  }, [settings]);
+  }, [settings, previousSettings, reloadActiveTabs]);
 
   const loadSettings = async () => {
     const response = await chrome.runtime.sendMessage({
@@ -33,6 +63,7 @@ export default function SettingsPanel() {
       // 初回ロードフラグをfalseにしてから設定をセット
       isInitialLoadRef.current = false;
       setSettings(response.settings);
+      setPreviousSettings(response.settings);
     }
   };
 
