@@ -5,6 +5,7 @@
  */
 
 import type { PluginData } from '../../shared/storage-types';
+import type { Plugin } from '../../shared/types';
 
 interface PluginListProps {
   plugins: PluginData[];
@@ -12,6 +13,7 @@ interface PluginListProps {
   onPluginDelete: (pluginId: string) => void;
   onPluginToggle: (pluginId: string, enabled: boolean) => void;
   onPluginExport: (pluginId: string) => void;
+  onPluginEdit: (plugin: Plugin) => void;
 }
 
 export default function PluginList({
@@ -20,6 +22,7 @@ export default function PluginList({
   onPluginDelete,
   onPluginToggle,
   onPluginExport,
+  onPluginEdit,
 }: PluginListProps) {
   if (plugins.length === 0) {
     return (
@@ -86,7 +89,7 @@ export default function PluginList({
 
           <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
             <button
-              onClick={() => onPluginSelect(pluginData)}
+              onClick={() => onPluginEdit(pluginData.plugin)}
               style={{
                 padding: '6px 12px',
                 fontSize: '13px',
@@ -95,9 +98,24 @@ export default function PluginList({
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
+                fontWeight: 600,
               }}
             >
-              編集
+              💬 チャットで編集
+            </button>
+            <button
+              onClick={() => onPluginSelect(pluginData)}
+              style={{
+                padding: '6px 12px',
+                fontSize: '13px',
+                backgroundColor: 'white',
+                color: '#24292f',
+                border: '1px solid #d0d7de',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              📝 JSON編集
             </button>
             <button
               onClick={() => onPluginToggle(pluginData.plugin.id, !pluginData.enabled)}

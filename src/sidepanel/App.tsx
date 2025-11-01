@@ -9,11 +9,19 @@ import NavigationBar from './components/NavigationBar';
 import ChatView from './components/ChatView';
 import PluginManagementView from './components/PluginManagementView';
 import SettingsPanel from './components/SettingsPanel';
+import type { Plugin } from '../shared/types';
 
 type View = 'chat' | 'plugins' | 'settings';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('chat');
+  const [selectedPluginForEdit, setSelectedPluginForEdit] = useState<Plugin | null>(null);
+
+  // プラグインを編集モードでチャットに持っていく
+  const handleEditPlugin = (plugin: Plugin) => {
+    setSelectedPluginForEdit(plugin);
+    setCurrentView('chat');
+  };
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -36,8 +44,15 @@ function App() {
 
       {/* コンテンツ */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        {currentView === 'chat' && <ChatView />}
-        {currentView === 'plugins' && <PluginManagementView />}
+        {currentView === 'chat' && (
+          <ChatView
+            selectedPluginForEdit={selectedPluginForEdit}
+            onClearSelectedPlugin={() => setSelectedPluginForEdit(null)}
+          />
+        )}
+        {currentView === 'plugins' && (
+          <PluginManagementView onEditPlugin={handleEditPlugin} />
+        )}
         {currentView === 'settings' && <SettingsPanel />}
       </div>
     </div>

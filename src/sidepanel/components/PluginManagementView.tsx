@@ -11,7 +11,11 @@ import type { PluginData, Settings } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
 import { canExecutePlugin, getSecurityLevelErrorMessage } from '../../shared/plugin-security-checker';
 
-export default function PluginManagementView() {
+interface PluginManagementViewProps {
+  onEditPlugin: (plugin: Plugin) => void;
+}
+
+export default function PluginManagementView({ onEditPlugin }: PluginManagementViewProps) {
   const [plugins, setPlugins] = useState<PluginData[]>([]);
   const [selectedPluginData, setSelectedPluginData] = useState<PluginData | null>(null);
   const [importing, setImporting] = useState(false);
@@ -184,6 +188,7 @@ export default function PluginManagementView() {
             onPluginDelete={handlePluginDelete}
             onPluginToggle={handlePluginToggle}
             onPluginExport={handlePluginExport}
+            onPluginEdit={(plugin) => onEditPlugin(plugin)}
           />
         </>
       )}

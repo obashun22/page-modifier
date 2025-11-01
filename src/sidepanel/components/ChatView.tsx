@@ -6,10 +6,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import MessageItem from './MessageItem';
-import PluginPreview from './PluginPreview';
+import PluginCard from './PluginCard';
 import { chatWithAI } from '../services/ai-service';
 import type { Plugin } from '../../shared/types';
-import type { PluginData } from '../../shared/storage-types';
 
 interface Message {
   id: string;
@@ -25,20 +24,23 @@ interface ElementInfo {
   id?: string;
 }
 
-export default function ChatView() {
+interface ChatViewProps {
+  selectedPluginForEdit: Plugin | null;
+  onClearSelectedPlugin: () => void;
+}
+
+export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin }: ChatViewProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
       role: 'assistant',
-      content: 'こんにちは！Page Modifierへようこそ。\n\nWebページに機能を追加したい場合は具体的な要望を教えてください。使い方や機能について知りたい場合は、お気軽に質問してください。\n\n既存のプラグインを編集したい場合は「📝 プラグインを選択」ボタンから選択してください。\n要素を選択したい場合は「📍 要素を選択」ボタンをクリックしてください。',
+      content: 'こんにちは！Page Modifierへようこそ。\n\nWebページに機能を追加したい場合は具体的な要望を教えてください。使い方や機能について知りたい場合は、お気軽に質問してください。\n\n既存のプラグインを編集したい場合は、プラグイン一覧から「💬 チャットで編集」ボタンでこのチャットに持ってくることができます。\n要素を選択したい場合は「📍 要素を選択」ボタンをクリックしてください。',
       timestamp: Date.now(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
-  const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
-  const [availablePlugins, setAvailablePlugins] = useState<PluginData[]>([]);
   const [previewPlugin, setPreviewPlugin] = useState<Plugin | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -47,20 +49,16 @@ export default function ChatView() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // プラグインリストを読み込む
+  // プラグイン一覧から編集対象プラグインが持ち込まれた時
   useEffect(() => {
-    loadPlugins();
-  }, []);
-
-  const loadPlugins = async () => {
-    const response = await chrome.runtime.sendMessage({
-      type: 'GET_ALL_PLUGINS',
-    });
-
-    if (response.success) {
-      setAvailablePlugins(response.plugins);
+    if (selectedPluginForEdit) {
+      addMessage(
+        'assistant',
+        `プラグイン「${selectedPluginForEdit.name}」を編集モードで開きました。このプラグインをどのように編集しますか？`
+      );
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPluginForEdit?.id]); // IDが変わった時のみ実行
 
   // 要素選択の結果を受信
   useEffect(() => {
@@ -124,7 +122,7 @@ export default function ChatView() {
 
     try {
       // AI APIを呼び出してチャット（選択したプラグインを渡す）
-      const response = await chatWithAI(input, selectedElement, selectedPlugin);
+      const response = await chatWithAI(input, selectedElement, selectedPluginForEdit);
 
       if (response.type === 'text') {
         // 通常のテキスト応答
@@ -138,7 +136,7 @@ export default function ChatView() {
         setMessages((prev) => [...prev, assistantMessage]);
       } else if (response.type === 'plugin') {
         // プラグイン生成レスポンス
-        const isEditing = selectedPlugin !== null;
+        const isEditing = selectedPluginForEdit !== null;
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -175,7 +173,7 @@ export default function ChatView() {
         plugin,
       });
 
-      const isEditing = selectedPlugin !== null;
+      const isEditing = selectedPluginForEdit !== null;
       addMessage(
         'assistant',
         isEditing
@@ -184,10 +182,7 @@ export default function ChatView() {
       );
       setPreviewPlugin(null);
       setSelectedElement(null);
-      setSelectedPlugin(null);
-
-      // プラグインリストを再読み込み
-      await loadPlugins();
+      onClearSelectedPlugin();
     } catch (error) {
       addMessage('assistant', `プラグインの保存に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -231,10 +226,20 @@ export default function ChatView() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* プラグインプレビュー */}
+      {/* 編集対象プラグインカード */}
+      {selectedPluginForEdit && !previewPlugin && (
+        <PluginCard
+          plugin={selectedPluginForEdit}
+          mode="editing"
+          onDismiss={onClearSelectedPlugin}
+        />
+      )}
+
+      {/* プラグインプレビュー（新規生成または編集後） */}
       {previewPlugin && (
-        <PluginPreview
+        <PluginCard
           plugin={previewPlugin}
+          mode="preview"
           onApprove={handleApprove}
           onReject={handleReject}
         />
@@ -248,7 +253,7 @@ export default function ChatView() {
           backgroundColor: '#f6f8fa',
         }}
       >
-        {selectedPlugin && (
+        {selectedPluginForEdit && (
           <div
             style={{
               padding: '8px 12px',
@@ -263,10 +268,10 @@ export default function ChatView() {
             }}
           >
             <span>
-              編集中: <strong>{selectedPlugin.name}</strong>
+              編集中: <strong>{selectedPluginForEdit.name}</strong>
             </span>
             <button
-              onClick={() => setSelectedPlugin(null)}
+              onClick={onClearSelectedPlugin}
               style={{
                 padding: '2px 8px',
                 fontSize: '12px',
@@ -315,35 +320,6 @@ export default function ChatView() {
         )}
 
         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-          <select
-            value={selectedPlugin?.id || ''}
-            onChange={(e) => {
-              const pluginData = availablePlugins.find((p) => p.plugin.id === e.target.value);
-              if (pluginData) {
-                setSelectedPlugin(pluginData.plugin);
-                addMessage('assistant', `プラグイン「${pluginData.plugin.name}」を選択しました。このプラグインをどのように編集しますか？`);
-              } else {
-                setSelectedPlugin(null);
-              }
-            }}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              fontSize: '13px',
-              backgroundColor: 'white',
-              color: '#24292f',
-              border: '1px solid #d0d7de',
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-          >
-            <option value="">📝 プラグインを選択...</option>
-            {availablePlugins.map((pluginData) => (
-              <option key={pluginData.plugin.id} value={pluginData.plugin.id}>
-                {pluginData.plugin.name}
-              </option>
-            ))}
-          </select>
           <button
             onClick={startElementSelection}
             style={{
