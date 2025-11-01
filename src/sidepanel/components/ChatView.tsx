@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { IoSend } from 'react-icons/io5';
-import { HiLocationMarker } from 'react-icons/hi';
+import { FiTarget } from 'react-icons/fi';
 import MessageItem from './MessageItem';
 import PluginCard from './PluginCard';
 import { chatWithAI } from '../services/ai-service';
@@ -431,22 +431,32 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
           <button
             onClick={startElementSelection}
+            title="要素を選択"
             style={{
-              padding: '8px 12px',
+              padding: '8px',
               fontSize: '13px',
               backgroundColor: 'white',
               color: '#24292f',
               border: '1px solid #d0d7de',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontWeight: 500,
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f6f8fa';
+              e.currentTarget.style.borderColor = '#0969da';
+              e.currentTarget.style.color = '#0969da';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'white';
+              e.currentTarget.style.borderColor = '#d0d7de';
+              e.currentTarget.style.color = '#24292f';
             }}
           >
-            <HiLocationMarker size={16} />
-            要素を選択
+            <FiTarget size={18} />
           </button>
         </div>
 
