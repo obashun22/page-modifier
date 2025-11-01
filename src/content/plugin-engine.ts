@@ -159,12 +159,13 @@ export class PluginEngine {
   private async executeOperation(operation: Operation): Promise<OperationResult> {
     console.log(`[PluginEngine] Executing operation: ${operation.id} (${operation.type})`);
 
-    // executeScriptは別処理
-    if (operation.type === 'executeScript') {
-      // executeScriptは一度だけ実行（既に実行済みの場合はスキップ）
+    // executeは別処理
+    if (operation.type === 'execute') {
       const operationKey = `${this.currentPluginId}-${operation.id}`;
-      if (this.executedOperations.has(operationKey)) {
-        console.log(`[PluginEngine] Skipping executeScript ${operation.id}: already executed`);
+
+      // run: 'once'（デフォルト）の場合、1度だけ実行
+      if (operation.run !== 'always' && this.executedOperations.has(operationKey)) {
+        console.log(`[PluginEngine] Skipping execute ${operation.id}: already executed`);
         return {
           operationId: operation.id,
           success: true,
@@ -173,7 +174,12 @@ export class PluginEngine {
       }
 
       await this.handleExecuteScript(operation);
-      this.executedOperations.add(operationKey);
+
+      // run: 'once'の場合のみ実行済みマークを付ける
+      if (operation.run !== 'always') {
+        this.executedOperations.add(operationKey);
+      }
+
       return {
         operationId: operation.id,
         success: true,
@@ -817,26 +823,14 @@ export class PluginEngine {
   }
 
   /**
-   * カスタムスクリプトを実行（executeScript operation）
+   * カスタムスクリプトを実行（execute operation）
    */
   private async handleExecuteScript(operation: Operation): Promise<void> {
     if (!operation.code) {
-      throw new Error('executeScript operation requires code field');
+      throw new Error('execute operation requires code field');
     }
 
     console.log(`[PluginEngine] Executing script: ${operation.id}`);
-
-    // waitForが指定されていれば要素の出現を待つ
-    if (operation.waitFor) {
-      console.log(`[PluginEngine] Waiting for element: ${operation.waitFor}`);
-      await this.waitForElement(operation.waitFor);
-    }
-
-    // delayが指定されていれば待機
-    if (operation.delay && operation.delay > 0) {
-      console.log(`[PluginEngine] Delaying execution by ${operation.delay}ms`);
-      await new Promise(resolve => setTimeout(resolve, operation.delay));
-    }
 
     // actionCustomと同じロジックでスクリプト実行
     await this.actionCustom(
@@ -845,37 +839,5 @@ export class PluginEngine {
     );
 
     console.log(`[PluginEngine] Script executed: ${operation.id}`);
-  }
-
-  /**
-   * 要素が出現するまで待機（MutationObserver使用）
-   */
-  private async waitForElement(selector: string, timeout: number = 10000): Promise<HTMLElement> {
-    // 既に存在する場合
-    const existingElement = document.querySelector<HTMLElement>(selector);
-    if (existingElement) {
-      return existingElement;
-    }
-
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        observer.disconnect();
-        reject(new Error(`Timeout waiting for element: ${selector}`));
-      }, timeout);
-
-      const observer = new MutationObserver(() => {
-        const element = document.querySelector<HTMLElement>(selector);
-        if (element) {
-          clearTimeout(timeoutId);
-          observer.disconnect();
-          resolve(element);
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
-    });
   }
 }

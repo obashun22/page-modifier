@@ -26,7 +26,7 @@ export type OperationType =
   | 'style'    // スタイルを適用
   | 'modify'   // 属性/コンテンツを変更
   | 'replace'  // 要素を置換
-  | 'executeScript'; // カスタムスクリプトを実行
+  | 'execute'; // カスタムスクリプトを実行
 
 /** 挿入位置 */
 export type InsertPosition =
@@ -120,20 +120,22 @@ export interface Element {
 
 // ==================== 操作 ====================
 
+/** 実行タイミング */
+export type ScriptRun = 'once' | 'always';
+
 /** 操作定義 */
 export interface Operation {
   id: string;                  // 操作の一意識別子
   description?: string;        // 操作の説明
   type: OperationType;         // 操作タイプ
-  selector?: SelectorString;   // CSSセレクター（executeScript以外では必須）
+  selector?: SelectorString;   // CSSセレクター（execute以外では必須）
   position?: InsertPosition;   // 挿入位置（insertの場合）
   element?: Element;           // 要素定義
   style?: StyleObject;         // スタイル定義
   attributes?: AttributeObject;// 属性定義
   condition?: Condition;       // 実行条件
-  code?: string;               // 実行するコード（executeScriptの場合）
-  waitFor?: string;            // 要素の出現を待つセレクター（executeScriptの場合）
-  delay?: number;              // 実行前の遅延時間（ミリ秒、executeScriptの場合）
+  code?: string;               // 実行するコード（executeの場合）
+  run?: ScriptRun;             // 実行タイミング（executeの場合、デフォルト: 'once'）
 }
 
 // ==================== プラグイン ====================
@@ -147,7 +149,6 @@ export interface Plugin {
   description?: string;        // 説明
   targetDomains: string[];     // 適用対象ドメイン（ワイルドカード対応）
   autoApply: boolean;          // 自動適用フラグ
-  priority: number;            // 実行優先度（0-1000）
   operations: Operation[];     // 操作の配列
 }
 

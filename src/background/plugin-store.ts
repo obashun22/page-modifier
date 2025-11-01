@@ -34,25 +34,29 @@ export class PluginStorage {
     }
 
     const now = Date.now();
-    const plugins = await this.getPluginsMap();
+    const plugins = await this.getPluginsArray();
 
-    // 既存プラグインがあれば更新日時のみ更新
-    const existingData = plugins[plugin.id];
-    const pluginData: PluginData = existingData
-      ? {
-          ...existingData,
-          plugin,
-          updatedAt: now,
-        }
-      : {
-          plugin,
-          enabled: true,
-          createdAt: now,
-          updatedAt: now,
-          usageCount: 0,
-        };
+    // 既存プラグインを検索
+    const existingIndex = plugins.findIndex((p) => p.plugin.id === plugin.id);
 
-    plugins[plugin.id] = pluginData;
+    if (existingIndex >= 0) {
+      // 既存プラグインを更新（位置は維持）
+      plugins[existingIndex] = {
+        ...plugins[existingIndex],
+        plugin,
+        updatedAt: now,
+      };
+    } else {
+      // 新規プラグインは配列の最後に追加
+      const pluginData: PluginData = {
+        plugin,
+        enabled: true,
+        createdAt: now,
+        updatedAt: now,
+        usageCount: 0,
+      };
+      plugins.push(pluginData);
+    }
 
     await chrome.storage.local.set({
       [STORAGE_KEYS.PLUGINS]: plugins,
@@ -66,16 +70,15 @@ export class PluginStorage {
    * プラグインを取得（ID指定）
    */
   async getPlugin(id: string): Promise<PluginData | null> {
-    const plugins = await this.getPluginsMap();
-    return plugins[id] || null;
+    const plugins = await this.getPluginsArray();
+    return plugins.find((p) => p.plugin.id === id) || null;
   }
 
   /**
    * 全プラグインを取得
    */
   async getAllPlugins(): Promise<PluginData[]> {
-    const plugins = await this.getPluginsMap();
-    return Object.values(plugins);
+    return await this.getPluginsArray();
   }
 
   /**
@@ -90,13 +93,11 @@ export class PluginStorage {
    * ドメインに適用されるプラグインを取得
    *
    * @param domain - 対象ドメイン
-   * @returns 適用可能な有効プラグイン
+   * @returns 適用可能な有効プラグイン（配列順序 = 実行優先度）
    */
   async getPluginsForDomain(domain: string): Promise<PluginData[]> {
     const enabled = await this.getEnabledPlugins();
-    return enabled
-      .filter((data) => isPluginApplicable(data.plugin, domain))
-      .sort((a, b) => b.plugin.priority - a.plugin.priority);
+    return enabled.filter((data) => isPluginApplicable(data.plugin, domain));
   }
 
   /**
@@ -120,11 +121,11 @@ export class PluginStorage {
    * プラグインを削除
    */
   async deletePlugin(id: string): Promise<void> {
-    const plugins = await this.getPluginsMap();
-    delete plugins[id];
+    const plugins = await this.getPluginsArray();
+    const filtered = plugins.filter((p) => p.plugin.id !== id);
 
     await chrome.storage.local.set({
-      [STORAGE_KEYS.PLUGINS]: plugins,
+      [STORAGE_KEYS.PLUGINS]: filtered,
     });
 
     // ドメインマッピングから削除
@@ -145,16 +146,15 @@ export class PluginStorage {
    * プラグインの有効/無効を切り替え
    */
   async togglePlugin(id: string, enabled: boolean): Promise<void> {
-    const pluginData = await this.getPlugin(id);
-    if (!pluginData) {
+    const plugins = await this.getPluginsArray();
+    const index = plugins.findIndex((p) => p.plugin.id === id);
+
+    if (index < 0) {
       throw new Error(`Plugin not found: ${id}`);
     }
 
-    pluginData.enabled = enabled;
-    pluginData.updatedAt = Date.now();
-
-    const plugins = await this.getPluginsMap();
-    plugins[id] = pluginData;
+    plugins[index].enabled = enabled;
+    plugins[index].updatedAt = Date.now();
 
     await chrome.storage.local.set({
       [STORAGE_KEYS.PLUGINS]: plugins,
@@ -165,14 +165,40 @@ export class PluginStorage {
    * プラグインの使用記録を更新
    */
   async recordPluginUsage(id: string): Promise<void> {
-    const pluginData = await this.getPlugin(id);
-    if (!pluginData) return;
+    const plugins = await this.getPluginsArray();
+    const index = plugins.findIndex((p) => p.plugin.id === id);
 
-    pluginData.usageCount++;
-    pluginData.lastUsedAt = Date.now();
+    if (index < 0) return;
 
-    const plugins = await this.getPluginsMap();
-    plugins[id] = pluginData;
+    plugins[index].usageCount++;
+    plugins[index].lastUsedAt = Date.now();
+
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.PLUGINS]: plugins,
+    });
+  }
+
+  /**
+   * プラグインを並び替え
+   *
+   * @param id - 移動するプラグインのID
+   * @param newIndex - 新しい位置のインデックス
+   */
+  async movePlugin(id: string, newIndex: number): Promise<void> {
+    const plugins = await this.getPluginsArray();
+    const currentIndex = plugins.findIndex((p) => p.plugin.id === id);
+
+    if (currentIndex < 0) {
+      throw new Error(`Plugin not found: ${id}`);
+    }
+
+    if (newIndex < 0 || newIndex >= plugins.length) {
+      throw new Error(`Invalid index: ${newIndex}`);
+    }
+
+    // 配列から削除して新しい位置に挿入
+    const [removed] = plugins.splice(currentIndex, 1);
+    plugins.splice(newIndex, 0, removed);
 
     await chrome.storage.local.set({
       [STORAGE_KEYS.PLUGINS]: plugins,
@@ -285,11 +311,40 @@ export class PluginStorage {
   // ==================== Private Methods ====================
 
   /**
-   * プラグインマップを取得
+   * プラグイン配列を取得（マイグレーション対応）
    */
-  private async getPluginsMap(): Promise<Record<string, PluginData>> {
+  private async getPluginsArray(): Promise<PluginData[]> {
     const result = await chrome.storage.local.get(STORAGE_KEYS.PLUGINS);
-    return result[STORAGE_KEYS.PLUGINS] || {};
+    const data = result[STORAGE_KEYS.PLUGINS];
+
+    // データが存在しない場合
+    if (!data) {
+      return [];
+    }
+
+    // 既に配列形式の場合
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    // 旧形式（Record<string, PluginData>）の場合はマイグレーション
+    console.log('[PluginStorage] Migrating old storage format to array...');
+    const pluginsArray = Object.values(data as Record<string, PluginData>);
+
+    // priority順にソート（降順）して配列化
+    pluginsArray.sort((a, b) => {
+      const priorityA = (a.plugin as any).priority || 500;
+      const priorityB = (b.plugin as any).priority || 500;
+      return priorityB - priorityA;
+    });
+
+    // 新形式で保存
+    await chrome.storage.local.set({
+      [STORAGE_KEYS.PLUGINS]: pluginsArray,
+    });
+
+    console.log(`[PluginStorage] Migration complete: ${pluginsArray.length} plugins migrated`);
+    return pluginsArray;
   }
 
   /**

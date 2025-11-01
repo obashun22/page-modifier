@@ -179,23 +179,21 @@ interface Plugin {
   author?: string;               // 作成者
   targetDomains: string[];       // 対象ドメイン
   autoApply: boolean;            // 自動適用（通常true）
-  priority: number;              // 優先度（0-1000、デフォルト500）
   operations: Operation[];       // 操作の配列
 }
 
 interface Operation {
   id: string;                    // 操作ID
   description?: string;          // 操作の説明
-  type: 'insert' | 'remove' | 'hide' | 'show' | 'style' | 'modify' | 'replace' | 'executeScript';
-  selector?: string;             // CSSセレクター（executeScript以外では必須）
+  type: 'insert' | 'remove' | 'hide' | 'show' | 'style' | 'modify' | 'replace' | 'execute';
+  selector?: string;             // CSSセレクター（execute以外では必須）
   position?: 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';  // insert時
   element?: Element;             // 挿入する要素（insert/replace時）
   style?: Record<string, string>;  // スタイル変更（style時）
   textContent?: string;          // テキスト変更（modify時）
   condition?: Condition;         // 実行条件
-  code?: string;                 // 実行するJavaScriptコード（executeScript時）
-  waitFor?: string;              // 要素の出現を待つセレクター（executeScript時）
-  delay?: number;                // 実行前の遅延時間（ミリ秒、executeScript時）
+  code?: string;                 // 実行するJavaScriptコード（execute時）
+  run?: 'once' | 'always';       // 実行タイミング（execute時、デフォルト: 'once'）
 }
 
 interface Element {
@@ -256,12 +254,16 @@ interface Condition {
 5. セキュリティを考慮（XSS対策: textContentを優先、innerHTMLは最小限）
 6. **id**: 新規作成時はidフィールドを省略してください（システムが自動的にUUIDを生成します）。編集時は既存のidをそのまま使用してください。
 7. versionは常に"1.0.0"から開始
-8. priorityは通常500（標準的な優先度）
-9. **executeScript**: ページ読み込み時に自動実行したいスクリプトがある場合に使用します。セキュリティレベル「Advanced」が必要です。
+8. **execute**: ページ読み込み時に自動実行したいJavaScriptコードを定義します。セキュリティレベル「Advanced」が必要です。
    - code: 実行するJavaScriptコード（必須）
-   - waitFor: スクリプト実行前に特定の要素が存在するまで待つ場合に指定（オプション）
-   - delay: スクリプト実行前に遅延させる時間（ミリ秒、オプション）
-   - selector: executeScriptでは不要です
+   - run: 実行タイミング（オプション、デフォルト: 'once'）
+     - 'once': 初回のみ実行（DOM変更による再適用時はスキップ）
+     - 'always': DOM変更検知時も毎回実行（**冪等性の確保が必須**）
+   - selector: executeでは不要です
+
+   **重要**: run: 'always'を使用する場合、スクリプトは冪等でなければなりません。
+   - 既に処理済みの要素をスキップする仕組みを実装してください
+   - 例: if (el.dataset.processed) return; el.dataset.processed = 'true';
 
 ## 良い例（新規作成）
 
@@ -273,7 +275,6 @@ interface Condition {
   "author": "AI Generated",
   "targetDomains": ["*"],
   "autoApply": true,
-  "priority": 500,
   "operations": [
     {
       "id": "insert-copy-button",
@@ -314,19 +315,65 @@ interface Condition {
 }
 \`\`\`
 
-## executeScriptの使用例
+## executeの使用例
 
-リアルタイムで更新される時刻表示など、定期的にJavaScriptを実行する必要がある場合：
+### 例1: 初回のみ実行（run: 'once' または省略）
+
+ページ読み込み時に1度だけコンソールログを出力：
 
 \`\`\`json
 {
-  "name": "リアルタイム時刻表示",
+  "name": "初回実行スクリプト",
   "version": "1.0.0",
-  "description": "ヘッダー下に現在時刻を1秒ごとに更新して表示",
+  "description": "ページ読み込み時に1度だけ実行",
   "author": "AI Generated",
   "targetDomains": ["example.com"],
   "autoApply": true,
-  "priority": 500,
+  "operations": [
+    {
+      "id": "log-once",
+      "type": "execute",
+      "code": "console.log('Page loaded:', new Date().toISOString());"
+    }
+  ]
+}
+\`\`\`
+
+### 例2: 毎回実行（run: 'always'）with 冪等性保証
+
+DOM変更検知時も毎回実行する場合は、**必ず冪等性を確保**してください：
+
+\`\`\`json
+{
+  "name": "動的に追加される要素の処理",
+  "version": "1.0.0",
+  "description": "新しく追加された商品カードにバッジを追加",
+  "author": "AI Generated",
+  "targetDomains": ["example.com"],
+  "autoApply": true,
+  "operations": [
+    {
+      "id": "add-badge-to-new-items",
+      "type": "execute",
+      "run": "always",
+      "code": "document.querySelectorAll('.product-card').forEach(card => { if (!card.dataset.badgeAdded) { const badge = document.createElement('span'); badge.textContent = 'NEW'; badge.style.cssText = 'background: red; color: white; padding: 2px 6px;'; card.prepend(badge); card.dataset.badgeAdded = 'true'; } });"
+    }
+  ]
+}
+\`\`\`
+
+### 例3: operationsの順序を活用
+
+要素を追加してからスクリプトを実行する場合は、operations配列の順序で制御：
+
+\`\`\`json
+{
+  "name": "時刻表示の追加と更新",
+  "version": "1.0.0",
+  "description": "ヘッダー下に時刻表示を追加し、1秒ごとに更新",
+  "author": "AI Generated",
+  "targetDomains": ["example.com"],
+  "autoApply": true,
   "operations": [
     {
       "id": "insert-time-display",
@@ -346,9 +393,8 @@ interface Condition {
     },
     {
       "id": "update-time",
-      "type": "executeScript",
-      "waitFor": "#time-display",
-      "code": "function updateTime() { const el = document.getElementById('time-display'); if (el) { el.textContent = new Date().toLocaleString('ja-JP'); } } updateTime(); setInterval(updateTime, 1000);"
+      "type": "execute",
+      "code": "const el = document.getElementById('time-display'); if (el) { function updateTime() { el.textContent = new Date().toLocaleString('ja-JP'); } updateTime(); setInterval(updateTime, 1000); }"
     }
   ]
 }

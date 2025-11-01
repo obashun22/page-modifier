@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { FiMessageSquare, FiEdit3, FiDownload, FiTrash2, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiMessageSquare, FiEdit3, FiDownload, FiTrash2, FiChevronDown, FiChevronUp, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import { MdToggleOn, MdToggleOff } from 'react-icons/md';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
@@ -17,6 +17,7 @@ interface PluginListProps {
   onPluginToggle: (pluginId: string, enabled: boolean) => void;
   onPluginExport: (pluginId: string) => void;
   onPluginEdit: (plugin: Plugin) => void;
+  onPluginMove: (pluginId: string, newIndex: number) => void;
 }
 
 export default function PluginList({
@@ -26,6 +27,7 @@ export default function PluginList({
   onPluginToggle,
   onPluginExport,
   onPluginEdit,
+  onPluginMove,
 }: PluginListProps) {
   const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(new Set());
 
@@ -54,7 +56,7 @@ export default function PluginList({
 
   return (
     <div style={{ padding: '12px', flex: 1, overflowY: 'auto' }}>
-      {plugins.map((pluginData) => {
+      {plugins.map((pluginData, index) => {
         const isExpanded = expandedPlugins.has(pluginData.plugin.id);
         return (
         <div
@@ -70,7 +72,7 @@ export default function PluginList({
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
             <div style={{ flex: 1 }}>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
-                {pluginData.plugin.name}
+                #{index + 1} {pluginData.plugin.name}
               </h3>
               <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
                 {pluginData.plugin.description || 'No description'}
@@ -79,14 +81,57 @@ export default function PluginList({
                 <span>v{pluginData.plugin.version}</span>
                 <span style={{ margin: '0 8px' }}>•</span>
                 <span>{pluginData.plugin.operations.length} operations</span>
-                <span style={{ margin: '0 8px' }}>•</span>
-                <span>Priority: {pluginData.plugin.priority}</span>
               </div>
               <div style={{ marginTop: '6px', fontSize: '12px', color: '#888' }}>
                 Domains: {pluginData.plugin.targetDomains.join(', ')}
               </div>
             </div>
-            <div style={{ marginLeft: '12px' }}>
+            <div style={{ marginLeft: '12px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+              {/* 上移動ボタン */}
+              <button
+                onClick={() => onPluginMove(pluginData.plugin.id, Math.max(0, index - 1))}
+                disabled={index === 0}
+                style={{
+                  padding: 0,
+                  width: '28px',
+                  height: '28px',
+                  backgroundColor: 'white',
+                  color: index === 0 ? '#d0d7de' : '#24292f',
+                  border: '1px solid #d0d7de',
+                  borderRadius: '4px',
+                  cursor: index === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title="上へ移動"
+              >
+                <FiArrowUp size={16} />
+              </button>
+
+              {/* 下移動ボタン */}
+              <button
+                onClick={() => onPluginMove(pluginData.plugin.id, Math.min(plugins.length - 1, index + 1))}
+                disabled={index === plugins.length - 1}
+                style={{
+                  padding: 0,
+                  width: '28px',
+                  height: '28px',
+                  backgroundColor: 'white',
+                  color: index === plugins.length - 1 ? '#d0d7de' : '#24292f',
+                  border: '1px solid #d0d7de',
+                  borderRadius: '4px',
+                  cursor: index === plugins.length - 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title="下へ移動"
+              >
+                <FiArrowDown size={16} />
+              </button>
+
+              {/* トグルボタン */}
               <button
                 onClick={() => onPluginToggle(pluginData.plugin.id, !pluginData.enabled)}
                 style={{

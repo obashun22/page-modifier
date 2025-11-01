@@ -42,9 +42,9 @@ export interface DomainMappings {
 
 /** ストレージデータ全体 */
 export interface StorageData {
-  plugins: Record<string, PluginData>;  // プラグインID → プラグインデータ
-  settings: Settings;                    // 全体設定
-  domainMappings: DomainMappings;       // ドメイン → プラグインIDリスト
+  plugins: PluginData[];     // プラグインデータの配列（配列順序 = 実行優先度）
+  settings: Settings;        // 全体設定
+  domainMappings: DomainMappings;  // ドメイン → プラグインIDリスト
 }
 
 /** デフォルト設定 */

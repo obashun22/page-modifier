@@ -102,7 +102,7 @@ export const ElementSchema: z.ZodType<Element> = z.lazy(() =>
 export const OperationSchema = z.object({
   id: z.string().min(1),
   description: z.string().optional(),
-  type: z.enum(['insert', 'remove', 'hide', 'show', 'style', 'modify', 'replace', 'executeScript']),
+  type: z.enum(['insert', 'remove', 'hide', 'show', 'style', 'modify', 'replace', 'execute']),
   selector: z.string().optional(),
   position: z.enum(['beforebegin', 'afterbegin', 'beforeend', 'afterend']).optional(),
   element: ElementSchema.optional(),
@@ -110,26 +110,25 @@ export const OperationSchema = z.object({
   attributes: AttributeObjectSchema.optional(),
   condition: ConditionSchema.optional(),
   code: z.string().optional(),
-  waitFor: z.string().optional(),
-  delay: z.number().min(0).optional(),
+  run: z.enum(['once', 'always']).optional(),
 })
   .refine(
     (data) => {
-      // executeScriptの場合はcodeが必須
-      if (data.type === 'executeScript') {
+      // executeの場合はcodeが必須
+      if (data.type === 'execute') {
         return data.code !== undefined && data.code.length > 0;
       }
       return true;
     },
     {
-      message: 'executeScript操作にはcodeフィールドが必須です',
+      message: 'execute操作にはcodeフィールドが必須です',
       path: ['code'],
     }
   )
   .refine(
     (data) => {
-      // executeScript以外の場合はselectorが必須
-      if (data.type !== 'executeScript') {
+      // execute以外の場合はselectorが必須
+      if (data.type !== 'execute') {
         return data.selector !== undefined && data.selector.length > 0;
       }
       return true;
@@ -155,7 +154,6 @@ export const PluginSchema = z.object({
   description: z.string().optional(),
   targetDomains: z.array(z.string().min(1)).min(1, '少なくとも1つのドメインを指定してください'),
   autoApply: z.boolean(),
-  priority: z.number().min(0).max(1000),
   operations: z.array(OperationSchema).min(1, '少なくとも1つの操作を指定してください'),
 }) satisfies z.ZodType<Plugin>;
 

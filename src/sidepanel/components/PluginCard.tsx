@@ -108,8 +108,6 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
           }}
         >
           <span>バージョン: {plugin.version}</span>
-          <span style={{ margin: '0 8px' }}>•</span>
-          <span>優先度: {plugin.priority}</span>
         </div>
         <div
           style={{

@@ -91,16 +91,6 @@ export function isPluginApplicable(plugin: Plugin, domain: string): boolean {
 }
 
 /**
- * プラグインを優先度順にソート
- *
- * @param plugins - プラグインの配列
- * @returns 優先度順（降順）にソートされたプラグイン配列
- */
-export function sortPluginsByPriority(plugins: Plugin[]): Plugin[] {
-  return [...plugins].sort((a, b) => b.priority - a.priority);
-}
-
-/**
  * プラグインの表示名を取得
  *
  * @param plugin - プラグイン

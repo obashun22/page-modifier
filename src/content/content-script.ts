@@ -87,10 +87,8 @@ class ContentScript {
    * プラグインを実行
    */
   private async executePlugins(plugins: Plugin[]): Promise<void> {
-    // 優先度順にソート（既にsortPluginsByPriorityがあるが、ここでも念のため）
-    const sortedPlugins = [...plugins].sort((a, b) => b.priority - a.priority);
-
-    for (const plugin of sortedPlugins) {
+    // プラグインは配列順序で実行（配列の順序 = 実行優先度）
+    for (const plugin of plugins) {
       // 自動適用フラグチェック
       if (!plugin.autoApply) {
         console.log(`[PageModifier] Skipping plugin ${plugin.id}: autoApply is false`);
