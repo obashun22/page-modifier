@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { IoSend } from 'react-icons/io5';
-import { FiTarget } from 'react-icons/fi';
+import { FiMousePointer } from 'react-icons/fi';
 import MessageItem from './MessageItem';
 import PluginCard from './PluginCard';
 import { chatWithAI } from '../services/ai-service';
@@ -456,7 +456,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               e.currentTarget.style.color = '#24292f';
             }}
           >
-            <FiTarget size={18} />
+            <FiMousePointer size={18} />
           </button>
         </div>
 
