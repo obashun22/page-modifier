@@ -35,21 +35,9 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     console.error('[PageModifier] Failed to initialize settings:', error);
   });
 
-  // MAIN World Scriptを登録（カスタムJS実行用）
-  try {
-    await chrome.scripting.registerContentScripts([
-      {
-        id: 'page-modifier-main-world',
-        matches: ['<all_urls>'],
-        js: ['assets/main-world-script.js'],
-        world: 'MAIN',
-        runAt: 'document_start',
-      },
-    ]);
-    console.log('[PageModifier] MAIN World Script registered');
-  } catch (error) {
-    console.error('[PageModifier] Failed to register MAIN World Script:', error);
-  }
+  // MAIN World Scriptは不要（Content Script内で直接実行）
+  // カスタムJSはContent Script（Isolated World）で実行するため、
+  // ページのCSPの影響を受けず、安全かつ高速に動作します
 
   // サンプルプラグインの読み込み（開発用）
   if (details.reason === 'install') {
@@ -216,15 +204,11 @@ async function handleGetSettings(): Promise<any> {
  * 設定を更新
  */
 async function handleUpdateSettings(newSettings: Settings): Promise<void> {
-  console.log('[PageModifier] handleUpdateSettings called with:', newSettings);
-
   // 現在の設定を取得
   const currentSettings = await pluginStorage.getSettings();
-  console.log('[PageModifier] Current settings:', currentSettings);
 
   // 設定を更新
   await pluginStorage.updateSettings(newSettings);
-  console.log('[PageModifier] Settings updated');
 
   // セキュリティレベルが変更された場合、プラグインをチェック
   if (currentSettings.securityLevel !== newSettings.securityLevel) {
@@ -234,20 +218,14 @@ async function handleUpdateSettings(newSettings: Settings): Promise<void> {
 
     // 全プラグインを取得
     const allPlugins = await pluginStorage.getAllPlugins();
-    console.log(`[PageModifier] Found ${allPlugins.length} total plugins`);
 
     // 新しいセキュリティレベルで実行できないプラグインを無効化
     let disabledCount = 0;
     for (const pluginData of allPlugins) {
-      console.log(`[PageModifier] Checking plugin ${pluginData.plugin.id}, enabled: ${pluginData.enabled}`);
-
       // 有効なプラグインのみチェック
       if (pluginData.enabled) {
         // 新しいセキュリティレベルで実行可能かチェック
-        const canExecute = canExecutePlugin(pluginData.plugin, newSettings.securityLevel);
-        console.log(`[PageModifier] Can execute ${pluginData.plugin.id}: ${canExecute}`);
-
-        if (!canExecute) {
+        if (!canExecutePlugin(pluginData.plugin, newSettings.securityLevel)) {
           console.log(
             `[PageModifier] Disabling plugin ${pluginData.plugin.id} (requires higher security level)`
           );
@@ -259,11 +237,7 @@ async function handleUpdateSettings(newSettings: Settings): Promise<void> {
 
     if (disabledCount > 0) {
       console.log(`[PageModifier] Disabled ${disabledCount} plugin(s) due to security level change`);
-    } else {
-      console.log('[PageModifier] No plugins needed to be disabled');
     }
-  } else {
-    console.log('[PageModifier] Security level unchanged, skipping plugin check');
   }
 }
 
