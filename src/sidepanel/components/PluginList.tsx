@@ -97,7 +97,7 @@ function PluginItem({
         <div
           onClick={() => setIsOperationsOpen(!isOperationsOpen)}
           style={{
-            marginTop: '12px',
+            marginTop: '6px',
             padding: '8px 12px',
             backgroundColor: '#f6f8fa',
             borderRadius: '6px',
