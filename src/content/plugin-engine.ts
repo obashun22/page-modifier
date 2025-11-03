@@ -641,12 +641,12 @@ export class PluginEngine {
   /**
    * カスタムJS実行（サンドボックス化）
    */
-  private async actionCustom(action: Action, element: HTMLElement, event?: UIEvent): Promise<void> {
+  private async actionCustom(action: Action, _element: HTMLElement, event?: UIEvent): Promise<void> {
     if (!action.code) return;
 
     // セキュリティレベルの確認
     const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
-
+    
     if (settings.settings?.securityLevel !== 'advanced') {
       console.warn('[PluginEngine] Custom JS requires security level "advanced"');
       showNotification(
@@ -658,55 +658,73 @@ export class PluginEngine {
     }
 
     try {
-      console.log('[PluginEngine] Executing custom JS in Content Script context');
+      // リクエストIDを生成
+      const requestId = `custom-js-${Date.now()}-${Math.random()}`;
 
-      // Content Script内で直接実行（CSP問題なし）
-      // セレクターから要素を取得（指定されている場合）
-      const targetElement = action.selector
-        ? document.querySelector(action.selector) as HTMLElement
-        : element;
-
-      // サンドボックス化されたコンテキストで実行
-      const func = new Function(
-        'element',
-        'event',
-        'document',
-        'console',
-        'setTimeout',
-        'setInterval',
-        'clearTimeout',
-        'clearInterval',
-        'navigator',
-        action.code
+      // MAIN Worldにメッセージを送信
+      // 注意: postMessage()はシリアライズ可能なデータのみ送信可能
+      window.postMessage(
+        {
+          type: 'EXECUTE_CUSTOM_JS',
+          requestId,
+          code: action.code,
+          selector: action.selector,
+          context: {
+            event: event
+              ? {
+                  type: event.type,
+                  // HTMLElementはクローン不可能なので、基本情報のみ送信
+                  target: event.target ? {
+                    tagName: (event.target as HTMLElement).tagName,
+                    id: (event.target as HTMLElement).id,
+                    className: (event.target as HTMLElement).className,
+                  } : null,
+                }
+              : null,
+          },
+        },
+        '*'
       );
 
-      // ユーザーコードを実行
-      func(
-        targetElement,
-        event,
-        document,
-        console,
-        setTimeout,
-        setInterval,
-        clearTimeout,
-        clearInterval,
-        navigator
-      );
+      // MAIN Worldからのレスポンスを待つ
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          window.removeEventListener('message', handler);
+          reject(new Error('Custom JS execution timeout'));
+        }, 5000);
 
-      console.log('[PluginEngine] Custom JS executed successfully');
+        const handler = (messageEvent: MessageEvent) => {
+          if (messageEvent.source !== window) return;
 
-      // 通知表示
-      if (action.notification) {
-        showNotification(action.notification, 3000, 'success');
-      }
+          const response = messageEvent.data;
+
+          if (response.type === 'CUSTOM_JS_RESULT' && response.requestId === requestId) {
+            clearTimeout(timeout);
+            window.removeEventListener('message', handler);
+
+            if (response.success) {
+              console.log('[PluginEngine] Custom JS executed successfully');
+              if (action.notification) {
+                showNotification(action.notification, 3000, 'success');
+              }
+              resolve();
+            } else {
+              console.error('[PluginEngine] Custom JS execution failed:', response.error);
+              showNotification(
+                `カスタムコードの実行に失敗しました: ${response.error}`,
+                5000,
+                'error'
+              );
+              reject(new Error(response.error));
+            }
+          }
+        };
+
+        window.addEventListener('message', handler);
+      });
     } catch (error) {
-      console.error('[PluginEngine] Custom JS execution failed:', error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      showNotification(
-        `カスタムコードの実行に失敗しました: ${errorMessage}`,
-        5000,
-        'error'
-      );
+      console.error('[PluginEngine] Custom action execution failed:', error);
+      showNotification('カスタムコードの実行に失敗しました', 3000, 'error');
       throw error;
     }
   }
@@ -814,10 +832,10 @@ export class PluginEngine {
 
     console.log(`[PluginEngine] Executing script: ${operation.id}`);
 
-    // Content Script内で直接スクリプト実行
+    // actionCustomと同じロジックでスクリプト実行
     await this.actionCustom(
       { type: 'custom', code: operation.code },
-      document.documentElement
+      document.body
     );
 
     console.log(`[PluginEngine] Script executed: ${operation.id}`);
