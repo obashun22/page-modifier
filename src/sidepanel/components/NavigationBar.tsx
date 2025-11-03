@@ -14,7 +14,7 @@ export default function NavigationBar({ currentView, onViewChange }: NavigationB
     const isActive = currentView === view;
     return `flex-1 p-3 text-sm font-medium border-none cursor-pointer ${
       isActive
-        ? 'bg-white text-blue-600 border-b-2 border-blue-600'
+        ? 'bg-white text-github-blue-500 border-b-2 border-blue-600'
         : 'bg-gray-50 text-gray-800 border-b-2 border-transparent'
     }`;
   };

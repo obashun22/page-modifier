@@ -98,7 +98,7 @@ function PluginItem({
         <div className="flex gap-2 items-center flex-wrap">
           <button
             onClick={() => onPluginEdit(pluginData.plugin)}
-            className="p-0 w-8 h-8 bg-blue-600 text-white border-none rounded-full cursor-pointer flex items-center justify-center"
+            className="p-0 w-8 h-8 bg-github-blue-500 text-white border-none rounded-full cursor-pointer flex items-center justify-center"
             title="チャットで編集"
           >
             <FiMessageSquare size={16} />

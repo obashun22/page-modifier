@@ -25,7 +25,7 @@ export default function MessageItem({ message }: MessageItemProps) {
       {/* アバター */}
       <div
         className={`w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0 ${
-          isUser ? 'bg-blue-600' : 'bg-gray-600'
+          isUser ? 'bg-github-blue-500' : 'bg-gray-600'
         }`}
       >
         {isUser ? '👤' : '🤖'}
@@ -38,7 +38,7 @@ export default function MessageItem({ message }: MessageItemProps) {
         {/* メッセージバブル */}
         <div
           className={`px-3.5 py-2.5 rounded-[18px] text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${
-            isUser ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-800'
+            isUser ? 'bg-github-blue-500 text-white' : 'bg-gray-50 text-gray-800'
           }`}
         >
           {message.content}

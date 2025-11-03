@@ -14,7 +14,7 @@ interface PluginPreviewProps {
 
 export default function PluginPreview({ plugin, onApprove, onReject }: PluginPreviewProps) {
   return (
-    <div className="p-4 border-t-2 border-blue-600 bg-gray-50 max-h-[300px] overflow-y-auto">
+    <div className="p-4 border-t-2 border-github-blue-500 bg-gray-50 max-h-[300px] overflow-y-auto">
       <div className="mb-3">
         <h3 className="m-0 mb-2 text-base font-semibold text-gray-800">
           {plugin.name}
@@ -44,7 +44,7 @@ export default function PluginPreview({ plugin, onApprove, onReject }: PluginPre
               className="px-3 py-2 bg-white border border-gray-300 rounded-md text-[13px]"
             >
               <div className="flex gap-2 mb-1">
-                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-xl text-[11px] font-semibold">
+                <span className="px-2 py-0.5 bg-github-blue-50 text-github-blue-500 rounded-xl text-[11px] font-semibold">
                   {op.type}
                 </span>
                 <code className="text-xs text-gray-600 font-mono">

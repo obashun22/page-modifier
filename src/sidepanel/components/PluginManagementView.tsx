@@ -178,7 +178,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
             <button
               onClick={handleImport}
               disabled={importing}
-              className={`px-4 py-2 text-sm bg-blue-600 text-white border-none rounded-md font-semibold flex items-center gap-2 ${
+              className={`px-4 py-2 text-sm bg-github-blue-500 text-white border-none rounded-md font-semibold flex items-center gap-2 ${
                 importing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
               }`}
             >

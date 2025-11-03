@@ -458,14 +458,14 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         {selectedElements.map((element, index) => (
           <div
             key={index}
-            className="px-3 py-2 mb-2 bg-blue-50 border border-blue-400 rounded-md text-xs flex items-center justify-between"
+            className="px-3 py-2 mb-2 bg-github-blue-50 border border-github-blue-400 rounded-md text-xs flex items-center justify-between"
           >
             <code className="font-mono text-[11px] flex-1">
               {element.selector}
             </code>
             <button
               onClick={() => setSelectedElements((prev) => prev.filter((_, i) => i !== index))}
-              className="px-1.5 py-0.5 text-[11px] bg-transparent text-blue-600 border-none cursor-pointer ml-2"
+              className="px-1.5 py-0.5 text-[11px] bg-transparent text-github-blue-500 border-none cursor-pointer ml-2"
             >
               ✕
             </button>
@@ -478,8 +478,8 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
             title={isSelectingElement ? '要素選択をキャンセル' : '要素を選択'}
             className={`p-2 text-[13px] border border-gray-300 rounded-md cursor-pointer flex items-center justify-center transition-all ${
               isSelectingElement
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-800 hover:bg-gray-50 hover:border-blue-600 hover:text-blue-600'
+                ? 'bg-github-blue-500 text-white'
+                : 'bg-white text-gray-800 hover:bg-gray-50 hover:border-github-blue-500 hover:text-github-blue-500'
             }`}
           >
             <FiMousePointer size={18} />
