@@ -20,6 +20,7 @@ interface Message {
   plugin?: Plugin;  // プラグイン情報（オプション）
   pluginMode?: 'preview' | 'editing' | 'applied';  // プラグイン表示モード
   isConfirmed?: boolean;  // 編集参照が確定済みかどうか
+  isEdited?: boolean;  // 編集モードから適用されたかどうか
 }
 
 interface ElementInfo {
@@ -246,6 +247,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         setMessages((prev) => [...prev, assistantMessage]);
       } else if (response.type === 'plugin') {
         // プラグイン生成レスポンス
+        const isEditing = selectedPluginForEdit !== null;
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
@@ -253,6 +255,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           timestamp: Date.now(),
           plugin: response.plugin,
           pluginMode: 'preview',
+          isEdited: isEditing,
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
@@ -396,6 +399,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
                   onDismiss={message.pluginMode === 'editing' ? () => handleDismissEdit(message.id) : undefined}
                   onUndo={message.pluginMode === 'applied' ? () => handleUndo(message.plugin!, message.id) : undefined}
                   isConfirmed={message.isConfirmed}
+                  isEdited={message.isEdited}
                 />
               </div>
             )}

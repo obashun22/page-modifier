@@ -18,9 +18,10 @@ interface PluginCardProps {
   onDismiss?: () => void;
   onUndo?: () => void; // 適用を取り消す
   isConfirmed?: boolean; // 編集参照が確定済みかどうか
+  isEdited?: boolean; // 編集モードから適用されたかどうか
 }
 
-export default function PluginCard({ plugin, mode, onApprove, onReject, onDismiss, onUndo, isConfirmed }: PluginCardProps) {
+export default function PluginCard({ plugin, mode, onApprove, onReject, onDismiss, onUndo, isConfirmed, isEdited }: PluginCardProps) {
   const getBorderColor = () => {
     switch (mode) {
       case 'preview':
@@ -81,7 +82,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
                 fontWeight: 600,
               }}
             >
-              適用済み
+              {isEdited ? '編集済み' : '適用済み'}
             </span>
           )}
         </div>
@@ -268,49 +269,28 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
         </div>
       )}
 
-      {mode === 'editing' && (
-        <div>
-          {isConfirmed ? (
-            <div
-              style={{
-                padding: '8px 12px',
-                backgroundColor: '#fff8c5',
-                border: '1px solid #d4a72c',
-                borderRadius: '6px',
-                fontSize: '13px',
-                color: '#9a6700',
-                textAlign: 'center',
-                fontWeight: 600,
-              }}
-            >
-              編集のために参照されました
-            </div>
-          ) : (
-            onDismiss && (
-              <button
-                onClick={onDismiss}
-                style={{
-                  width: '100%',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  backgroundColor: 'white',
-                  color: '#24292f',
-                  border: '1px solid #d0d7de',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                }}
-              >
-                <IoClose size={18} />
-                削除
-              </button>
-            )
-          )}
-        </div>
+      {mode === 'editing' && !isConfirmed && onDismiss && (
+        <button
+          onClick={onDismiss}
+          style={{
+            width: '100%',
+            padding: '8px 16px',
+            fontSize: '14px',
+            backgroundColor: 'white',
+            color: '#24292f',
+            border: '1px solid #d0d7de',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+          }}
+        >
+          <IoClose size={18} />
+          削除
+        </button>
       )}
     </div>
   );
