@@ -66,6 +66,22 @@ function PluginItem({
                 {pluginData.plugin.targetDomains.join(', ')}
               </span>
             </div>
+            {/* 操作内容（ドロップダウン） */}
+            <div
+              onClick={() => setIsOperationsOpen(!isOperationsOpen)}
+              style={{
+                marginTop: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '12px',
+                color: '#888',
+              }}
+            >
+              <span style={{ textDecoration: 'underline' }}>{pluginData.plugin.operations.length} operations</span>
+              {isOperationsOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+            </div>
           </div>
           <div style={{ marginLeft: '12px', display: 'flex', gap: '4px', alignItems: 'center' }}>
             {/* トグルボタン */}
@@ -92,23 +108,6 @@ function PluginItem({
           </button>
         </div>
       </div>
-
-        {/* 操作内容（ドロップダウン） */}
-        <div
-          onClick={() => setIsOperationsOpen(!isOperationsOpen)}
-          style={{
-            marginTop: '6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px',
-            color: '#888',
-          }}
-        >
-          <span>{pluginData.plugin.operations.length} operations</span>
-          {isOperationsOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
-        </div>
 
         {isOperationsOpen && (
           <div style={{ marginTop: '8px', padding: '12px', backgroundColor: '#f6f8fa', borderRadius: '6px' }}>
