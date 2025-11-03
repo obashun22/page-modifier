@@ -130,15 +130,6 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     }
   };
 
-  const handlePluginMove = async (pluginId: string, newIndex: number) => {
-    await chrome.runtime.sendMessage({
-      type: 'MOVE_PLUGIN',
-      pluginId,
-      newIndex,
-    });
-
-    await loadPlugins();
-  };
 
   const handleImport = () => {
     const input = document.createElement('input');
@@ -219,7 +210,6 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
             onPluginToggle={handlePluginToggle}
             onPluginExport={handlePluginExport}
             onPluginEdit={(plugin) => onEditPlugin(plugin)}
-            onPluginMove={handlePluginMove}
           />
         </>
       )}

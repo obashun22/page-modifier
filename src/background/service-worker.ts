@@ -129,12 +129,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .catch((error) => sendResponse({ success: false, error: error.message }));
       return true; // 非同期応答
 
-    case 'MOVE_PLUGIN':
-      handleMovePlugin(message.pluginId, message.newIndex)
-        .then(() => sendResponse({ success: true }))
-        .catch((error) => sendResponse({ success: false, error: error.message }));
-      return true; // 非同期応答
-
     default:
       console.warn('[PageModifier] Unknown message type:', message.type);
       sendResponse({ success: false, error: 'Unknown message type' });
@@ -284,16 +278,6 @@ async function handleImportPlugin(json: string): Promise<any> {
  */
 async function handleExportPlugin(pluginId: string): Promise<string> {
   return await pluginStorage.exportPlugin(pluginId);
-}
-
-/**
- * プラグインを並び替え
- */
-async function handleMovePlugin(pluginId: string, newIndex: number): Promise<void> {
-  await pluginStorage.movePlugin(pluginId, newIndex);
-
-  // 全てのタブにリロード通知
-  notifyAllTabs('RELOAD_PLUGINS');
 }
 
 /**

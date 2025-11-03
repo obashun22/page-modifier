@@ -94,8 +94,8 @@ class ContentScript {
     const settingsResponse = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
     const securityLevel: SecurityLevel = settingsResponse.settings?.securityLevel || 'safe';
 
-    // プラグインは配列順序で実行（配列の順序 = 実行優先度）
-    for (const plugin of plugins) {
+    // プラグインは古い順に実行（配列の逆順 = 最も古いプラグインから）
+    for (const plugin of plugins.slice().reverse()) {
       // 自動適用フラグチェック
       if (!plugin.autoApply) {
         console.log(`[PageModifier] Skipping plugin ${plugin.id}: autoApply is false`);

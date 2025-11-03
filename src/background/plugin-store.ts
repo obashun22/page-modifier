@@ -93,7 +93,7 @@ export class PluginStorage {
    * ドメインに適用されるプラグインを取得
    *
    * @param domain - 対象ドメイン
-   * @returns 適用可能な有効プラグイン（配列順序 = 実行優先度）
+   * @returns 適用可能な有効プラグイン（配列は新しい順、実行は逆順で古い順）
    */
   async getPluginsForDomain(domain: string): Promise<PluginData[]> {
     const enabled = await this.getEnabledPlugins();
@@ -172,33 +172,6 @@ export class PluginStorage {
 
     plugins[index].usageCount++;
     plugins[index].lastUsedAt = Date.now();
-
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.PLUGINS]: plugins,
-    });
-  }
-
-  /**
-   * プラグインを並び替え
-   *
-   * @param id - 移動するプラグインのID
-   * @param newIndex - 新しい位置のインデックス
-   */
-  async movePlugin(id: string, newIndex: number): Promise<void> {
-    const plugins = await this.getPluginsArray();
-    const currentIndex = plugins.findIndex((p) => p.plugin.id === id);
-
-    if (currentIndex < 0) {
-      throw new Error(`Plugin not found: ${id}`);
-    }
-
-    if (newIndex < 0 || newIndex >= plugins.length) {
-      throw new Error(`Invalid index: ${newIndex}`);
-    }
-
-    // 配列から削除して新しい位置に挿入
-    const [removed] = plugins.splice(currentIndex, 1);
-    plugins.splice(newIndex, 0, removed);
 
     await chrome.storage.local.set({
       [STORAGE_KEYS.PLUGINS]: plugins,

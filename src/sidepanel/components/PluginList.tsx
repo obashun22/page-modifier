@@ -4,26 +4,9 @@
  * プラグイン一覧表示コンポーネント
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { FiMessageSquare, FiEdit3, FiDownload, FiTrash2, FiChevronDown, FiChevronUp } from 'react-icons/fi';
-import { MdToggleOn, MdToggleOff, MdDragIndicator } from 'react-icons/md';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { MdToggleOn, MdToggleOff } from 'react-icons/md';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
 
@@ -34,10 +17,9 @@ interface PluginListProps {
   onPluginToggle: (pluginId: string, enabled: boolean) => void;
   onPluginExport: (pluginId: string) => void;
   onPluginEdit: (plugin: Plugin) => void;
-  onPluginMove: (pluginId: string, newIndex: number) => void;
 }
 
-interface SortablePluginItemProps {
+interface PluginItemProps {
   pluginData: PluginData;
   index: number;
   isExpanded: boolean;
@@ -49,7 +31,7 @@ interface SortablePluginItemProps {
   onPluginEdit: (plugin: Plugin) => void;
 }
 
-function SortablePluginItem({
+function PluginItem({
   pluginData,
   index,
   isExpanded,
@@ -59,62 +41,18 @@ function SortablePluginItem({
   onPluginToggle,
   onPluginExport,
   onPluginEdit,
-}: SortablePluginItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: pluginData.plugin.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
+}: PluginItemProps) {
 
   return (
     <div
-      ref={setNodeRef}
       style={{
-        ...style,
-        display: 'flex',
-        gap: '4px',
-        padding: '12px 16px',
+        padding: '16px',
         marginBottom: '12px',
         backgroundColor: '#f6f8fa',
         borderRadius: '8px',
         border: '1px solid #d0d7de',
       }}
     >
-      {/* 左側: ドラッグハンドル */}
-      <div
-        {...attributes}
-        {...listeners}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          cursor: 'grab',
-          color: '#6e7781',
-          opacity: 0.4,
-          transition: 'opacity 0.2s',
-          marginRight: '4px',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.opacity = '0.8';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.opacity = '0.4';
-        }}
-        title="ドラッグして並び替え"
-      >
-        <MdDragIndicator size={20} />
-      </div>
-
-      {/* 右側: コンテンツ */}
-      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ flex: 1 }}>
             <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
@@ -332,7 +270,6 @@ function SortablePluginItem({
             <FiTrash2 size={16} />
           </button>
         </div>
-      </div>
     </div>
   );
 }
@@ -344,22 +281,8 @@ export default function PluginList({
   onPluginToggle,
   onPluginExport,
   onPluginEdit,
-  onPluginMove,
 }: PluginListProps) {
   const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(new Set());
-  const [localPlugins, setLocalPlugins] = useState<PluginData[]>(plugins);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // pluginsが変更されたらlocalPluginsも更新
-  useEffect(() => {
-    setLocalPlugins(plugins);
-  }, [plugins]);
 
   const toggleExpanded = (pluginId: string) => {
     setExpandedPlugins((prev) => {
@@ -373,23 +296,7 @@ export default function PluginList({
     });
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = localPlugins.findIndex((p) => p.plugin.id === active.id);
-      const newIndex = localPlugins.findIndex((p) => p.plugin.id === over.id);
-
-      // 配列を並び替え
-      const newPlugins = arrayMove(localPlugins, oldIndex, newIndex);
-      setLocalPlugins(newPlugins);
-
-      // 親コンポーネントに通知
-      onPluginMove(active.id as string, newIndex);
-    }
-  };
-
-  if (localPlugins.length === 0) {
+  if (plugins.length === 0) {
     return (
       <div style={{ padding: '40px 20px', textAlign: 'center', color: '#666', flex: 1, overflowY: 'auto' }}>
         <p>プラグインがありません</p>
@@ -402,31 +309,20 @@ export default function PluginList({
 
   return (
     <div style={{ padding: '12px', flex: 1, overflowY: 'auto' }}>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={localPlugins.map((p) => p.plugin.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          {localPlugins.map((pluginData, index) => (
-            <SortablePluginItem
-              key={pluginData.plugin.id}
-              pluginData={pluginData}
-              index={index}
-              isExpanded={expandedPlugins.has(pluginData.plugin.id)}
-              onToggleExpanded={toggleExpanded}
-              onPluginSelect={onPluginSelect}
-              onPluginDelete={onPluginDelete}
-              onPluginToggle={onPluginToggle}
-              onPluginExport={onPluginExport}
-              onPluginEdit={onPluginEdit}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
+      {plugins.map((pluginData, index) => (
+        <PluginItem
+          key={pluginData.plugin.id}
+          pluginData={pluginData}
+          index={index}
+          isExpanded={expandedPlugins.has(pluginData.plugin.id)}
+          onToggleExpanded={toggleExpanded}
+          onPluginSelect={onPluginSelect}
+          onPluginDelete={onPluginDelete}
+          onPluginToggle={onPluginToggle}
+          onPluginExport={onPluginExport}
+          onPluginEdit={onPluginEdit}
+        />
+      ))}
     </div>
   );
 }
