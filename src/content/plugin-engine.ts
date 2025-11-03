@@ -841,3 +841,126 @@ export class PluginEngine {
     console.log(`[PluginEngine] Script executed: ${operation.id}`);
   }
 }
+
+/**
+ * Storage Manager
+ * Main WorldからのストレージリクエストをChrome Storage APIに橋渡し
+ */
+interface StorageRequest {
+  type: 'STORAGE_REQUEST';
+  requestId: string;
+  operation: 'get' | 'set' | 'remove' | 'clear';
+  scope: 'page' | 'global';
+  key?: string;
+  value?: any;
+}
+
+interface StorageResponse {
+  type: 'STORAGE_RESPONSE';
+  requestId: string;
+  success: boolean;
+  result?: any;
+  error?: string;
+}
+
+/**
+ * ストレージキー名を生成
+ */
+function generateStorageKey(scope: 'page' | 'global', key?: string): string {
+  if (scope === 'global') {
+    return key ? `global:${key}` : 'global:';
+  } else {
+    const domain = location.hostname;
+    return key ? `page:${domain}:${key}` : `page:${domain}:`;
+  }
+}
+
+/**
+ * ストレージリクエストを処理
+ */
+async function handleStorageRequest(request: StorageRequest): Promise<StorageResponse> {
+  try {
+    const { operation, scope, key, value } = request;
+
+    switch (operation) {
+      case 'get': {
+        if (!key) {
+          throw new Error('get operation requires key');
+        }
+        const storageKey = generateStorageKey(scope, key);
+        const result = await chrome.storage.local.get(storageKey);
+        return {
+          type: 'STORAGE_RESPONSE',
+          requestId: request.requestId,
+          success: true,
+          result: result[storageKey],
+        };
+      }
+
+      case 'set': {
+        if (!key) {
+          throw new Error('set operation requires key');
+        }
+        const storageKey = generateStorageKey(scope, key);
+        await chrome.storage.local.set({ [storageKey]: value });
+        return {
+          type: 'STORAGE_RESPONSE',
+          requestId: request.requestId,
+          success: true,
+        };
+      }
+
+      case 'remove': {
+        if (!key) {
+          throw new Error('remove operation requires key');
+        }
+        const storageKey = generateStorageKey(scope, key);
+        await chrome.storage.local.remove(storageKey);
+        return {
+          type: 'STORAGE_RESPONSE',
+          requestId: request.requestId,
+          success: true,
+        };
+      }
+
+      case 'clear': {
+        // スコープに応じて該当するキーを全削除
+        const prefix = generateStorageKey(scope);
+        const allKeys = await chrome.storage.local.get(null);
+        const keysToRemove = Object.keys(allKeys).filter(k => k.startsWith(prefix));
+        if (keysToRemove.length > 0) {
+          await chrome.storage.local.remove(keysToRemove);
+        }
+        return {
+          type: 'STORAGE_RESPONSE',
+          requestId: request.requestId,
+          success: true,
+        };
+      }
+
+      default:
+        throw new Error(`Unknown operation: ${operation}`);
+    }
+  } catch (error) {
+    return {
+      type: 'STORAGE_RESPONSE',
+      requestId: request.requestId,
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+// Main Worldからのストレージリクエストを受信
+window.addEventListener('message', async (event) => {
+  if (event.source !== window) return;
+  if (event.data?.type !== 'STORAGE_REQUEST') return;
+
+  const request = event.data as StorageRequest;
+  console.log(`[PluginEngine Storage] Received request: ${request.operation} (${request.scope})`);
+
+  const response = await handleStorageRequest(request);
+  window.postMessage(response, '*');
+});
+
+console.log('[PluginEngine Storage] Storage message handler initialized');

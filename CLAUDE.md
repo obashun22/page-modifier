@@ -105,6 +105,54 @@ Chrome Extension API経由で以下のコンポーネント間通信：
 - **Background ↔ Content Script**: プラグイン実行、要素選択モード
 - **Content Script → Background → Side Panel**: 要素選択結果
 
+### Main World API
+
+Main Worldで実行されるカスタムJavaScriptから利用可能なAPIです。
+
+#### Storage API
+
+`window.pluginStorage`を通じてchrome.storage.localにアクセスできます。
+
+**構造:**
+```typescript
+window.pluginStorage = {
+  page: {
+    async get(key: string): Promise<any>
+    async set(key: string, value: any): Promise<void>
+    async remove(key: string): Promise<void>
+    async clear(): Promise<void>
+  },
+  global: {
+    async get(key: string): Promise<any>
+    async set(key: string, value: any): Promise<void>
+    async remove(key: string): Promise<void>
+    async clear(): Promise<void>
+  }
+}
+```
+
+**スコープ:**
+- `page`: ページ固有のストレージ（キー形式: `page:{domain}:{key}`）
+- `global`: 拡張機能全体で共有されるストレージ（キー形式: `global:{key}`）
+
+**使用例:**
+```javascript
+// ページ固有のカウンターを保存
+const count = await window.pluginStorage.page.get('counter') || 0;
+await window.pluginStorage.page.set('counter', count + 1);
+
+// 全ページで共有される設定を取得
+const theme = await window.pluginStorage.global.get('theme');
+
+// ページのストレージをクリア
+await window.pluginStorage.page.clear();
+```
+
+**技術実装:**
+- Main World → postMessage → Content Script → chrome.storage.local
+- CSP制約を受けない（postMessageとChrome APIは制限外）
+- 最大5MB（chrome.storage.local制限）
+
 ## 開発フロー
 
 ### 初期セットアップ

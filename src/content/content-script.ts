@@ -90,46 +90,28 @@ class ContentScript {
    * プラグインを実行
    */
   private async executePlugins(plugins: Plugin[]): Promise<void> {
-    console.log(`[PageModifier] executePlugins called with ${plugins.length} plugins`);
-
     // 現在のセキュリティレベルを取得
     const settingsResponse = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
-    console.log('[PageModifier] Settings response:', settingsResponse);
-
     const securityLevel: SecurityLevel = settingsResponse.settings?.securityLevel || 'safe';
-    console.log(`[PageModifier] Current security level: ${securityLevel}`);
 
     // プラグインは配列順序で実行（配列の順序 = 実行優先度）
     for (const plugin of plugins) {
-      console.log(`[PageModifier] Processing plugin: ${plugin.id} (${plugin.name})`);
-      console.log(`[PageModifier] Plugin autoApply: ${plugin.autoApply}`);
-
       // 自動適用フラグチェック
       if (!plugin.autoApply) {
         console.log(`[PageModifier] Skipping plugin ${plugin.id}: autoApply is false`);
         continue;
       }
 
-      // プラグインのセキュリティレベルを分析
-      const analyzer = new SecurityAnalyzer();
-      const analysis = analyzer.analyze(plugin);
-      console.log(`[PageModifier] Plugin ${plugin.id} requires security level: ${analysis.level}`);
-      console.log(`[PageModifier] Security analysis:`, analysis);
-
       // セキュリティレベルチェック
-      const canExecute = canExecutePlugin(plugin, securityLevel);
-      console.log(`[PageModifier] Can execute plugin ${plugin.id}: ${canExecute}`);
-
-      if (!canExecute) {
+      if (!canExecutePlugin(plugin, securityLevel)) {
+        const analyzer = new SecurityAnalyzer();
+        const analysis = analyzer.analyze(plugin);
         console.warn(
-          `[PageModifier] ⛔ Plugin ${plugin.id} (${plugin.name}) cannot be executed!`
-        );
-        console.warn(
-          `[PageModifier] Required: ${analysis.level}, Current: ${securityLevel}`
+          `[PageModifier] Plugin ${plugin.id} requires ${analysis.level} security level, ` +
+          `but current level is ${securityLevel}. Disabling plugin.`
         );
 
         // プラグインを自動的に無効化
-        console.log(`[PageModifier] Auto-disabling plugin ${plugin.id}`);
         chrome.runtime.sendMessage({
           type: 'TOGGLE_PLUGIN',
           pluginId: plugin.id,
@@ -143,7 +125,7 @@ class ContentScript {
 
       // プラグイン実行
       try {
-        console.log(`[PageModifier] ✅ Security check passed. Executing plugin: ${plugin.name} (${plugin.id})`);
+        console.log(`[PageModifier] Executing plugin: ${plugin.name} (${plugin.id})`);
         const result = await this.pluginEngine.executePlugin(plugin);
 
         if (result.success) {
@@ -176,8 +158,6 @@ class ContentScript {
         }
       }
     }
-
-    console.log('[PageModifier] executePlugins completed');
   }
 
   /**

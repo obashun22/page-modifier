@@ -20,7 +20,6 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   const [plugins, setPlugins] = useState<PluginData[]>([]);
   const [selectedPluginData, setSelectedPluginData] = useState<PluginData | null>(null);
   const [importing, setImporting] = useState(false);
-  const [togglingPlugins, setTogglingPlugins] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadPlugins();
@@ -79,55 +78,38 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   };
 
   const handlePluginToggle = async (pluginId: string, enabled: boolean) => {
-    // トグル中の場合は無視
-    if (togglingPlugins.has(pluginId)) {
-      return;
-    }
+    // 有効化しようとしている場合、セキュリティレベルをチェック
+    if (enabled) {
+      // 現在の設定を取得
+      const settingsResponse = await chrome.runtime.sendMessage({
+        type: 'GET_SETTINGS',
+      });
 
-    // トグル中状態を設定
-    setTogglingPlugins((prev) => new Set(prev).add(pluginId));
+      const settings: Settings = settingsResponse.settings;
 
-    try {
-      // 有効化しようとしている場合、セキュリティレベルをチェック
-      if (enabled) {
-        // 現在の設定を取得
-        const settingsResponse = await chrome.runtime.sendMessage({
-          type: 'GET_SETTINGS',
-        });
+      // プラグインを取得
+      const pluginData = plugins.find((p) => p.plugin.id === pluginId);
+      if (!pluginData) return;
 
-        const settings: Settings = settingsResponse.settings;
+      // セキュリティレベルをチェック
+      if (!canExecutePlugin(pluginData.plugin, settings.securityLevel)) {
+        const errorMessage = getSecurityLevelErrorMessage(
+          pluginData.plugin,
+          settings.securityLevel
+        );
 
-        // プラグインを取得
-        const pluginData = plugins.find((p) => p.plugin.id === pluginId);
-        if (!pluginData) return;
-
-        // セキュリティレベルをチェック
-        if (!canExecutePlugin(pluginData.plugin, settings.securityLevel)) {
-          const errorMessage = getSecurityLevelErrorMessage(
-            pluginData.plugin,
-            settings.securityLevel
-          );
-
-          alert(`⚠️ プラグインを有効化できません\n\n${errorMessage}\n\n設定タブからセキュリティレベルを変更してください。`);
-          return;
-        }
+        alert(`⚠️ プラグインを有効化できません\n\n${errorMessage}\n\n設定タブからセキュリティレベルを変更してください。`);
+        return;
       }
-
-      await chrome.runtime.sendMessage({
-        type: 'TOGGLE_PLUGIN',
-        pluginId,
-        enabled,
-      });
-
-      await loadPlugins();
-    } finally {
-      // トグル中状態を解除
-      setTogglingPlugins((prev) => {
-        const next = new Set(prev);
-        next.delete(pluginId);
-        return next;
-      });
     }
+
+    await chrome.runtime.sendMessage({
+      type: 'TOGGLE_PLUGIN',
+      pluginId,
+      enabled,
+    });
+
+    await loadPlugins();
   };
 
   const handlePluginExport = async (pluginId: string) => {
@@ -238,7 +220,6 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
             onPluginExport={handlePluginExport}
             onPluginEdit={(plugin) => onEditPlugin(plugin)}
             onPluginMove={handlePluginMove}
-            togglingPlugins={togglingPlugins}
           />
         </>
       )}

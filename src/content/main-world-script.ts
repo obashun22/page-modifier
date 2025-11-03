@@ -42,6 +42,23 @@ interface EvalTemplateResponse {
   error?: string;
 }
 
+interface StorageRequest {
+  type: 'STORAGE_REQUEST';
+  requestId: string;
+  operation: 'get' | 'set' | 'remove' | 'clear';
+  scope: 'page' | 'global';
+  key?: string;
+  value?: any;
+}
+
+interface StorageResponse {
+  type: 'STORAGE_RESPONSE';
+  requestId: string;
+  success: boolean;
+  result?: any;
+  error?: string;
+}
+
 console.log('[PageModifier MAIN World] Script loaded');
 
 // Content Scriptからのメッセージを受信
@@ -135,5 +152,76 @@ window.addEventListener('message', (event) => {
 
       window.postMessage(response, '*');
     }
+  } else if (message.type === 'STORAGE_RESPONSE') {
+    // ストレージレスポンスは下記のPluginStorage APIが処理する
   }
 });
+
+/**
+ * PluginStorage API
+ * Main WorldからContent Script経由でchrome.storage.localにアクセスするためのAPI
+ */
+const createStorageAPI = (scope: 'page' | 'global') => {
+  const sendStorageRequest = (operation: string, key?: string, value?: any): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      const requestId = `storage_${Date.now()}_${Math.random()}`;
+
+      const request: StorageRequest = {
+        type: 'STORAGE_REQUEST',
+        requestId,
+        operation: operation as any,
+        scope,
+        key,
+        value,
+      };
+
+      // レスポンスハンドラーを登録
+      const handleResponse = (event: MessageEvent) => {
+        if (event.source !== window) return;
+        const response = event.data as StorageResponse;
+        if (response.type === 'STORAGE_RESPONSE' && response.requestId === requestId) {
+          window.removeEventListener('message', handleResponse);
+          if (response.success) {
+            resolve(response.result);
+          } else {
+            reject(new Error(response.error || 'Storage operation failed'));
+          }
+        }
+      };
+
+      window.addEventListener('message', handleResponse);
+
+      // タイムアウト設定（5秒）
+      setTimeout(() => {
+        window.removeEventListener('message', handleResponse);
+        reject(new Error('Storage operation timeout'));
+      }, 5000);
+
+      // Content Scriptにリクエスト送信
+      window.postMessage(request, '*');
+    });
+  };
+
+  return {
+    async get(key: string): Promise<any> {
+      return sendStorageRequest('get', key);
+    },
+    async set(key: string, value: any): Promise<void> {
+      await sendStorageRequest('set', key, value);
+    },
+    async remove(key: string): Promise<void> {
+      await sendStorageRequest('remove', key);
+    },
+    async clear(): Promise<void> {
+      await sendStorageRequest('clear');
+    },
+  };
+};
+
+// グローバルAPIをエクスポート
+(window as any).pluginStorage = {
+  page: createStorageAPI('page'),
+  global: createStorageAPI('global'),
+};
+
+console.log('[PageModifier MAIN World] pluginStorage API initialized');
