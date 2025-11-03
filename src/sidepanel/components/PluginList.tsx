@@ -5,8 +5,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { FiMessageSquare, FiEdit3, FiDownload, FiTrash2, FiChevronDown, FiChevronUp, FiMenu } from 'react-icons/fi';
-import { MdToggleOn, MdToggleOff } from 'react-icons/md';
+import { FiMessageSquare, FiEdit3, FiDownload, FiTrash2, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { MdToggleOn, MdToggleOff, MdDragIndicator } from 'react-icons/md';
 import {
   DndContext,
   closestCenter,
@@ -80,6 +80,8 @@ function SortablePluginItem({
       ref={setNodeRef}
       style={{
         ...style,
+        display: 'flex',
+        gap: '12px',
         padding: '16px',
         marginBottom: '12px',
         backgroundColor: '#f6f8fa',
@@ -87,52 +89,55 @@ function SortablePluginItem({
         border: '1px solid #d0d7de',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-        <div style={{ flex: 1 }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
-            #{index + 1} {pluginData.plugin.name}
-          </h3>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
-            {pluginData.plugin.description || 'No description'}
-          </p>
-          <div style={{ marginTop: '8px', fontSize: '12px', color: '#888' }}>
-            <span>v{pluginData.plugin.version}</span>
-            <span style={{ margin: '0 8px' }}>•</span>
-            <span>{pluginData.plugin.operations.length} operations</span>
-          </div>
-          <div style={{ marginTop: '6px', fontSize: '12px', color: '#888' }}>
-            <span style={{ fontFamily: 'monospace', backgroundColor: '#f0f0f0', padding: '2px 6px', borderRadius: '4px' }}>
-              ID: {pluginData.plugin.id}
-            </span>
-          </div>
-          <div style={{ marginTop: '6px', fontSize: '12px', color: '#888' }}>
-            Domains: {pluginData.plugin.targetDomains.join(', ')}
-          </div>
-        </div>
-        <div style={{ marginLeft: '12px', display: 'flex', gap: '4px', alignItems: 'center' }}>
-          {/* ドラッグハンドル */}
-          <button
-            {...attributes}
-            {...listeners}
-            style={{
-              padding: 0,
-              width: '32px',
-              height: '32px',
-              backgroundColor: 'white',
-              color: '#24292f',
-              border: '1px solid #d0d7de',
-              borderRadius: '4px',
-              cursor: 'grab',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            title="ドラッグして並び替え"
-          >
-            <FiMenu size={16} />
-          </button>
+      {/* 左側: ドラッグハンドル */}
+      <div
+        {...attributes}
+        {...listeners}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          cursor: 'grab',
+          color: '#6e7781',
+          opacity: 0.4,
+          transition: 'opacity 0.2s',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = '0.8';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = '0.4';
+        }}
+        title="ドラッグして並び替え"
+      >
+        <MdDragIndicator size={24} />
+      </div>
 
-          {/* トグルボタン */}
+      {/* 右側: コンテンツ */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+              #{index + 1} {pluginData.plugin.name}
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
+              {pluginData.plugin.description || 'No description'}
+            </p>
+            <div style={{ marginTop: '8px', fontSize: '12px', color: '#888' }}>
+              <span>v{pluginData.plugin.version}</span>
+              <span style={{ margin: '0 8px' }}>•</span>
+              <span>{pluginData.plugin.operations.length} operations</span>
+            </div>
+            <div style={{ marginTop: '6px', fontSize: '12px', color: '#888' }}>
+              <span style={{ fontFamily: 'monospace', backgroundColor: '#f0f0f0', padding: '2px 6px', borderRadius: '4px' }}>
+                ID: {pluginData.plugin.id}
+              </span>
+            </div>
+            <div style={{ marginTop: '6px', fontSize: '12px', color: '#888' }}>
+              Domains: {pluginData.plugin.targetDomains.join(', ')}
+            </div>
+          </div>
+          <div style={{ marginLeft: '12px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+            {/* トグルボタン */}
           <button
             onClick={() => onPluginToggle(pluginData.plugin.id, !pluginData.enabled)}
             style={{
@@ -157,8 +162,8 @@ function SortablePluginItem({
         </div>
       </div>
 
-      {/* 詳細表示ボタン */}
-      <button
+        {/* 詳細表示ボタン */}
+        <button
         onClick={() => onToggleExpanded(pluginData.plugin.id)}
         style={{
           width: '100%',
@@ -187,144 +192,145 @@ function SortablePluginItem({
             詳細を表示
           </>
         )}
-      </button>
+        </button>
 
-      {/* 詳細情報（展開時のみ表示） */}
-      {isExpanded && (
-        <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#f6f8fa', borderRadius: '6px' }}>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 600 }}>
-            操作内容 ({pluginData.plugin.operations.length}件)
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {pluginData.plugin.operations.map((op, opIndex) => (
-              <div
-                key={opIndex}
-                style={{
-                  padding: '8px 12px',
-                  backgroundColor: 'white',
-                  border: '1px solid #d0d7de',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                }}
-              >
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-                  <span
-                    style={{
-                      padding: '2px 8px',
-                      backgroundColor: '#ddf4ff',
-                      color: '#0969da',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {op.type}
-                  </span>
-                  <code
-                    style={{
-                      fontSize: '12px',
-                      color: '#6e7781',
-                      fontFamily: 'monospace',
-                    }}
-                  >
-                    {op.selector}
-                  </code>
+        {/* 詳細情報（展開時のみ表示） */}
+        {isExpanded && (
+          <div style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#f6f8fa', borderRadius: '6px' }}>
+            <h4 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 600 }}>
+              操作内容 ({pluginData.plugin.operations.length}件)
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {pluginData.plugin.operations.map((op, opIndex) => (
+                <div
+                  key={opIndex}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: 'white',
+                    border: '1px solid #d0d7de',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                    <span
+                      style={{
+                        padding: '2px 8px',
+                        backgroundColor: '#ddf4ff',
+                        color: '#0969da',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {op.type}
+                    </span>
+                    <code
+                      style={{
+                        fontSize: '12px',
+                        color: '#6e7781',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      {op.selector}
+                    </code>
+                  </div>
+                  {op.description && (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: '12px',
+                        color: '#6e7781',
+                      }}
+                    >
+                      {op.description}
+                    </p>
+                  )}
                 </div>
-                {op.description && (
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: '12px',
-                      color: '#6e7781',
-                    }}
-                  >
-                    {op.description}
-                  </p>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* アクションボタン */}
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <button
-          onClick={() => onPluginEdit(pluginData.plugin)}
-          style={{
-            padding: '6px 12px',
-            fontSize: '13px',
-            backgroundColor: '#0969da',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          <FiMessageSquare size={14} />
-          チャットで編集
-        </button>
-        <button
-          onClick={() => onPluginSelect(pluginData)}
-          style={{
-            padding: '6px 12px',
-            fontSize: '13px',
-            backgroundColor: 'white',
-            color: '#24292f',
-            border: '1px solid #d0d7de',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          <FiEdit3 size={14} />
-          JSON編集
-        </button>
-        <div style={{ flex: 1 }} />
-        <button
-          onClick={() => onPluginExport(pluginData.plugin.id)}
-          style={{
-            padding: 0,
-            width: '32px',
-            height: '32px',
-            backgroundColor: 'white',
-            color: '#24292f',
-            border: '1px solid #d0d7de',
-            borderRadius: '50%',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title="エクスポート"
-        >
-          <FiDownload size={16} />
-        </button>
-        <button
-          onClick={() => onPluginDelete(pluginData.plugin.id)}
-          style={{
-            padding: 0,
-            width: '32px',
-            height: '32px',
-            backgroundColor: 'white',
-            color: '#dc3545',
-            border: '1px solid #d0d7de',
-            borderRadius: '50%',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title="削除"
-        >
-          <FiTrash2 size={16} />
-        </button>
+        {/* アクションボタン */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => onPluginEdit(pluginData.plugin)}
+            style={{
+              padding: '6px 12px',
+              fontSize: '13px',
+              backgroundColor: '#0969da',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <FiMessageSquare size={14} />
+            チャットで編集
+          </button>
+          <button
+            onClick={() => onPluginSelect(pluginData)}
+            style={{
+              padding: '6px 12px',
+              fontSize: '13px',
+              backgroundColor: 'white',
+              color: '#24292f',
+              border: '1px solid #d0d7de',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <FiEdit3 size={14} />
+            JSON編集
+          </button>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={() => onPluginExport(pluginData.plugin.id)}
+            style={{
+              padding: 0,
+              width: '32px',
+              height: '32px',
+              backgroundColor: 'white',
+              color: '#24292f',
+              border: '1px solid #d0d7de',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="エクスポート"
+          >
+            <FiDownload size={16} />
+          </button>
+          <button
+            onClick={() => onPluginDelete(pluginData.plugin.id)}
+            style={{
+              padding: 0,
+              width: '32px',
+              height: '32px',
+              backgroundColor: 'white',
+              color: '#dc3545',
+              border: '1px solid #d0d7de',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="削除"
+          >
+            <FiTrash2 size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );
