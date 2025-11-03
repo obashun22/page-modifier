@@ -33,16 +33,16 @@ export default function OperationItem({ operation }: OperationItemProps) {
   const targetValue = getTargetValue();
 
   return (
-    <div className="px-3 py-2 bg-white border border-gray-300 rounded-md text-[13px] w-full box-border">
+    <div className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-[13px] w-full box-border">
       <div className="flex gap-2 flex-wrap items-center">
         {/* 操作タイプバッジ */}
-        <span className="px-2 py-0.5 bg-github-blue-50 text-github-blue-500 rounded-xl text-[11px] font-semibold">
+        <span className="px-2 py-0.5 bg-github-blue-50 dark:bg-github-blue-900 text-github-blue-500 dark:text-github-blue-400 rounded-xl text-[11px] font-semibold">
           {operation.type}
         </span>
 
         {/* 対象情報 */}
         {targetValue && (
-          <code className="text-xs text-gray-600 font-mono">
+          <code className="text-xs text-gray-600 dark:text-gray-300 font-mono">
             {targetValue}
           </code>
         )}

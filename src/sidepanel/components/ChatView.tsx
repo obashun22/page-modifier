@@ -443,9 +443,9 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           <div className="py-3 px-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <span className="text-xl">🤖</span>
             <div className="flex gap-1 items-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce-loading" />
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce-loading-delay-1" />
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce-loading-delay-2" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-400 animate-bounce-loading" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-400 animate-bounce-loading-delay-1" />
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-400 animate-bounce-loading-delay-2" />
             </div>
           </div>
         )}
@@ -454,18 +454,18 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       </div>
 
       {/* 入力エリア */}
-      <div className="p-3 border-t border-gray-300 bg-gray-50 dark:bg-gray-800">
+      <div className="p-3 border-t border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         {selectedElements.map((element, index) => (
           <div
             key={index}
-            className="px-3 py-2 mb-2 bg-github-blue-50 border border-github-blue-400 rounded-md text-xs flex items-center justify-between"
+            className="px-3 py-2 mb-2 bg-github-blue-50 dark:bg-github-blue-900 border border-github-blue-400 dark:border-github-blue-600 rounded-md text-xs flex items-center justify-between"
           >
-            <code className="font-mono text-[11px] flex-1">
+            <code className="font-mono text-[11px] flex-1 text-gray-900 dark:text-gray-100">
               {element.selector}
             </code>
             <button
               onClick={() => setSelectedElements((prev) => prev.filter((_, i) => i !== index))}
-              className="px-1.5 py-0.5 text-[11px] bg-transparent text-github-blue-500 border-none cursor-pointer ml-2"
+              className="px-1.5 py-0.5 text-[11px] bg-transparent text-github-blue-500 dark:text-github-blue-400 border-none cursor-pointer ml-2"
             >
               ✕
             </button>
@@ -476,10 +476,10 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           <button
             onClick={toggleElementSelection}
             title={isSelectingElement ? '要素選択をキャンセル' : '要素を選択'}
-            className={`p-2 text-[13px] border border-gray-300 rounded-md cursor-pointer flex items-center justify-center transition-all ${
+            className={`p-2 text-[13px] border rounded-md cursor-pointer flex items-center justify-center transition-all ${
               isSelectingElement
-                ? 'bg-github-blue-500 text-white'
-                : 'bg-white text-gray-800 hover:bg-gray-50 hover:border-github-blue-500 hover:text-github-blue-500'
+                ? 'bg-github-blue-500 text-white border-github-blue-500'
+                : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-github-blue-500 hover:text-github-blue-500'
             }`}
           >
             <FiMousePointer size={18} />
@@ -488,7 +488,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           <button
             onClick={startNewChat}
             title="新しいチャット"
-            className="p-2 text-[13px] bg-transparent text-gray-600 border-none rounded-md cursor-pointer flex items-center justify-center transition-all hover:text-gray-800 dark:text-gray-200"
+            className="p-2 text-[13px] bg-transparent text-gray-600 dark:text-gray-400 border-none rounded-md cursor-pointer flex items-center justify-center transition-all hover:text-gray-800 dark:hover:text-gray-200"
           >
             <FiPlus size={18} />
           </button>
@@ -502,15 +502,15 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
             onKeyPress={handleKeyPress}
             placeholder="メッセージを入力してください..."
             disabled={isLoading}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md outline-none"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isLoading}
             className={`px-4 py-2 text-sm text-white border-none rounded-md font-semibold flex items-center gap-1.5 ${
               !input.trim() || isLoading
-                ? 'bg-gray-600 cursor-not-allowed opacity-60'
-                : 'bg-green-600 cursor-pointer'
+                ? 'bg-gray-600 dark:bg-gray-700 cursor-not-allowed opacity-60'
+                : 'bg-green-600 dark:bg-green-700 cursor-pointer hover:bg-green-700 dark:hover:bg-green-800'
             }`}
           >
             <IoSend size={16} />

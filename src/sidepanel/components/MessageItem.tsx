@@ -25,7 +25,7 @@ export default function MessageItem({ message }: MessageItemProps) {
       {/* アバター */}
       <div
         className={`w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0 ${
-          isUser ? 'bg-github-blue-500' : 'bg-gray-600'
+          isUser ? 'bg-github-blue-500' : 'bg-gray-600 dark:bg-gray-700'
         }`}
       >
         {isUser ? '👤' : '🤖'}
@@ -38,7 +38,7 @@ export default function MessageItem({ message }: MessageItemProps) {
         {/* メッセージバブル */}
         <div
           className={`px-3.5 py-2.5 rounded-[18px] text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${
-            isUser ? 'bg-github-blue-500 text-white' : 'bg-gray-50 text-gray-800'
+            isUser ? 'bg-github-blue-500 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
           }`}
         >
           {message.content}
@@ -46,7 +46,7 @@ export default function MessageItem({ message }: MessageItemProps) {
 
         {/* タイムスタンプ */}
         <span
-          className={`text-[11px] text-gray-600 ${isUser ? 'pr-2' : 'pl-2'}`}
+          className={`text-[11px] text-gray-600 dark:text-gray-400 ${isUser ? 'pr-2' : 'pl-2'}`}
         >
           {new Date(message.timestamp).toLocaleTimeString('ja-JP', {
             hour: '2-digit',

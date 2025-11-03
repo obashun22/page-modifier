@@ -50,12 +50,12 @@ function PluginItem({
               {pluginData.plugin.description || 'No description'}
             </p>
             <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Plugin ID: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">
+              Plugin ID: <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-900 dark:text-gray-100">
                 {pluginData.plugin.id}
               </span>
             </div>
             <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-              Domain: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">
+              Domain: <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-900 dark:text-gray-100">
                 {pluginData.plugin.targetDomains.join(', ')}
               </span>
             </div>
@@ -85,7 +85,7 @@ function PluginItem({
       </div>
 
         {isOperationsOpen && (
-          <div className="mt-2 py-3 bg-gray-50 rounded-md">
+          <div className="mt-2 py-3 bg-gray-50 dark:bg-gray-800 rounded-md">
             <div className="flex flex-col gap-2">
               {pluginData.plugin.operations.map((op, opIndex) => (
                 <OperationItem key={opIndex} operation={op} />
@@ -98,14 +98,14 @@ function PluginItem({
         <div className="flex gap-2 items-center flex-wrap">
           <button
             onClick={() => onPluginEdit(pluginData.plugin)}
-            className="p-0 w-8 h-8 bg-github-blue-500 text-white border-none rounded-full cursor-pointer flex items-center justify-center"
+            className="p-0 w-8 h-8 bg-github-blue-500 dark:bg-github-blue-600 text-white border-none rounded-full cursor-pointer flex items-center justify-center hover:bg-github-blue-600 dark:hover:bg-github-blue-700"
             title="チャットで編集"
           >
             <FiMessageSquare size={16} />
           </button>
           <button
             onClick={() => onPluginSelect(pluginData)}
-            className="p-0 w-8 h-8 bg-white text-gray-800 border border-gray-300 rounded-full cursor-pointer flex items-center justify-center"
+            className="p-0 w-8 h-8 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-full cursor-pointer flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600"
             title="JSON編集"
           >
             <FiEdit3 size={16} />
@@ -113,14 +113,14 @@ function PluginItem({
           <div className="flex-1" />
           <button
             onClick={() => onPluginExport(pluginData.plugin.id)}
-            className="p-0 w-8 h-8 bg-white text-gray-800 border border-gray-300 rounded-full cursor-pointer flex items-center justify-center"
+            className="p-0 w-8 h-8 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-full cursor-pointer flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600"
             title="エクスポート"
           >
             <FiUpload size={16} />
           </button>
           <button
             onClick={() => onPluginDelete(pluginData.plugin.id)}
-            className="p-0 w-8 h-8 bg-white text-red-600 border border-gray-300 rounded-full cursor-pointer flex items-center justify-center"
+            className="p-0 w-8 h-8 bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 border border-gray-300 dark:border-gray-600 rounded-full cursor-pointer flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600"
             title="削除"
           >
             <FiTrash2 size={16} />
