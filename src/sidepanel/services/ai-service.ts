@@ -6,19 +6,14 @@
 
 import { claudeAPIClient, type AIResponse } from './claude-api-client';
 import type { Plugin } from '../../shared/types';
-
-interface ElementInfo {
-  selector: string;
-  tagName?: string;
-  className?: string;
-  id?: string;
-}
+import type { ChatItem, ElementInfo } from '../../shared/chat-types';
 
 /**
  * AIとチャット（通常の会話またはプラグイン生成/編集）
  */
 export async function chatWithAI(
   userRequest: string,
+  chatHistory: ChatItem[],
   selectedElements: ElementInfo[],
   selectedPlugin: Plugin | null = null
 ): Promise<AIResponse> {
@@ -29,8 +24,8 @@ export async function chatWithAI(
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const currentUrl = tab.url;
 
-  // Claude APIでチャット（プラグイン編集モードの場合はselectedPluginを渡す）
-  return await claudeAPIClient.chat(userRequest, selectedElements, currentUrl, selectedPlugin);
+  // Claude APIでチャット（チャット履歴も渡す）
+  return await claudeAPIClient.chat(userRequest, chatHistory, selectedElements, currentUrl, selectedPlugin);
 }
 
 /**

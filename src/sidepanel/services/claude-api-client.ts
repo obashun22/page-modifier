@@ -8,13 +8,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { v4 as uuidv4 } from 'uuid';
 import { PluginSchema } from '../../shared/plugin-schema';
 import type { Plugin } from '../../shared/types';
-
-interface ElementInfo {
-  selector: string;
-  tagName?: string;
-  className?: string;
-  id?: string;
-}
+import type { ChatItem, ChatMessage, ChatPlugin, ElementInfo } from '../../shared/chat-types';
 
 export type AIResponse =
   | { type: 'text'; content: string }
@@ -55,6 +49,7 @@ class ClaudeAPIClient {
    */
   async chat(
     userRequest: string,
+    chatHistory: ChatItem[],
     selectedElements?: ElementInfo[],
     currentUrl?: string,
     selectedPlugin?: Plugin | null
@@ -66,12 +61,16 @@ class ClaudeAPIClient {
     const systemPrompt = this.buildSystemPrompt(selectedPlugin);
     const userPrompt = this.buildUserPrompt(userRequest, selectedElements, currentUrl, selectedPlugin);
 
+    // チャット履歴をAnthropicのメッセージ形式に変換
+    const historyMessages = this.convertChatHistoryToMessages(chatHistory);
+
     try {
       const response = await this.client.messages.create({
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 4096,
         system: systemPrompt,
         messages: [
+          ...historyMessages,
           {
             role: 'user',
             content: userPrompt,
@@ -674,6 +673,55 @@ JSONのみを出力してください（説明文は不要）。
     }
 
     return pluginData;
+  }
+
+  /**
+   * チャット履歴をAnthropicのメッセージ形式に変換
+   */
+  private convertChatHistoryToMessages(chatHistory: ChatItem[]): Array<{ role: 'user' | 'assistant'; content: string }> {
+    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+
+    for (const item of chatHistory) {
+      if (item.type === 'message') {
+        const message = item as ChatMessage;
+        // 初期ウェルカムメッセージ（id: '0'）はスキップ
+        if (message.id === '0') {
+          continue;
+        }
+        messages.push({
+          role: message.role,
+          content: message.content,
+        });
+      } else if (item.type === 'plugin') {
+        const pluginItem = item as ChatPlugin;
+        // プラグインの要約を含める（トークン節約のため全体ではなく要約）
+        let content = '';
+        switch (pluginItem.mode) {
+          case 'referencing':
+          case 'referenced':
+            content = `[プラグイン参照: ${pluginItem.plugin.name}]\nID: ${pluginItem.plugin.id}\n説明: ${pluginItem.plugin.description}`;
+            break;
+          case 'add_preview':
+            content = `[プラグイン生成（プレビュー）: ${pluginItem.plugin.name}]\n説明: ${pluginItem.plugin.description}`;
+            break;
+          case 'update_preview':
+            content = `[プラグイン更新（プレビュー）: ${pluginItem.plugin.name}]\n説明: ${pluginItem.plugin.description}`;
+            break;
+          case 'added':
+            content = `[プラグイン追加済み: ${pluginItem.plugin.name}]\n説明: ${pluginItem.plugin.description}`;
+            break;
+          case 'updated':
+            content = `[プラグイン更新済み: ${pluginItem.plugin.name}]\n説明: ${pluginItem.plugin.description}`;
+            break;
+        }
+        messages.push({
+          role: pluginItem.role,
+          content,
+        });
+      }
+    }
+
+    return messages;
   }
 }
 

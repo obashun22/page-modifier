@@ -244,8 +244,8 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     setIsLoading(true);
 
     try {
-      // AI APIを呼び出してチャット
-      const response = await chatWithAI(input, selectedElements, selectedPluginForEdit);
+      // AI APIを呼び出してチャット（チャット履歴全体を渡す）
+      const response = await chatWithAI(input, chatItems, selectedElements, selectedPluginForEdit);
 
       if (response.type === 'text') {
         // 通常のテキスト応答
