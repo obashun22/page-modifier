@@ -398,7 +398,172 @@ DOM変更検知時も毎回実行する場合は、**必ず冪等性を確保**�
     }
   ]
 }
-\`\`\``;
+\`\`\`
+
+## ストレージAPI
+
+Main Worldで実行されるカスタムJavaScriptコード（execute operationやcustom action）から、**window.pluginStorage**を使用してデータを永続化できます。
+
+### API仕様
+
+\`\`\`typescript
+window.pluginStorage = {
+  page: {
+    async get(key: string): Promise<any>
+    async set(key: string, value: any): Promise<void>
+    async remove(key: string): Promise<void>
+    async clear(): Promise<void>
+  },
+  global: {
+    async get(key: string): Promise<any>
+    async set(key: string, value: any): Promise<void>
+    async remove(key: string): Promise<void>
+    async clear(): Promise<void>
+  }
+}
+\`\`\`
+
+### スコープ
+
+- **page**: ページ固有のストレージ（ドメインごとに独立）
+  - 例: Yahoo.co.jpに保存したデータは、Yahoo.co.jpでのみ利用可能
+- **global**: 拡張機能全体で共有されるストレージ（全ドメインで共有）
+  - 例: ユーザー設定やテーマなど、全ページで共通のデータ
+
+### 使用例
+
+#### 例1: ページ固有のカウンター
+
+ページごとに訪問回数をカウント：
+
+\`\`\`json
+{
+  "name": "訪問回数カウンター",
+  "version": "1.0.0",
+  "description": "ページの訪問回数を記録して表示",
+  "targetDomains": ["*"],
+  "autoApply": true,
+  "operations": [
+    {
+      "id": "insert-counter",
+      "type": "insert",
+      "selector": "body",
+      "position": "afterbegin",
+      "element": {
+        "tag": "div",
+        "attributes": { "id": "visit-counter" },
+        "style": {
+          "position": "fixed",
+          "top": "10px",
+          "right": "10px",
+          "padding": "10px",
+          "backgroundColor": "#333",
+          "color": "white",
+          "borderRadius": "5px",
+          "zIndex": "10000"
+        },
+        "textContent": "読み込み中..."
+      }
+    },
+    {
+      "id": "update-counter",
+      "type": "execute",
+      "code": "const el = document.getElementById('visit-counter'); if (el) { (async () => { const count = await window.pluginStorage.page.get('visitCount') || 0; const newCount = count + 1; await window.pluginStorage.page.set('visitCount', newCount); el.textContent = \`訪問回数: \${newCount}回\`; })(); }"
+    }
+  ]
+}
+\`\`\`
+
+#### 例2: グローバル設定（ダークモード）
+
+全ページで共有されるダークモード設定：
+
+\`\`\`json
+{
+  "name": "ダークモード切り替え",
+  "version": "1.0.0",
+  "description": "全ページでダークモードを切り替え",
+  "targetDomains": ["*"],
+  "autoApply": true,
+  "operations": [
+    {
+      "id": "insert-toggle-button",
+      "type": "insert",
+      "selector": "body",
+      "position": "afterbegin",
+      "element": {
+        "tag": "button",
+        "attributes": { "id": "dark-mode-toggle" },
+        "style": {
+          "position": "fixed",
+          "bottom": "20px",
+          "right": "20px",
+          "padding": "10px 15px",
+          "backgroundColor": "#444",
+          "color": "white",
+          "border": "none",
+          "borderRadius": "5px",
+          "cursor": "pointer",
+          "zIndex": "10000"
+        },
+        "textContent": "🌙 ダークモード",
+        "events": [
+          {
+            "type": "click",
+            "action": {
+              "type": "custom",
+              "code": "(async () => { const isDark = await window.pluginStorage.global.get('darkMode') || false; await window.pluginStorage.global.set('darkMode', !isDark); location.reload(); })()"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "apply-dark-mode",
+      "type": "execute",
+      "code": "(async () => { const isDark = await window.pluginStorage.global.get('darkMode'); if (isDark) { document.body.style.backgroundColor = '#1a1a1a'; document.body.style.color = '#e0e0e0'; document.body.style.filter = 'invert(1) hue-rotate(180deg)'; } })()"
+    }
+  ]
+}
+\`\`\`
+
+#### 例3: フォームデータの一時保存
+
+入力途中のフォームデータを自動保存：
+
+\`\`\`json
+{
+  "name": "フォーム自動保存",
+  "version": "1.0.0",
+  "description": "テキストエリアの内容を自動保存",
+  "targetDomains": ["example.com"],
+  "autoApply": true,
+  "operations": [
+    {
+      "id": "setup-autosave",
+      "type": "execute",
+      "code": "const textarea = document.querySelector('textarea'); if (textarea) { (async () => { const saved = await window.pluginStorage.page.get('draft'); if (saved) textarea.value = saved; textarea.addEventListener('input', async () => { await window.pluginStorage.page.set('draft', textarea.value); }); })(); }"
+    }
+  ]
+}
+\`\`\`
+
+### ストレージAPI使用時の注意事項
+
+1. **非同期処理**: すべてのメソッドがPromiseを返すため、async/awaitを使用してください
+2. **容量制限**: chrome.storage.localの制限（5MB）に従います
+3. **データ型**: プリミティブ型、配列、オブジェクトなど、JSON化可能なデータを保存できます
+4. **page vs global**: ページ固有のデータはpage、全ページ共通のデータはglobalを使用してください
+5. **エラーハンドリング**: try-catchでエラーをキャッチすることを推奨します
+
+### ストレージAPIを使うべきケース
+
+以下のような要求があった場合、ストレージAPIを積極的に活用してください：
+- カウンター、統計情報の記録
+- ユーザー設定の保存（テーマ、表示設定など）
+- フォームデータの一時保存
+- 状態の永続化（開閉状態、選択状態など）
+- セッションをまたいだデータの保持`;
   }
 
   /**
