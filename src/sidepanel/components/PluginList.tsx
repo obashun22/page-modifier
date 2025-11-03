@@ -62,7 +62,9 @@ function PluginItem({
               </span>
             </div>
             <div style={{ marginTop: '6px', fontSize: '12px', color: '#888' }}>
-              Domains: {pluginData.plugin.targetDomains.join(', ')}
+              Domains: <span style={{ fontFamily: 'monospace', backgroundColor: '#f0f0f0', padding: '2px 6px', borderRadius: '4px' }}>
+                {pluginData.plugin.targetDomains.join(', ')}
+              </span>
             </div>
           </div>
           <div style={{ marginLeft: '12px', display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -90,6 +92,80 @@ function PluginItem({
           </button>
         </div>
       </div>
+
+        {/* 操作内容（ドロップダウン） */}
+        <div
+          onClick={() => setIsOperationsOpen(!isOperationsOpen)}
+          style={{
+            marginTop: '12px',
+            padding: '8px 12px',
+            backgroundColor: '#f6f8fa',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '12px',
+            color: '#888',
+          }}
+        >
+          <span>{pluginData.plugin.operations.length} operations</span>
+          {isOperationsOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
+        </div>
+
+        {isOperationsOpen && (
+          <div style={{ marginTop: '8px', padding: '12px', backgroundColor: '#f6f8fa', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {pluginData.plugin.operations.map((op, opIndex) => (
+                <div
+                  key={opIndex}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: 'white',
+                    border: '1px solid #d0d7de',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
+                    <span
+                      style={{
+                        padding: '2px 8px',
+                        backgroundColor: '#ddf4ff',
+                        color: '#0969da',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {op.type}
+                    </span>
+                    <code
+                      style={{
+                        fontSize: '12px',
+                        color: '#6e7781',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      {op.selector}
+                    </code>
+                  </div>
+                  {op.description && (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: '12px',
+                        color: '#6e7781',
+                      }}
+                    >
+                      {op.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* アクションボタン */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -171,80 +247,6 @@ function PluginItem({
             <FiTrash2 size={16} />
           </button>
         </div>
-
-        {/* 操作内容（ドロップダウン） */}
-        <div
-          onClick={() => setIsOperationsOpen(!isOperationsOpen)}
-          style={{
-            marginTop: '12px',
-            padding: '8px 12px',
-            backgroundColor: '#f6f8fa',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '12px',
-            color: '#888',
-          }}
-        >
-          <span>{pluginData.plugin.operations.length} operations</span>
-          {isOperationsOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
-        </div>
-
-        {isOperationsOpen && (
-          <div style={{ marginTop: '8px', padding: '12px', backgroundColor: '#f6f8fa', borderRadius: '6px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {pluginData.plugin.operations.map((op, opIndex) => (
-                <div
-                  key={opIndex}
-                  style={{
-                    padding: '8px 12px',
-                    backgroundColor: 'white',
-                    border: '1px solid #d0d7de',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-                    <span
-                      style={{
-                        padding: '2px 8px',
-                        backgroundColor: '#ddf4ff',
-                        color: '#0969da',
-                        borderRadius: '12px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {op.type}
-                    </span>
-                    <code
-                      style={{
-                        fontSize: '12px',
-                        color: '#6e7781',
-                        fontFamily: 'monospace',
-                      }}
-                    >
-                      {op.selector}
-                    </code>
-                  </div>
-                  {op.description && (
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: '12px',
-                        color: '#6e7781',
-                      }}
-                    >
-                      {op.description}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
     </div>
   );
 }
