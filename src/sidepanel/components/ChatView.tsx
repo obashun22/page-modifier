@@ -316,14 +316,6 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         )
       );
 
-      // 成功メッセージを追加
-      addMessage(
-        'assistant',
-        isExistingPlugin
-          ? `プラグイン「${plugin.name}」を更新しました。`
-          : `プラグイン「${plugin.name}」を保存しました。有効化して使用してください。`
-      );
-
       setSelectedElements([]);
       onClearSelectedPlugin();
 
