@@ -4,32 +4,40 @@
  * プラグインカードコンポーネント（新規/編集の統一表示）
  */
 
-import { FaCheck, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaTimes, FaUndo } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import type { Plugin } from '../../shared/types';
+import OperationItem from './OperationItem';
 
-type PluginCardMode = 'preview' | 'editing' | 'applied';
+type ChatPluginMode =
+  | 'referencing'    // 編集のために参照中（バツボタンで削除可能）
+  | 'referenced'     // 編集要望送信済み（削除不可、表示のみ）
+  | 'update_preview' // 更新プレビュー（編集から生成、承認待ち）
+  | 'add_preview'    // 追加プレビュー（新規生成、承認待ち）
+  | 'updated'        // 更新済み（「編集済み」バッジ、元に戻すボタン）
+  | 'added';         // 追加済み（「適用済み」バッジ、元に戻すボタン）
 
 interface PluginCardProps {
   plugin: Plugin;
-  mode: PluginCardMode;
+  mode: ChatPluginMode;
   onApprove?: (plugin: Plugin) => void;
   onReject?: () => void;
   onDismiss?: () => void;
-  onUndo?: () => void; // 適用を取り消す
-  isConfirmed?: boolean; // 編集参照が確定済みかどうか
-  isEdited?: boolean; // 編集モードから適用されたかどうか
+  onUndo?: () => void;
 }
 
-export default function PluginCard({ plugin, mode, onApprove, onReject, onDismiss, onUndo, isConfirmed, isEdited }: PluginCardProps) {
+export default function PluginCard({ plugin, mode, onApprove, onReject, onDismiss, onUndo }: PluginCardProps) {
   const getBorderColor = () => {
     switch (mode) {
-      case 'preview':
-        return '#0969da';
-      case 'editing':
-        return '#d4a72c';
-      case 'applied':
-        return '#28a745';
+      case 'add_preview':
+      case 'update_preview':
+        return '#0969da'; // 青：プレビュー
+      case 'referencing':
+      case 'referenced':
+        return '#d4a72c'; // 黄：編集中
+      case 'added':
+      case 'updated':
+        return '#28a745'; // 緑：適用済み
       default:
         return '#d0d7de';
     }
@@ -37,36 +45,14 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
 
   return (
     <div
-      style={{
-        position: 'relative',
-        padding: '16px',
-        border: `2px solid ${getBorderColor()}`,
-        borderRadius: '8px',
-        backgroundColor: '#f6f8fa',
-      }}
+      className="relative p-4 rounded-lg bg-gray-50"
+      style={{ border: `2px solid ${getBorderColor()}` }}
     >
-      {/* 削除ボタン（編集モード時のみ右上に表示） */}
-      {mode === 'editing' && !isConfirmed && onDismiss && (
+      {/* 削除ボタン（referencingモード時のみ右上に表示） */}
+      {mode === 'referencing' && onDismiss && (
         <button
           onClick={onDismiss}
-          style={{
-            position: 'absolute',
-            top: '8px',
-            right: '8px',
-            padding: 0,
-            width: '24px',
-            height: '24px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#6e7781',
-            transition: 'color 0.2s',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#dc3545')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#6e7781')}
+          className="absolute top-2 right-2 p-0 w-6 h-6 bg-transparent border-none cursor-pointer flex items-center justify-center text-gray-600 transition-colors hover:text-red-600"
           title="削除"
         >
           <IoClose size={20} />
@@ -74,223 +60,80 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
       )}
 
       {/* ヘッダー */}
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <h3
-            style={{
-              margin: 0,
-              fontSize: '16px',
-              fontWeight: 600,
-              color: '#24292f',
-            }}
-          >
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="m-0 text-base font-semibold text-gray-800">
             {plugin.name}
           </h3>
-          {mode === 'editing' && (
-            <span
-              style={{
-                padding: '2px 8px',
-                fontSize: '11px',
-                backgroundColor: '#fff8c5',
-                color: '#9a6700',
-                borderRadius: '12px',
-                fontWeight: 600,
-              }}
-            >
-              編集中
+          {(mode === 'referencing' || mode === 'referenced') && (
+            <span className="px-2 py-0.5 text-[11px] bg-yellow-100 text-yellow-800 rounded-xl font-semibold">
+              参照中
             </span>
           )}
-          {mode === 'applied' && (
-            <span
-              style={{
-                padding: '2px 8px',
-                fontSize: '11px',
-                backgroundColor: '#d1f4dd',
-                color: '#0f5132',
-                borderRadius: '12px',
-                fontWeight: 600,
-              }}
-            >
-              {isEdited ? '編集済み' : '適用済み'}
+          {mode === 'updated' && (
+            <span className="px-2 py-0.5 text-[11px] bg-green-100 text-green-800 rounded-xl font-semibold">
+              編集済み
+            </span>
+          )}
+          {mode === 'added' && (
+            <span className="px-2 py-0.5 text-[11px] bg-green-100 text-green-800 rounded-xl font-semibold">
+              追加済み
             </span>
           )}
         </div>
-        <p
-          style={{
-            margin: 0,
-            fontSize: '13px',
-            color: '#666',
-          }}
-        >
+        <p className="m-0 text-[13px] text-gray-600">
           {plugin.description || 'No description'}
         </p>
       </div>
 
       {/* メタ情報 */}
-      <div style={{ marginBottom: '12px' }}>
-        <div
-          style={{
-            fontSize: '12px',
-            color: '#6e7781',
-            marginBottom: '4px',
-          }}
-        >
+      <div className="mb-3">
+        <div className="text-xs text-gray-600 mb-1">
           <span>バージョン: {plugin.version}</span>
         </div>
-        <div
-          style={{
-            fontSize: '12px',
-            color: '#6e7781',
-          }}
-        >
+        <div className="text-xs text-gray-600">
           対象ドメイン: {plugin.targetDomains.join(', ')}
         </div>
       </div>
 
       {/* 操作内容 */}
-      <div style={{ marginBottom: '16px' }}>
-        <h4
-          style={{
-            margin: '0 0 8px 0',
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#24292f',
-          }}
-        >
+      <div className="mb-4">
+        <h4 className="m-0 mb-2 text-sm font-semibold text-gray-800">
           操作内容 ({plugin.operations.length}件)
         </h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="flex flex-col gap-2 -mx-4 px-4">
           {plugin.operations.map((op, index) => (
-            <div
-              key={index}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: 'white',
-                border: '1px solid #d0d7de',
-                borderRadius: '6px',
-                fontSize: '13px',
-              }}
-            >
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-                <span
-                  style={{
-                    padding: '2px 8px',
-                    backgroundColor: '#ddf4ff',
-                    color: '#0969da',
-                    borderRadius: '12px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                  }}
-                >
-                  {op.type}
-                </span>
-                <code
-                  style={{
-                    fontSize: '12px',
-                    color: '#6e7781',
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  {op.selector}
-                </code>
-              </div>
-              {op.description && (
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: '12px',
-                    color: '#6e7781',
-                  }}
-                >
-                  {op.description}
-                </p>
-              )}
-            </div>
+            <OperationItem key={index} operation={op} />
           ))}
         </div>
       </div>
 
       {/* アクションボタン */}
-      {mode === 'applied' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div
-            style={{
-              padding: '8px 12px',
-              backgroundColor: '#d1f4dd',
-              border: '1px solid #a3cfbb',
-              borderRadius: '6px',
-              fontSize: '13px',
-              color: '#0f5132',
-              textAlign: 'center',
-              fontWeight: 600,
-            }}
-          >
-            ✓ このプラグインは保存されました
-          </div>
+      {(mode === 'added' || mode === 'updated') && (
+        <div className="flex flex-col gap-2">
           {onUndo && (
             <button
               onClick={onUndo}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                backgroundColor: 'white',
-                color: '#24292f',
-                border: '1px solid #d0d7de',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-              }}
+              className="px-4 py-2 text-sm bg-white text-gray-800 border border-gray-300 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5"
             >
-              <FaTimes size={14} />
+              <FaUndo size={14} />
               元に戻す
             </button>
           )}
         </div>
       )}
-      {mode === 'preview' && onApprove && onReject && (
-        <div style={{ display: 'flex', gap: '8px' }}>
+      {(mode === 'add_preview' || mode === 'update_preview') && onApprove && onReject && (
+        <div className="flex gap-2">
           <button
             onClick={() => onApprove(plugin)}
-            style={{
-              flex: 1,
-              padding: '8px 16px',
-              fontSize: '14px',
-              backgroundColor: '#2da44e',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-            }}
+            className="flex-1 px-4 py-2 text-sm bg-green-600 text-white border-none rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5"
           >
-            <FaCheck size={14} />
-            適用する
+            <FaPlus size={14} />
+            追加する
           </button>
           <button
             onClick={onReject}
-            style={{
-              flex: 1,
-              padding: '8px 16px',
-              fontSize: '14px',
-              backgroundColor: 'white',
-              color: '#24292f',
-              border: '1px solid #d0d7de',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-            }}
+            className="flex-1 px-4 py-2 text-sm bg-white text-gray-800 border border-gray-300 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5"
           >
             <FaTimes size={14} />
             キャンセル

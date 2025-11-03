@@ -31,28 +31,18 @@ export default function PluginEditor({ pluginData, onSave, onCancel }: PluginEdi
   };
 
   return (
-    <div style={{ padding: '16px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600 }}>
+    <div className="p-4 h-full flex flex-col">
+      <div className="mb-4">
+        <h2 className="m-0 mb-2 text-lg font-semibold">
           プラグイン編集: {pluginData.plugin.name}
         </h2>
-        <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>
+        <p className="m-0 text-[13px] text-gray-600">
           JSON形式で直接編集できます。保存前にバリデーションが実行されます。
         </p>
       </div>
 
       {error && (
-        <div
-          style={{
-            padding: '12px',
-            marginBottom: '12px',
-            backgroundColor: '#fff3cd',
-            border: '1px solid #ffc107',
-            borderRadius: '6px',
-            color: '#856404',
-            fontSize: '13px',
-          }}
-        >
+        <div className="p-3 mb-3 bg-yellow-100 border border-yellow-400 rounded-md text-yellow-800 text-[13px]">
           <strong>エラー:</strong> {error}
         </div>
       )}
@@ -60,53 +50,21 @@ export default function PluginEditor({ pluginData, onSave, onCancel }: PluginEdi
       <textarea
         value={jsonText}
         onChange={(e) => setJsonText(e.target.value)}
-        style={{
-          flex: 1,
-          padding: '12px',
-          fontFamily: 'monospace',
-          fontSize: '13px',
-          border: '1px solid #d0d7de',
-          borderRadius: '6px',
-          resize: 'none',
-          minHeight: '400px',
-        }}
+        className="flex-1 p-3 font-mono text-[13px] border border-gray-300 rounded-md resize-none min-h-[400px]"
         spellCheck={false}
       />
 
-      <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+      <div className="flex gap-2 mt-4">
         <button
           onClick={handleSave}
-          style={{
-            padding: '8px 16px',
-            fontSize: '14px',
-            backgroundColor: '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
+          className="px-4 py-2 text-sm bg-green-600 text-white border-none rounded-md cursor-pointer font-semibold flex items-center gap-1.5"
         >
           <FaSave size={14} />
           保存
         </button>
         <button
           onClick={onCancel}
-          style={{
-            padding: '8px 16px',
-            fontSize: '14px',
-            backgroundColor: 'white',
-            color: '#24292f',
-            border: '1px solid #d0d7de',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
+          className="px-4 py-2 text-sm bg-white text-gray-800 border border-gray-300 rounded-md cursor-pointer flex items-center gap-1.5"
         >
           <IoClose size={16} />
           キャンセル

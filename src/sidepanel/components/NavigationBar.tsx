@@ -10,60 +10,24 @@ interface NavigationBarProps {
 }
 
 export default function NavigationBar({ currentView, onViewChange }: NavigationBarProps) {
+  const getButtonClasses = (view: string) => {
+    const isActive = currentView === view;
+    return `flex-1 p-3 text-sm font-medium border-none cursor-pointer ${
+      isActive
+        ? 'bg-white text-blue-600 border-b-2 border-blue-600'
+        : 'bg-gray-50 text-gray-800 border-b-2 border-transparent'
+    }`;
+  };
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        borderBottom: '1px solid #d0d7de',
-        backgroundColor: 'white',
-      }}
-    >
-      <button
-        onClick={() => onViewChange('chat')}
-        style={{
-          flex: 1,
-          padding: '12px',
-          fontSize: '14px',
-          fontWeight: 500,
-          backgroundColor: currentView === 'chat' ? 'white' : '#f6f8fa',
-          color: currentView === 'chat' ? '#0969da' : '#24292f',
-          border: 'none',
-          borderBottom: currentView === 'chat' ? '2px solid #0969da' : '2px solid transparent',
-          cursor: 'pointer',
-        }}
-      >
+    <div className="flex border-b border-gray-300 bg-white">
+      <button onClick={() => onViewChange('chat')} className={getButtonClasses('chat')}>
         💬 チャット
       </button>
-      <button
-        onClick={() => onViewChange('plugins')}
-        style={{
-          flex: 1,
-          padding: '12px',
-          fontSize: '14px',
-          fontWeight: 500,
-          backgroundColor: currentView === 'plugins' ? 'white' : '#f6f8fa',
-          color: currentView === 'plugins' ? '#0969da' : '#24292f',
-          border: 'none',
-          borderBottom: currentView === 'plugins' ? '2px solid #0969da' : '2px solid transparent',
-          cursor: 'pointer',
-        }}
-      >
+      <button onClick={() => onViewChange('plugins')} className={getButtonClasses('plugins')}>
         🔧 プラグイン
       </button>
-      <button
-        onClick={() => onViewChange('settings')}
-        style={{
-          flex: 1,
-          padding: '12px',
-          fontSize: '14px',
-          fontWeight: 500,
-          backgroundColor: currentView === 'settings' ? 'white' : '#f6f8fa',
-          color: currentView === 'settings' ? '#0969da' : '#24292f',
-          border: 'none',
-          borderBottom: currentView === 'settings' ? '2px solid #0969da' : '2px solid transparent',
-          cursor: 'pointer',
-        }}
-      >
+      <button onClick={() => onViewChange('settings')} className={getButtonClasses('settings')}>
         ⚙️ 設定
       </button>
     </div>

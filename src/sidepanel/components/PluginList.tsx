@@ -5,10 +5,11 @@
  */
 
 import { useState } from 'react';
-import { FiMessageSquare, FiEdit3, FiDownload, FiTrash2, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiMessageSquare, FiEdit3, FiUpload, FiTrash2, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { MdToggleOn, MdToggleOff } from 'react-icons/md';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
+import OperationItem from './OperationItem';
 
 interface PluginListProps {
   plugins: PluginData[];
@@ -39,65 +40,39 @@ function PluginItem({
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
   return (
-    <div
-      style={{
-        padding: '16px',
-        marginBottom: '12px',
-        backgroundColor: '#f6f8fa',
-        borderRadius: '8px',
-        border: '1px solid #d0d7de',
-      }}
-    >
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{ flex: 1 }}>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+    <div className="p-4 mb-3 bg-gray-50 rounded-lg border border-gray-300">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <h3 className="m-0 text-base font-semibold">
               {pluginData.plugin.name}
             </h3>
-            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
+            <p className="mt-1 text-[13px] text-gray-600">
               {pluginData.plugin.description || 'No description'}
             </p>
-            <div style={{ marginTop: '8px', fontSize: '12px', color: '#888' }}>
-              ID: <span style={{ fontFamily: 'monospace', backgroundColor: '#f0f0f0', padding: '2px 6px', borderRadius: '4px' }}>
+            <div className="mt-2 text-xs text-gray-500">
+              Plugin ID: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">
                 {pluginData.plugin.id}
               </span>
             </div>
-            <div style={{ marginTop: '6px', fontSize: '12px', color: '#888' }}>
-              Domains: <span style={{ fontFamily: 'monospace', backgroundColor: '#f0f0f0', padding: '2px 6px', borderRadius: '4px' }}>
+            <div className="mt-1.5 text-xs text-gray-500">
+              対象ドメイン: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">
                 {pluginData.plugin.targetDomains.join(', ')}
               </span>
             </div>
             {/* 操作内容（ドロップダウン） */}
             <div
               onClick={() => setIsOperationsOpen(!isOperationsOpen)}
-              style={{
-                marginTop: '6px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '12px',
-                color: '#888',
-              }}
+              className="mt-1.5 cursor-pointer flex items-center gap-1 text-xs text-gray-500"
             >
-              <span style={{ textDecoration: 'underline' }}>{pluginData.plugin.operations.length} operations</span>
+              <span className="underline">{pluginData.plugin.operations.length} operations</span>
               {isOperationsOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
             </div>
           </div>
-          <div style={{ marginLeft: '12px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+          <div className="ml-3 flex gap-1 items-center">
             {/* トグルボタン */}
           <button
             onClick={() => onPluginToggle(pluginData.plugin.id, !pluginData.enabled)}
-            style={{
-              padding: 0,
-              width: '48px',
-              height: '28px',
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            className="p-0 w-12 h-7 bg-transparent border-none cursor-pointer flex items-center justify-center"
             title={pluginData.enabled ? '無効化' : '有効化'}
           >
             {pluginData.enabled ? (
@@ -110,134 +85,42 @@ function PluginItem({
       </div>
 
         {isOperationsOpen && (
-          <div style={{ marginTop: '8px', padding: '12px', backgroundColor: '#f6f8fa', borderRadius: '6px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="mt-2 py-3 bg-gray-50 rounded-md">
+            <div className="flex flex-col gap-2">
               {pluginData.plugin.operations.map((op, opIndex) => (
-                <div
-                  key={opIndex}
-                  style={{
-                    padding: '8px 12px',
-                    backgroundColor: 'white',
-                    border: '1px solid #d0d7de',
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-                    <span
-                      style={{
-                        padding: '2px 8px',
-                        backgroundColor: '#ddf4ff',
-                        color: '#0969da',
-                        borderRadius: '12px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {op.type}
-                    </span>
-                    <code
-                      style={{
-                        fontSize: '12px',
-                        color: '#6e7781',
-                        fontFamily: 'monospace',
-                      }}
-                    >
-                      {op.selector}
-                    </code>
-                  </div>
-                  {op.description && (
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: '12px',
-                        color: '#6e7781',
-                      }}
-                    >
-                      {op.description}
-                    </p>
-                  )}
-                </div>
+                <OperationItem key={opIndex} operation={op} />
               ))}
             </div>
           </div>
         )}
 
         {/* アクションボタン */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="flex gap-2 items-center flex-wrap">
           <button
             onClick={() => onPluginEdit(pluginData.plugin)}
-            style={{
-              padding: 0,
-              width: '32px',
-              height: '32px',
-              backgroundColor: '#0969da',
-              color: 'white',
-              border: 'none',
-              borderRadius: '50%',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            className="p-0 w-8 h-8 bg-blue-600 text-white border-none rounded-full cursor-pointer flex items-center justify-center"
             title="チャットで編集"
           >
             <FiMessageSquare size={16} />
           </button>
           <button
             onClick={() => onPluginSelect(pluginData)}
-            style={{
-              padding: 0,
-              width: '32px',
-              height: '32px',
-              backgroundColor: 'white',
-              color: '#24292f',
-              border: '1px solid #d0d7de',
-              borderRadius: '50%',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            className="p-0 w-8 h-8 bg-white text-gray-800 border border-gray-300 rounded-full cursor-pointer flex items-center justify-center"
             title="JSON編集"
           >
             <FiEdit3 size={16} />
           </button>
-          <div style={{ flex: 1 }} />
+          <div className="flex-1" />
           <button
             onClick={() => onPluginExport(pluginData.plugin.id)}
-            style={{
-              padding: 0,
-              width: '32px',
-              height: '32px',
-              backgroundColor: 'white',
-              color: '#24292f',
-              border: '1px solid #d0d7de',
-              borderRadius: '50%',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            className="p-0 w-8 h-8 bg-white text-gray-800 border border-gray-300 rounded-full cursor-pointer flex items-center justify-center"
             title="エクスポート"
           >
-            <FiDownload size={16} />
+            <FiUpload size={16} />
           </button>
           <button
             onClick={() => onPluginDelete(pluginData.plugin.id)}
-            style={{
-              padding: 0,
-              width: '32px',
-              height: '32px',
-              backgroundColor: 'white',
-              color: '#dc3545',
-              border: '1px solid #d0d7de',
-              borderRadius: '50%',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            className="p-0 w-8 h-8 bg-white text-red-600 border border-gray-300 rounded-full cursor-pointer flex items-center justify-center"
             title="削除"
           >
             <FiTrash2 size={16} />
@@ -257,9 +140,9 @@ export default function PluginList({
 }: PluginListProps) {
   if (plugins.length === 0) {
     return (
-      <div style={{ padding: '40px 20px', textAlign: 'center', color: '#666', flex: 1, overflowY: 'auto' }}>
+      <div className="py-10 px-5 text-center text-gray-600 flex-1 overflow-y-auto">
         <p>プラグインがありません</p>
-        <p style={{ fontSize: '14px', marginTop: '8px' }}>
+        <p className="text-sm mt-2">
           チャットでプラグインを作成するか、JSONファイルをインポートしてください
         </p>
       </div>
@@ -267,7 +150,7 @@ export default function PluginList({
   }
 
   return (
-    <div style={{ padding: '12px', flex: 1, overflowY: 'auto' }}>
+    <div className="p-3 flex-1 overflow-y-auto">
       {plugins.map((pluginData) => (
         <PluginItem
           key={pluginData.plugin.id}

@@ -20,66 +20,33 @@ export default function MessageItem({ message }: MessageItemProps) {
 
   return (
     <div
-      style={{
-        display: 'flex',
-        flexDirection: isUser ? 'row-reverse' : 'row',
-        gap: '8px',
-        padding: '8px 16px',
-        alignItems: 'flex-start',
-      }}
+      className={`flex gap-2 px-4 py-2 items-start ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
     >
       {/* アバター */}
       <div
-        style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: '50%',
-          backgroundColor: isUser ? '#0969da' : '#6e7781',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '16px',
-          flexShrink: 0,
-        }}
+        className={`w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0 ${
+          isUser ? 'bg-blue-600' : 'bg-gray-600'
+        }`}
       >
         {isUser ? '👤' : '🤖'}
       </div>
 
       {/* メッセージ吹き出し */}
       <div
-        style={{
-          maxWidth: '75%',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
-          alignItems: isUser ? 'flex-end' : 'flex-start',
-        }}
+        className={`max-w-[75%] flex flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}
       >
         {/* メッセージバブル */}
         <div
-          style={{
-            padding: '10px 14px',
-            borderRadius: '18px',
-            backgroundColor: isUser ? '#0969da' : '#f6f8fa',
-            color: isUser ? '#ffffff' : '#24292f',
-            fontSize: '14px',
-            lineHeight: '1.5',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-          }}
+          className={`px-3.5 py-2.5 rounded-[18px] text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${
+            isUser ? 'bg-blue-600 text-white' : 'bg-gray-50 text-gray-800'
+          }`}
         >
           {message.content}
         </div>
 
         {/* タイムスタンプ */}
         <span
-          style={{
-            fontSize: '11px',
-            color: '#6e7781',
-            paddingLeft: isUser ? '0' : '8px',
-            paddingRight: isUser ? '8px' : '0',
-          }}
+          className={`text-[11px] text-gray-600 ${isUser ? 'pr-2' : 'pl-2'}`}
         >
           {new Date(message.timestamp).toLocaleTimeString('ja-JP', {
             hour: '2-digit',

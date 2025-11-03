@@ -79,65 +79,49 @@ export default function SettingsPanel() {
   }, [settings, autoSave]);
 
   if (!settings) {
-    return <div style={{ padding: '20px' }}>読み込み中...</div>;
+    return <div className="p-5">読み込み中...</div>;
   }
 
   return (
-    <div style={{ padding: '16px' }}>
-      <h2 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 600 }}>設定</h2>
+    <div className="p-4">
+      <h2 className="m-0 mb-4 text-lg font-semibold">設定</h2>
 
-      <div style={{ marginBottom: '20px' }}>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-          }}
-        >
+      <div className="mb-5">
+        <label className="flex items-center gap-2 cursor-pointer text-sm">
           <input
             type="checkbox"
             checked={settings.autoApplyPlugins}
             onChange={(e) =>
               setSettings({ ...settings, autoApplyPlugins: e.target.checked })
             }
-            style={{ cursor: 'pointer' }}
+            className="cursor-pointer"
           />
           <span>プラグインを自動的に適用する</span>
         </label>
-        <p style={{ margin: '4px 0 0 24px', fontSize: '12px', color: '#666' }}>
+        <p className="mt-1 ml-6 text-xs text-gray-600">
           有効化されたプラグインを対象ドメインで自動的に実行します
         </p>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-          }}
-        >
+      <div className="mb-5">
+        <label className="flex items-center gap-2 cursor-pointer text-sm">
           <input
             type="checkbox"
             checked={settings.showNotifications}
             onChange={(e) =>
               setSettings({ ...settings, showNotifications: e.target.checked })
             }
-            style={{ cursor: 'pointer' }}
+            className="cursor-pointer"
           />
           <span>通知を表示する</span>
         </label>
-        <p style={{ margin: '4px 0 0 24px', fontSize: '12px', color: '#666' }}>
+        <p className="mt-1 ml-6 text-xs text-gray-600">
           プラグインの実行や更新時に通知を表示します
         </p>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
+      <div className="mb-5">
+        <label className="block mb-2 text-sm font-medium">
           テーマ
         </label>
         <select
@@ -145,14 +129,7 @@ export default function SettingsPanel() {
           onChange={(e) =>
             setSettings({ ...settings, theme: e.target.value as 'light' | 'dark' | 'auto' })
           }
-          style={{
-            padding: '8px 12px',
-            fontSize: '14px',
-            border: '1px solid #d0d7de',
-            borderRadius: '6px',
-            backgroundColor: 'white',
-            cursor: 'pointer',
-          }}
+          className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white cursor-pointer"
         >
           <option value="light">ライト</option>
           <option value="dark">ダーク</option>
@@ -160,8 +137,8 @@ export default function SettingsPanel() {
         </select>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
+      <div className="mb-5">
+        <label className="block mb-2 text-sm font-medium">
           セキュリティレベル
         </label>
         <select
@@ -172,26 +149,19 @@ export default function SettingsPanel() {
               securityLevel: e.target.value as 'safe' | 'moderate' | 'advanced',
             })
           }
-          style={{
-            padding: '8px 12px',
-            fontSize: '14px',
-            border: '1px solid #d0d7de',
-            borderRadius: '6px',
-            backgroundColor: 'white',
-            cursor: 'pointer',
-          }}
+          className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white cursor-pointer"
         >
           <option value="safe">Safe（基本DOM操作のみ）</option>
           <option value="moderate">Moderate（事前定義イベント、外部API）</option>
           <option value="advanced">Advanced（カスタムJS実行）</option>
         </select>
-        <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#666' }}>
+        <p className="mt-1 text-xs text-gray-600">
           Advancedレベルでは、カスタムJavaScriptコードの実行が許可されます（承認が必要）
         </p>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
+      <div className="mb-5">
+        <label className="block mb-2 text-sm font-medium">
           Claude APIキー
         </label>
         <input
@@ -199,15 +169,9 @@ export default function SettingsPanel() {
           value={settings.apiKey || ''}
           onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
           placeholder="sk-ant-..."
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            fontSize: '14px',
-            border: '1px solid #d0d7de',
-            borderRadius: '6px',
-          }}
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
         />
-        <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#666' }}>
+        <p className="mt-1 text-xs text-gray-600">
           チャットでプラグインを生成するために必要です
         </p>
       </div>

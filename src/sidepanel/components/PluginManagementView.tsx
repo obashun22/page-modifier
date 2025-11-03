@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { FiUpload } from 'react-icons/fi';
+import { FiDownload } from 'react-icons/fi';
 import PluginList from './PluginList';
 import PluginEditor from './PluginEditor';
 import type { PluginData, Settings } from '../../shared/storage-types';
@@ -165,7 +165,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="h-full flex flex-col">
       {selectedPluginData ? (
         <PluginEditor
           pluginData={selectedPluginData}
@@ -174,33 +174,16 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
         />
       ) : (
         <>
-          <div
-            style={{
-              padding: '12px',
-              borderBottom: '1px solid #d0d7de',
-              backgroundColor: '#f6f8fa',
-            }}
-          >
+          <div className="p-3 border-b border-gray-300 bg-gray-50">
             <button
               onClick={handleImport}
               disabled={importing}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                backgroundColor: '#0969da',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: importing ? 'not-allowed' : 'pointer',
-                fontWeight: 600,
-                opacity: importing ? 0.6 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
+              className={`px-4 py-2 text-sm bg-blue-600 text-white border-none rounded-md font-semibold flex items-center gap-2 ${
+                importing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              }`}
             >
-              <FiUpload size={16} />
-              {importing ? 'インポート中...' : 'プラグインをインポート'}
+              <FiDownload size={16} />
+              {importing ? 'インポート中...' : 'インポート'}
             </button>
           </div>
           <PluginList

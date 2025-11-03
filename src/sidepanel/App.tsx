@@ -24,17 +24,11 @@ function App() {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="h-screen flex flex-col">
       {/* ヘッダー */}
-      <div
-        style={{
-          padding: '16px',
-          borderBottom: '1px solid #d0d7de',
-          backgroundColor: '#f6f8fa',
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>Page Modifier</h1>
-        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#666' }}>
+      <div className="p-4 border-b border-gray-300 bg-gray-50">
+        <h1 className="m-0 text-xl font-semibold">Page Modifier</h1>
+        <p className="mt-1 text-[13px] text-gray-600">
           AIを使ってWebページをカスタマイズ
         </p>
       </div>
@@ -43,7 +37,7 @@ function App() {
       <NavigationBar currentView={currentView} onViewChange={setCurrentView} />
 
       {/* コンテンツ */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div className="flex-1 overflow-hidden">
         {currentView === 'chat' && (
           <ChatView
             selectedPluginForEdit={selectedPluginForEdit}

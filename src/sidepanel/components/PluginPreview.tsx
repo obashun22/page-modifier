@@ -14,111 +14,45 @@ interface PluginPreviewProps {
 
 export default function PluginPreview({ plugin, onApprove, onReject }: PluginPreviewProps) {
   return (
-    <div
-      style={{
-        padding: '16px',
-        borderTop: '2px solid #0969da',
-        backgroundColor: '#f6f8fa',
-        maxHeight: '300px',
-        overflowY: 'auto',
-      }}
-    >
-      <div style={{ marginBottom: '12px' }}>
-        <h3
-          style={{
-            margin: '0 0 8px 0',
-            fontSize: '16px',
-            fontWeight: 600,
-            color: '#24292f',
-          }}
-        >
+    <div className="p-4 border-t-2 border-blue-600 bg-gray-50 max-h-[300px] overflow-y-auto">
+      <div className="mb-3">
+        <h3 className="m-0 mb-2 text-base font-semibold text-gray-800">
           {plugin.name}
         </h3>
-        <p
-          style={{
-            margin: 0,
-            fontSize: '13px',
-            color: '#666',
-          }}
-        >
+        <p className="m-0 text-[13px] text-gray-600">
           {plugin.description || 'No description'}
         </p>
       </div>
 
-      <div style={{ marginBottom: '12px' }}>
-        <div
-          style={{
-            fontSize: '12px',
-            color: '#6e7781',
-            marginBottom: '4px',
-          }}
-        >
+      <div className="mb-3">
+        <div className="text-xs text-gray-600 mb-1">
           <span>バージョン: {plugin.version}</span>
         </div>
-        <div
-          style={{
-            fontSize: '12px',
-            color: '#6e7781',
-          }}
-        >
+        <div className="text-xs text-gray-600">
           対象ドメイン: {plugin.targetDomains.join(', ')}
         </div>
       </div>
 
-      <div style={{ marginBottom: '16px' }}>
-        <h4
-          style={{
-            margin: '0 0 8px 0',
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#24292f',
-          }}
-        >
+      <div className="mb-4">
+        <h4 className="m-0 mb-2 text-sm font-semibold text-gray-800">
           操作内容 ({plugin.operations.length}件)
         </h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="flex flex-col gap-2">
           {plugin.operations.map((op, index) => (
             <div
               key={index}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: 'white',
-                border: '1px solid #d0d7de',
-                borderRadius: '6px',
-                fontSize: '13px',
-              }}
+              className="px-3 py-2 bg-white border border-gray-300 rounded-md text-[13px]"
             >
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-                <span
-                  style={{
-                    padding: '2px 8px',
-                    backgroundColor: '#ddf4ff',
-                    color: '#0969da',
-                    borderRadius: '12px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                  }}
-                >
+              <div className="flex gap-2 mb-1">
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-xl text-[11px] font-semibold">
                   {op.type}
                 </span>
-                <code
-                  style={{
-                    fontSize: '12px',
-                    color: '#6e7781',
-                    fontFamily: 'monospace',
-                  }}
-                >
+                <code className="text-xs text-gray-600 font-mono">
                   {op.selector}
                 </code>
               </div>
               {op.description && (
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: '12px',
-                    color: '#6e7781',
-                  }}
-                >
+                <p className="m-0 text-xs text-gray-600">
                   {op.description}
                 </p>
               )}
@@ -127,36 +61,16 @@ export default function PluginPreview({ plugin, onApprove, onReject }: PluginPre
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div className="flex gap-2">
         <button
           onClick={() => onApprove(plugin)}
-          style={{
-            flex: 1,
-            padding: '8px 16px',
-            fontSize: '14px',
-            backgroundColor: '#2da44e',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
+          className="flex-1 px-4 py-2 text-sm bg-green-600 text-white border-none rounded-md cursor-pointer font-semibold"
         >
           ✅ 適用する
         </button>
         <button
           onClick={onReject}
-          style={{
-            flex: 1,
-            padding: '8px 16px',
-            fontSize: '14px',
-            backgroundColor: 'white',
-            color: '#24292f',
-            border: '1px solid #d0d7de',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600,
-          }}
+          className="flex-1 px-4 py-2 text-sm bg-white text-gray-800 border border-gray-300 rounded-md cursor-pointer font-semibold"
         >
           ❌ キャンセル
         </button>
