@@ -174,7 +174,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
         />
       ) : (
         <>
-          <div className="p-3 border-b border-gray-300 bg-gray-50">
+          <div className="p-3 border-b border-gray-300 flex justify-end">
             <button
               onClick={handleImport}
               disabled={importing}
