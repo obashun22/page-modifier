@@ -40,10 +40,10 @@ function PluginItem({
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
   return (
-    <div className="p-4 mb-3 bg-gray-50 rounded-lg border border-gray-300 dark:border-gray-700">
+    <div className="p-4 mb-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h3 className="m-0 text-base font-semibold">
+            <h3 className="m-0 text-base font-semibold text-gray-900 dark:text-gray-100">
               {pluginData.plugin.name}
             </h3>
             <p className="mt-1 text-[13px] text-gray-600 dark:text-gray-400">

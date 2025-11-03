@@ -4,6 +4,8 @@
  * チャットメッセージ表示コンポーネント（吹き出し形式）
  */
 
+import { FiUser, FiCpu } from 'react-icons/fi';
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -25,10 +27,10 @@ export default function MessageItem({ message }: MessageItemProps) {
       {/* アバター */}
       <div
         className={`w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0 ${
-          isUser ? 'bg-github-blue-500' : 'bg-gray-600 dark:bg-gray-700'
+          isUser ? 'bg-github-blue-500 text-white' : 'bg-gray-600 dark:bg-gray-700 text-white'
         }`}
       >
-        {isUser ? '👤' : '🤖'}
+        {isUser ? <FiUser size={18} /> : <FiCpu size={18} />}
       </div>
 
       {/* メッセージ吹き出し */}

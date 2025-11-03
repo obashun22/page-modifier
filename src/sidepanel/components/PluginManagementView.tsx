@@ -174,11 +174,11 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
         />
       ) : (
         <>
-          <div className="p-3 border-b border-gray-300 flex justify-end">
+          <div className="px-3 pt-3 flex justify-end">
             <button
               onClick={handleImport}
               disabled={importing}
-              className={`px-4 py-2 text-sm bg-github-blue-500 text-white border-none rounded-md font-semibold flex items-center gap-2 ${
+              className={`px-4 py-2 text-sm bg-github-blue-500 dark:bg-github-blue-600 text-white border-none rounded-md font-semibold flex items-center gap-2 hover:bg-github-blue-600 dark:hover:bg-github-blue-700 ${
                 importing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
               }`}
             >

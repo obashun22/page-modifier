@@ -52,7 +52,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
       {mode === 'referencing' && onDismiss && (
         <button
           onClick={onDismiss}
-          className="absolute top-2 right-2 p-0 w-6 h-6 bg-transparent border-none cursor-pointer flex items-center justify-center text-gray-600 transition-colors hover:text-red-600"
+          className="absolute top-2 right-2 p-0 w-6 h-6 bg-transparent border-none cursor-pointer flex items-center justify-center text-gray-600 dark:text-gray-400 transition-colors hover:text-red-600 dark:hover:text-red-400"
           title="削除"
         >
           <IoClose size={20} />
@@ -66,17 +66,17 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
             {plugin.name}
           </h3>
           {(mode === 'referencing' || mode === 'referenced') && (
-            <span className="px-2 py-0.5 text-[11px] bg-yellow-100 text-yellow-800 rounded-xl font-semibold">
+            <span className="px-2 py-0.5 text-[11px] bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-xl font-semibold">
               参照中
             </span>
           )}
           {mode === 'updated' && (
-            <span className="px-2 py-0.5 text-[11px] bg-green-100 text-green-800 rounded-xl font-semibold">
+            <span className="px-2 py-0.5 text-[11px] bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-xl font-semibold">
               編集済み
             </span>
           )}
           {mode === 'added' && (
-            <span className="px-2 py-0.5 text-[11px] bg-green-100 text-green-800 rounded-xl font-semibold">
+            <span className="px-2 py-0.5 text-[11px] bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-xl font-semibold">
               追加済み
             </span>
           )}
@@ -88,7 +88,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
 
       {/* メタ情報 */}
       <div className="mb-3">
-        <div className="text-xs text-gray-600 mb-1">
+        <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
           <span>Version: {plugin.version}</span>
         </div>
         <div className="text-xs text-gray-600 dark:text-gray-400">
@@ -101,7 +101,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
         <h4 className="m-0 mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
           操作内容 ({plugin.operations.length}件)
         </h4>
-        <div className="flex flex-col gap-2 -mx-4 px-4">
+        <div className="flex flex-col gap-2">
           {plugin.operations.map((op, index) => (
             <OperationItem key={index} operation={op} />
           ))}
@@ -114,7 +114,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
           {onUndo && (
             <button
               onClick={onUndo}
-              className="px-4 py-2 text-sm bg-white text-gray-800 border border-gray-300 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5"
+              className="px-4 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               <FaUndo size={14} />
               元に戻す
@@ -126,14 +126,14 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
         <div className="flex gap-2">
           <button
             onClick={() => onApprove(plugin)}
-            className="flex-1 px-4 py-2 text-sm bg-green-600 text-white border-none rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5"
+            className="flex-1 px-4 py-2 text-sm bg-green-600 dark:bg-green-700 text-white border-none rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5 hover:bg-green-700 dark:hover:bg-green-800"
           >
             <FaPlus size={14} />
             追加する
           </button>
           <button
             onClick={onReject}
-            className="flex-1 px-4 py-2 text-sm bg-white text-gray-800 border border-gray-300 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5"
+            className="flex-1 px-4 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-600"
           >
             <FaTimes size={14} />
             キャンセル

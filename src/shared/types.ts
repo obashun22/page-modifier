@@ -126,7 +126,7 @@ export type ScriptRun = 'once' | 'always';
 /** 操作定義 */
 export interface Operation {
   id: string;                  // 操作の一意識別子
-  description?: string;        // 操作の説明
+  description: string;         // 操作の説明（必須、空文字列可）
   type: OperationType;         // 操作タイプ
   selector?: SelectorString;   // CSSセレクター（execute以外では必須）
   position?: InsertPosition;   // 挿入位置（insertの場合）

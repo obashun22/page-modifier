@@ -101,7 +101,7 @@ export const ElementSchema: z.ZodType<Element> = z.lazy(() =>
 /** 操作スキーマ */
 export const OperationSchema = z.object({
   id: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string(),
   type: z.enum(['insert', 'remove', 'hide', 'show', 'style', 'modify', 'replace', 'execute']),
   selector: z.string().optional(),
   position: z.enum(['beforebegin', 'afterbegin', 'beforeend', 'afterend']).optional(),
