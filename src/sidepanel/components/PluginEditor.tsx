@@ -36,7 +36,7 @@ export default function PluginEditor({ pluginData, onSave, onCancel }: PluginEdi
         <h2 className="m-0 mb-2 text-lg font-semibold">
           プラグイン編集: {pluginData.plugin.name}
         </h2>
-        <p className="m-0 text-[13px] text-gray-600">
+        <p className="m-0 text-[13px] text-gray-600 dark:text-gray-400">
           JSON形式で直接編集できます。保存前にバリデーションが実行されます。
         </p>
       </div>

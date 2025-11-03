@@ -16,10 +16,10 @@ export default function PluginPreview({ plugin, onApprove, onReject }: PluginPre
   return (
     <div className="p-4 border-t-2 border-github-blue-500 bg-gray-50 max-h-[300px] overflow-y-auto">
       <div className="mb-3">
-        <h3 className="m-0 mb-2 text-base font-semibold text-gray-800">
+        <h3 className="m-0 mb-2 text-base font-semibold text-gray-800 dark:text-gray-200">
           {plugin.name}
         </h3>
-        <p className="m-0 text-[13px] text-gray-600">
+        <p className="m-0 text-[13px] text-gray-600 dark:text-gray-400">
           {plugin.description || 'No description'}
         </p>
       </div>
@@ -28,13 +28,13 @@ export default function PluginPreview({ plugin, onApprove, onReject }: PluginPre
         <div className="text-xs text-gray-600 mb-1">
           <span>Version: {plugin.version}</span>
         </div>
-        <div className="text-xs text-gray-600">
+        <div className="text-xs text-gray-600 dark:text-gray-400">
           Domain: {plugin.targetDomains.join(', ')}
         </div>
       </div>
 
       <div className="mb-4">
-        <h4 className="m-0 mb-2 text-sm font-semibold text-gray-800">
+        <h4 className="m-0 mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
           操作内容 ({plugin.operations.length}件)
         </h4>
         <div className="flex flex-col gap-2">
@@ -52,7 +52,7 @@ export default function PluginPreview({ plugin, onApprove, onReject }: PluginPre
                 </code>
               </div>
               {op.description && (
-                <p className="m-0 text-xs text-gray-600">
+                <p className="m-0 text-xs text-gray-600 dark:text-gray-400">
                   {op.description}
                 </p>
               )}

@@ -45,7 +45,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
 
   return (
     <div
-      className="relative p-4 rounded-lg bg-gray-50"
+      className="relative p-4 rounded-lg bg-gray-50 dark:bg-gray-800"
       style={{ border: `2px solid ${getBorderColor()}` }}
     >
       {/* 削除ボタン（referencingモード時のみ右上に表示） */}
@@ -62,7 +62,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
       {/* ヘッダー */}
       <div className="mb-3">
         <div className="flex items-center gap-2 mb-2">
-          <h3 className="m-0 text-base font-semibold text-gray-800">
+          <h3 className="m-0 text-base font-semibold text-gray-800 dark:text-gray-200">
             {plugin.name}
           </h3>
           {(mode === 'referencing' || mode === 'referenced') && (
@@ -81,7 +81,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
             </span>
           )}
         </div>
-        <p className="m-0 text-[13px] text-gray-600">
+        <p className="m-0 text-[13px] text-gray-600 dark:text-gray-400">
           {plugin.description || 'No description'}
         </p>
       </div>
@@ -91,14 +91,14 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
         <div className="text-xs text-gray-600 mb-1">
           <span>Version: {plugin.version}</span>
         </div>
-        <div className="text-xs text-gray-600">
+        <div className="text-xs text-gray-600 dark:text-gray-400">
           Domain: {plugin.targetDomains.join(', ')}
         </div>
       </div>
 
       {/* 操作内容 */}
       <div className="mb-4">
-        <h4 className="m-0 mb-2 text-sm font-semibold text-gray-800">
+        <h4 className="m-0 mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
           操作内容 ({plugin.operations.length}件)
         </h4>
         <div className="flex flex-col gap-2 -mx-4 px-4">

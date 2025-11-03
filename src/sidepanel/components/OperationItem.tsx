@@ -50,7 +50,7 @@ export default function OperationItem({ operation }: OperationItemProps) {
 
       {/* 説明文 */}
       {operation.description && (
-        <p className="m-0 text-xs text-gray-600">
+        <p className="m-0 text-xs text-gray-600 dark:text-gray-400">
           {operation.description}
         </p>
       )}

@@ -414,7 +414,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   return (
     <div className="h-full flex flex-col">
       {/* メッセージリスト */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-white">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
         {chatItems.map((item) => {
           if (item.type === 'message') {
             return <MessageItem key={item.id} message={item} />;
@@ -440,7 +440,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         })}
 
         {isLoading && (
-          <div className="py-3 px-4 flex items-center gap-2 text-gray-600">
+          <div className="py-3 px-4 flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <span className="text-xl">🤖</span>
             <div className="flex gap-1 items-center">
               <span className="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce-loading" />
@@ -454,7 +454,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       </div>
 
       {/* 入力エリア */}
-      <div className="p-3 border-t border-gray-300 bg-gray-50">
+      <div className="p-3 border-t border-gray-300 bg-gray-50 dark:bg-gray-800">
         {selectedElements.map((element, index) => (
           <div
             key={index}
@@ -488,7 +488,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           <button
             onClick={startNewChat}
             title="新しいチャット"
-            className="p-2 text-[13px] bg-transparent text-gray-600 border-none rounded-md cursor-pointer flex items-center justify-center transition-all hover:text-gray-800"
+            className="p-2 text-[13px] bg-transparent text-gray-600 border-none rounded-md cursor-pointer flex items-center justify-center transition-all hover:text-gray-800 dark:text-gray-200"
           >
             <FiPlus size={18} />
           </button>

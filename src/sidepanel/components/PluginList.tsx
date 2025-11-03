@@ -40,21 +40,21 @@ function PluginItem({
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
   return (
-    <div className="p-4 mb-3 bg-gray-50 rounded-lg border border-gray-300">
+    <div className="p-4 mb-3 bg-gray-50 rounded-lg border border-gray-300 dark:border-gray-700">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="m-0 text-base font-semibold">
               {pluginData.plugin.name}
             </h3>
-            <p className="mt-1 text-[13px] text-gray-600">
+            <p className="mt-1 text-[13px] text-gray-600 dark:text-gray-400">
               {pluginData.plugin.description || 'No description'}
             </p>
-            <div className="mt-2 text-xs text-gray-500">
+            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               Plugin ID: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">
                 {pluginData.plugin.id}
               </span>
             </div>
-            <div className="mt-1.5 text-xs text-gray-500">
+            <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
               Domain: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">
                 {pluginData.plugin.targetDomains.join(', ')}
               </span>
@@ -62,7 +62,7 @@ function PluginItem({
             {/* 操作内容（ドロップダウン） */}
             <div
               onClick={() => setIsOperationsOpen(!isOperationsOpen)}
-              className="mt-1.5 cursor-pointer flex items-center gap-1 text-xs text-gray-500"
+              className="mt-1.5 cursor-pointer flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
             >
               <span className="underline">{pluginData.plugin.operations.length} operations</span>
               {isOperationsOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}

@@ -6,8 +6,14 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Settings } from '../../shared/storage-types';
+import { FiMoon, FiSun } from 'react-icons/fi';
 
-export default function SettingsPanel() {
+interface SettingsPanelProps {
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
+}
+
+export default function SettingsPanel({ isDarkMode, onToggleDarkMode }: SettingsPanelProps) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [previousSettings, setPreviousSettings] = useState<Settings | null>(null);
   const isInitialLoadRef = useRef(true);
@@ -79,15 +85,32 @@ export default function SettingsPanel() {
   }, [settings, autoSave]);
 
   if (!settings) {
-    return <div className="p-5">読み込み中...</div>;
+    return <div className="p-5 text-gray-900 dark:text-gray-100">読み込み中...</div>;
   }
 
   return (
-    <div className="p-4">
-      <h2 className="m-0 mb-4 text-lg font-semibold">設定</h2>
+    <div className="p-4 bg-white dark:bg-gray-900">
+      <h2 className="m-0 mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">設定</h2>
+
+      {/* ダークモード切り替え */}
+      <div className="mb-5">
+        <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+          テーマ
+        </label>
+        <button
+          onClick={onToggleDarkMode}
+          className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 cursor-pointer flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+        >
+          {isDarkMode ? <FiSun size={16} /> : <FiMoon size={16} />}
+          {isDarkMode ? 'ライトモード' : 'ダークモード'}
+        </button>
+        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+          ダークモードとライトモードを切り替えます
+        </p>
+      </div>
 
       <div className="mb-5">
-        <label className="flex items-center gap-2 cursor-pointer text-sm">
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-900 dark:text-gray-100">
           <input
             type="checkbox"
             checked={settings.autoApplyPlugins}
@@ -98,13 +121,13 @@ export default function SettingsPanel() {
           />
           <span>プラグインを自動的に適用する</span>
         </label>
-        <p className="mt-1 ml-6 text-xs text-gray-600">
+        <p className="mt-1 ml-6 text-xs text-gray-600 dark:text-gray-400">
           有効化されたプラグインを対象ドメインで自動的に実行します
         </p>
       </div>
 
       <div className="mb-5">
-        <label className="flex items-center gap-2 cursor-pointer text-sm">
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-900 dark:text-gray-100">
           <input
             type="checkbox"
             checked={settings.showNotifications}
@@ -115,30 +138,13 @@ export default function SettingsPanel() {
           />
           <span>通知を表示する</span>
         </label>
-        <p className="mt-1 ml-6 text-xs text-gray-600">
+        <p className="mt-1 ml-6 text-xs text-gray-600 dark:text-gray-400">
           プラグインの実行や更新時に通知を表示します
         </p>
       </div>
 
       <div className="mb-5">
-        <label className="block mb-2 text-sm font-medium">
-          テーマ
-        </label>
-        <select
-          value={settings.theme}
-          onChange={(e) =>
-            setSettings({ ...settings, theme: e.target.value as 'light' | 'dark' | 'auto' })
-          }
-          className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white cursor-pointer"
-        >
-          <option value="light">ライト</option>
-          <option value="dark">ダーク</option>
-          <option value="auto">自動</option>
-        </select>
-      </div>
-
-      <div className="mb-5">
-        <label className="block mb-2 text-sm font-medium">
+        <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">
           セキュリティレベル
         </label>
         <select
@@ -149,19 +155,19 @@ export default function SettingsPanel() {
               securityLevel: e.target.value as 'safe' | 'moderate' | 'advanced',
             })
           }
-          className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white cursor-pointer"
+          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 cursor-pointer"
         >
           <option value="safe">Safe（基本DOM操作のみ）</option>
           <option value="moderate">Moderate（事前定義イベント、外部API）</option>
           <option value="advanced">Advanced（カスタムJS実行）</option>
         </select>
-        <p className="mt-1 text-xs text-gray-600">
+        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
           Advancedレベルでは、カスタムJavaScriptコードの実行が許可されます（承認が必要）
         </p>
       </div>
 
       <div className="mb-5">
-        <label className="block mb-2 text-sm font-medium">
+        <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">
           Claude APIキー
         </label>
         <input
@@ -169,9 +175,9 @@ export default function SettingsPanel() {
           value={settings.apiKey || ''}
           onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
           placeholder="sk-ant-..."
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         />
-        <p className="mt-1 text-xs text-gray-600">
+        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
           チャットでプラグインを生成するために必要です
         </p>
       </div>
