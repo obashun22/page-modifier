@@ -89,10 +89,10 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
       {/* メタ情報 */}
       <div className="mb-3">
         <div className="text-xs text-gray-600 mb-1">
-          <span>バージョン: {plugin.version}</span>
+          <span>Version: {plugin.version}</span>
         </div>
         <div className="text-xs text-gray-600">
-          対象ドメイン: {plugin.targetDomains.join(', ')}
+          Domain: {plugin.targetDomains.join(', ')}
         </div>
       </div>
 

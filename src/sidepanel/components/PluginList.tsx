@@ -55,7 +55,7 @@ function PluginItem({
               </span>
             </div>
             <div className="mt-1.5 text-xs text-gray-500">
-              対象ドメイン: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">
+              Domain: <span className="font-mono bg-gray-200 px-1.5 py-0.5 rounded">
                 {pluginData.plugin.targetDomains.join(', ')}
               </span>
             </div>
