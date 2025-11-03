@@ -38,12 +38,41 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
   return (
     <div
       style={{
+        position: 'relative',
         padding: '16px',
         border: `2px solid ${getBorderColor()}`,
         borderRadius: '8px',
         backgroundColor: '#f6f8fa',
       }}
     >
+      {/* 削除ボタン（編集モード時のみ右上に表示） */}
+      {mode === 'editing' && !isConfirmed && onDismiss && (
+        <button
+          onClick={onDismiss}
+          style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            padding: 0,
+            width: '24px',
+            height: '24px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#6e7781',
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#dc3545')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#6e7781')}
+          title="削除"
+        >
+          <IoClose size={20} />
+        </button>
+      )}
+
       {/* ヘッダー */}
       <div style={{ marginBottom: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -267,30 +296,6 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
             キャンセル
           </button>
         </div>
-      )}
-
-      {mode === 'editing' && !isConfirmed && onDismiss && (
-        <button
-          onClick={onDismiss}
-          style={{
-            width: '100%',
-            padding: '8px 16px',
-            fontSize: '14px',
-            backgroundColor: 'white',
-            color: '#24292f',
-            border: '1px solid #d0d7de',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-          }}
-        >
-          <IoClose size={18} />
-          削除
-        </button>
       )}
     </div>
   );

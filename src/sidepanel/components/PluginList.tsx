@@ -5,9 +5,8 @@
  */
 
 import { useState } from 'react';
-import { FiMessageSquare, FiEdit3, FiDownload, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiMessageSquare, FiEdit3, FiDownload, FiTrash2, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { MdToggleOn, MdToggleOff } from 'react-icons/md';
-import { IoClose } from 'react-icons/io5';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
 
@@ -42,7 +41,6 @@ function PluginItem({
   return (
     <div
       style={{
-        position: 'relative',
         padding: '16px',
         marginBottom: '12px',
         backgroundColor: '#f6f8fa',
@@ -50,32 +48,6 @@ function PluginItem({
         border: '1px solid #d0d7de',
       }}
     >
-        {/* 削除ボタン（右上） */}
-        <button
-          onClick={() => onPluginDelete(pluginData.plugin.id)}
-          style={{
-            position: 'absolute',
-            top: '8px',
-            right: '8px',
-            padding: 0,
-            width: '24px',
-            height: '24px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#6e7781',
-            transition: 'color 0.2s',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#dc3545')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#6e7781')}
-          title="削除"
-        >
-          <IoClose size={20} />
-        </button>
-
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ flex: 1 }}>
             <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
@@ -250,6 +222,25 @@ function PluginItem({
             title="エクスポート"
           >
             <FiDownload size={16} />
+          </button>
+          <button
+            onClick={() => onPluginDelete(pluginData.plugin.id)}
+            style={{
+              padding: 0,
+              width: '32px',
+              height: '32px',
+              backgroundColor: 'white',
+              color: '#dc3545',
+              border: '1px solid #d0d7de',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="削除"
+          >
+            <FiTrash2 size={16} />
           </button>
         </div>
     </div>
