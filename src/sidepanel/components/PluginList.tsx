@@ -81,8 +81,8 @@ function SortablePluginItem({
       style={{
         ...style,
         display: 'flex',
-        gap: '12px',
-        padding: '16px',
+        gap: '4px',
+        padding: '12px 16px',
         marginBottom: '12px',
         backgroundColor: '#f6f8fa',
         borderRadius: '8px',
@@ -100,6 +100,7 @@ function SortablePluginItem({
           color: '#6e7781',
           opacity: 0.4,
           transition: 'opacity 0.2s',
+          marginRight: '4px',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.opacity = '0.8';
@@ -109,7 +110,7 @@ function SortablePluginItem({
         }}
         title="ドラッグして並び替え"
       >
-        <MdDragIndicator size={24} />
+        <MdDragIndicator size={20} />
       </div>
 
       {/* 右側: コンテンツ */}
