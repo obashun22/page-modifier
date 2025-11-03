@@ -98,13 +98,10 @@ function PluginItem({
           onClick={() => setIsOperationsOpen(!isOperationsOpen)}
           style={{
             marginTop: '6px',
-            padding: '8px 12px',
-            backgroundColor: '#f6f8fa',
-            borderRadius: '6px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '4px',
             fontSize: '12px',
             color: '#888',
           }}
