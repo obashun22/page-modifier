@@ -192,13 +192,10 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
 
   // 新しいチャットを開始
   const startNewChat = () => {
-    const confirmed = confirm('新しいチャットを開始しますか？現在のチャット履歴はクリアされます。');
-    if (confirmed) {
-      setMessages(getInitialMessages());
-      setSelectedElement(null);
-      setIsSelectingElement(false);
-      onClearSelectedPlugin();
-    }
+    setMessages(getInitialMessages());
+    setSelectedElement(null);
+    setIsSelectingElement(false);
+    onClearSelectedPlugin();
   };
 
   // メッセージ追加
@@ -424,12 +421,57 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           <div
             style={{
               padding: '12px 16px',
-              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
               color: '#6e7781',
-              textAlign: 'center',
             }}
           >
-            🤖 生成中...
+            <span style={{ fontSize: '20px' }}>🤖</span>
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#6e7781',
+                  animation: 'bounce 1.4s infinite ease-in-out both',
+                  animationDelay: '0s',
+                }}
+              />
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#6e7781',
+                  animation: 'bounce 1.4s infinite ease-in-out both',
+                  animationDelay: '0.16s',
+                }}
+              />
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: '#6e7781',
+                  animation: 'bounce 1.4s infinite ease-in-out both',
+                  animationDelay: '0.32s',
+                }}
+              />
+            </div>
+            <style>{`
+              @keyframes bounce {
+                0%, 80%, 100% {
+                  transform: translateY(0);
+                  opacity: 0.5;
+                }
+                40% {
+                  transform: translateY(-8px);
+                  opacity: 1;
+                }
+              }
+            `}</style>
           </div>
         )}
 

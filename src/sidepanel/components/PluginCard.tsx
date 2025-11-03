@@ -41,8 +41,6 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
         border: `2px solid ${getBorderColor()}`,
         borderRadius: '8px',
         backgroundColor: '#f6f8fa',
-        maxHeight: '400px',
-        overflowY: 'auto',
       }}
     >
       {/* ヘッダー */}
