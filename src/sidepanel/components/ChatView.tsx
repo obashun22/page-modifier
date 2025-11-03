@@ -246,13 +246,10 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         setMessages((prev) => [...prev, assistantMessage]);
       } else if (response.type === 'plugin') {
         // プラグイン生成レスポンス
-        const isEditing = selectedPluginForEdit !== null;
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: isEditing
-            ? `プラグイン「${response.plugin.name}」を編集しました。以下の内容を確認して、適用してください。`
-            : `プラグイン「${response.plugin.name}」を生成しました。以下の内容を確認して、適用してください。`,
+          content: '',
           timestamp: Date.now(),
           plugin: response.plugin,
           pluginMode: 'preview',
