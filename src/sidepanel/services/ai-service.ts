@@ -19,7 +19,7 @@ interface ElementInfo {
  */
 export async function chatWithAI(
   userRequest: string,
-  selectedElement: ElementInfo | null,
+  selectedElements: ElementInfo[],
   selectedPlugin: Plugin | null = null
 ): Promise<AIResponse> {
   // Claude API クライアントを初期化
@@ -30,7 +30,7 @@ export async function chatWithAI(
   const currentUrl = tab.url;
 
   // Claude APIでチャット（プラグイン編集モードの場合はselectedPluginを渡す）
-  return await claudeAPIClient.chat(userRequest, selectedElement, currentUrl, selectedPlugin);
+  return await claudeAPIClient.chat(userRequest, selectedElements, currentUrl, selectedPlugin);
 }
 
 /**

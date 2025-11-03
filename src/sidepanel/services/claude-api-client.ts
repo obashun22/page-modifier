@@ -55,7 +55,7 @@ class ClaudeAPIClient {
    */
   async chat(
     userRequest: string,
-    selectedElement?: ElementInfo | null,
+    selectedElements?: ElementInfo[],
     currentUrl?: string,
     selectedPlugin?: Plugin | null
   ): Promise<AIResponse> {
@@ -64,7 +64,7 @@ class ClaudeAPIClient {
     }
 
     const systemPrompt = this.buildSystemPrompt(selectedPlugin);
-    const userPrompt = this.buildUserPrompt(userRequest, selectedElement, currentUrl, selectedPlugin);
+    const userPrompt = this.buildUserPrompt(userRequest, selectedElements, currentUrl, selectedPlugin);
 
     try {
       const response = await this.client.messages.create({
@@ -571,7 +571,7 @@ window.pluginStorage = {
    */
   private buildUserPrompt(
     userRequest: string,
-    selectedElement?: ElementInfo | null,
+    selectedElements?: ElementInfo[],
     currentUrl?: string,
     selectedPlugin?: Plugin | null
   ): string {
@@ -605,14 +605,19 @@ ${userRequest}
 `;
     }
 
-    if (selectedElement) {
+    if (selectedElements && selectedElements.length > 0) {
       prompt += `
-選択された要素:
-- セレクター: ${selectedElement.selector}
-- タグ: ${selectedElement.tagName || '不明'}
-- ID: ${selectedElement.id || 'なし'}
-- クラス: ${selectedElement.className || 'なし'}
+選択された要素${selectedElements.length > 1 ? `（${selectedElements.length}個）` : ''}:
 `;
+      selectedElements.forEach((element, index) => {
+        prompt += `
+${selectedElements.length > 1 ? `要素 ${index + 1}:` : ''}
+- セレクター: ${element.selector}
+- タグ: ${element.tagName || '不明'}
+- ID: ${element.id || 'なし'}
+- クラス: ${element.className || 'なし'}
+`;
+      });
     }
 
     if (isEditMode) {

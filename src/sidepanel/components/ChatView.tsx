@@ -42,7 +42,7 @@ const getInitialMessages = (): Message[] => {
     {
       id: '0',
       role: 'assistant',
-      content: 'こんにちは！Page Modifierへようこそ。\n\nWebページに機能を追加したい場合は具体的な要望を教えてください。使い方や機能について知りたい場合は、お気軽に質問してください。\n\n既存のプラグインを編集したい場合は、プラグイン一覧から「💬 チャットで編集」ボタンでこのチャットに持ってくることができます。\n要素を選択したい場合は下の「📍」ボタンをクリックしてください（キャンセルする場合は再度ボタンをクリック）。',
+      content: 'こんにちは！Page Modifierへようこそ。\n\nWebページに機能を追加したい場合は具体的な要望を教えてください。使い方や機能について知りたい場合は、お気軽に質問してください。\n\n既存のプラグインを編集したい場合は、プラグイン一覧から「💬 チャットで編集」ボタンでこのチャットに持ってくることができます。',
       timestamp: Date.now(),
     },
   ];
@@ -64,7 +64,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedElement, setSelectedElement] = useState<ElementInfo | null>(null);
+  const [selectedElements, setSelectedElements] = useState<ElementInfo[]>([]);
   const [existingPluginIds, setExistingPluginIds] = useState<Set<string>>(new Set());
   const [isSelectingElement, setIsSelectingElement] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -158,9 +158,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           id: message.id,
         };
 
-        setSelectedElement(elementInfo);
-        setIsSelectingElement(false);
-        addMessage('assistant', `要素を選択しました: ${message.selector}`);
+        setSelectedElements((prev) => [...prev, elementInfo]);
       }
     };
 
@@ -181,19 +179,17 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       // キャンセル
       await chrome.tabs.sendMessage(tab.id, { type: 'STOP_ELEMENT_SELECTION' });
       setIsSelectingElement(false);
-      addMessage('assistant', '要素選択をキャンセルしました。');
     } else {
       // 開始
       await chrome.tabs.sendMessage(tab.id, { type: 'START_ELEMENT_SELECTION' });
       setIsSelectingElement(true);
-      addMessage('assistant', '要素を選択してください。選択したい要素の上にマウスを移動し、クリックしてください。');
     }
   };
 
   // 新しいチャットを開始
   const startNewChat = () => {
     setMessages(getInitialMessages());
-    setSelectedElement(null);
+    setSelectedElements([]);
     setIsSelectingElement(false);
     onClearSelectedPlugin();
   };
@@ -236,7 +232,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
 
     try {
       // AI APIを呼び出してチャット（選択したプラグインを渡す）
-      const response = await chatWithAI(input, selectedElement, selectedPluginForEdit);
+      const response = await chatWithAI(input, selectedElements, selectedPluginForEdit);
 
       if (response.type === 'text') {
         // 通常のテキスト応答
@@ -328,7 +324,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           : `プラグイン「${plugin.name}」を保存しました。有効化して使用してください。`
       );
 
-      setSelectedElement(null);
+      setSelectedElements([]);
       onClearSelectedPlugin();
 
       // プラグインIDリストを再読み込み
@@ -519,7 +515,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           </div>
         )}
 
-        {selectedElement && (
+        {selectedElements.length > 0 && (
           <div
             style={{
               padding: '8px 12px',
@@ -528,27 +524,47 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
               border: '1px solid #54aeff',
               borderRadius: '6px',
               fontSize: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
             }}
           >
-            <span>
-              選択中: <code style={{ fontFamily: 'monospace' }}>{selectedElement.selector}</code>
-            </span>
-            <button
-              onClick={() => setSelectedElement(null)}
-              style={{
-                padding: '2px 8px',
-                fontSize: '12px',
-                backgroundColor: 'transparent',
-                color: '#0969da',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              ✕
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: selectedElements.length > 1 ? '8px' : 0 }}>
+              <span style={{ fontWeight: 600 }}>
+                選択中の要素: {selectedElements.length}個
+              </span>
+              <button
+                onClick={() => setSelectedElements([])}
+                style={{
+                  padding: '2px 8px',
+                  fontSize: '12px',
+                  backgroundColor: 'transparent',
+                  color: '#0969da',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                すべてクリア
+              </button>
+            </div>
+            {selectedElements.map((element, index) => (
+              <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: index > 0 ? '4px' : 0 }}>
+                <span>
+                  {selectedElements.length > 1 && `${index + 1}. `}
+                  <code style={{ fontFamily: 'monospace', fontSize: '11px' }}>{element.selector}</code>
+                </span>
+                <button
+                  onClick={() => setSelectedElements((prev) => prev.filter((_, i) => i !== index))}
+                  style={{
+                    padding: '2px 6px',
+                    fontSize: '11px',
+                    backgroundColor: 'transparent',
+                    color: '#0969da',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
           </div>
         )}
 
