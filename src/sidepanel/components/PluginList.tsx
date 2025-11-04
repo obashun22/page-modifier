@@ -48,7 +48,7 @@ function PluginItem({
             <h3 className="m-0 text-base font-semibold text-gray-900 dark:text-gray-100">
               {pluginData.plugin.name}
             </h3>
-            <p className="mt-1 text-[13px] text-github-gray-600 dark:text-gray-400">
+            <p className="mt-1 text-[13px] text-gray-500 dark:text-gray-400">
               {pluginData.plugin.description || 'No description'}
             </p>
             <div className="mt-2 text-xs text-github-gray-400 dark:text-gray-400">

@@ -202,7 +202,7 @@ export default function OperationItem({ operation }: OperationItemProps) {
           {operation.type}
         </span>
         {operation.description && (
-          <span className="text-xs text-gray-800 dark:text-gray-200 font-medium flex-1">
+          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium flex-1">
             {operation.description}
           </span>
         )}
