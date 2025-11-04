@@ -454,7 +454,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       </div>
 
       {/* 入力エリア */}
-      <div className="p-3 border-t border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      <div className="p-3 border-t border-github-gray-300 dark:border-gray-700 bg-github-gray-50 dark:bg-gray-800">
         {selectedElements.map((element, index) => (
           <div
             key={index}
@@ -479,7 +479,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
             className={`p-2 text-[13px] border rounded-md cursor-pointer flex items-center justify-center transition-all ${
               isSelectingElement
                 ? 'bg-github-blue-500 text-white border-github-blue-500'
-                : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-github-blue-500 hover:text-github-blue-500'
+                : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-github-gray-300 dark:border-gray-600 hover:bg-github-gray-50 dark:hover:bg-gray-600 hover:border-github-blue-500 hover:text-github-blue-500'
             }`}
           >
             <FiMousePointer size={18} />

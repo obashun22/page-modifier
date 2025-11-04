@@ -23,6 +23,7 @@ interface DetailSection {
 }
 
 export default function OperationItem({ operation }: OperationItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [detailSection, setDetailSection] = useState<DetailSection | null>(null);
   // Selectorを表示すべきかチェック
   const shouldShowSelector = () => {
@@ -191,52 +192,62 @@ export default function OperationItem({ operation }: OperationItemProps) {
   }, [operation]);
 
   return (
-    <div className="px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-[13px] w-full box-border">
+    <div
+      className="px-3 py-2.5 bg-white dark:bg-gray-700 border border-github-gray-300 dark:border-gray-600 rounded-md text-[13px] w-full box-border cursor-pointer"
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
       {/* ヘッダー: [type] description */}
-      <div className="flex gap-2 items-center mb-2">
+      <div className="flex gap-2 items-center">
         <span className="px-2 py-0.5 bg-github-blue-50 dark:bg-github-blue-900 text-github-blue-500 dark:text-github-blue-400 rounded-xl text-[11px] font-semibold">
           {operation.type}
         </span>
         {operation.description && (
-          <span className="text-xs text-gray-800 dark:text-gray-200 font-medium">
+          <span className="text-xs text-gray-800 dark:text-gray-200 font-medium flex-1">
             {operation.description}
           </span>
         )}
       </div>
 
-      {/* Selector */}
-      {shouldShowSelector() && operation.selector && (
-        <div className="mb-2">
-          <div className="text-[11px] text-gray-500 dark:text-gray-400 font-semibold mb-1">
-            Selector:
-          </div>
-          <code className="block text-xs text-gray-800 dark:text-gray-200 font-mono bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded">
-            {operation.selector}
-          </code>
-        </div>
-      )}
+      {/* 詳細部分（展開時のみ表示） */}
+      {isExpanded && (
+        <div className="mt-2">
+          {/* Selector */}
+          {shouldShowSelector() && operation.selector && (
+            <div className="mb-2">
+              <div className="text-[11px] text-github-gray-400 dark:text-gray-400 font-semibold mb-1">
+                Selector:
+              </div>
+              <code className="block text-xs text-gray-700 dark:text-gray-200 font-mono bg-github-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                {operation.selector}
+              </code>
+            </div>
+          )}
 
-      {/* Execute用のRun表示 */}
-      {detailSection && detailSection.run && (
-        <div className="mb-2">
-          <span className="text-[11px] text-gray-600 dark:text-gray-300">Run: </span>
-          <code className="text-xs text-gray-800 dark:text-gray-200 font-mono bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-            {detailSection.run}
-          </code>
-        </div>
-      )}
+          {/* Execute用のRun表示 */}
+          {detailSection && detailSection.run && (
+            <div className="mb-2">
+              <div className="text-[11px] text-github-gray-400 dark:text-gray-400 font-semibold mb-1">
+                Run:
+              </div>
+              <code className="block text-xs text-gray-700 dark:text-gray-200 font-mono bg-github-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                {detailSection.run}
+              </code>
+            </div>
+          )}
 
-      {/* 詳細セクション */}
-      {detailSection && (
-        <div>
-          <div className="text-[11px] text-gray-500 dark:text-gray-400 font-semibold mb-1">
-            {detailSection.label}:
-          </div>
-          <pre className="m-0 text-[11px] font-mono bg-gray-50 dark:bg-gray-800 px-2 py-1.5 rounded overflow-x-auto">
-            <code className="text-gray-800 dark:text-gray-200">
-              {detailSection.content}
-            </code>
-          </pre>
+          {/* 詳細セクション */}
+          {detailSection && (
+            <div>
+              <div className="text-[11px] text-github-gray-400 dark:text-gray-400 font-semibold mb-1">
+                {detailSection.label}:
+              </div>
+              <pre className="m-0 text-[11px] font-mono bg-github-gray-100 dark:bg-gray-800 px-2 py-1.5 rounded overflow-x-auto">
+                <code className="text-gray-700 dark:text-gray-200">
+                  {detailSection.content}
+                </code>
+              </pre>
+            </div>
+          )}
         </div>
       )}
     </div>

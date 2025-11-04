@@ -5,7 +5,6 @@
  */
 
 import { useState, useEffect } from 'react';
-import { FiDownload } from 'react-icons/fi';
 import PluginList from './PluginList';
 import PluginEditor from './PluginEditor';
 import type { PluginData, Settings } from '../../shared/storage-types';
@@ -173,28 +172,16 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
           onCancel={() => setSelectedPluginData(null)}
         />
       ) : (
-        <>
-          <div className="px-3 pt-3 flex justify-end">
-            <button
-              onClick={handleImport}
-              disabled={importing}
-              className={`px-4 py-2 text-sm bg-github-blue-500 dark:bg-github-blue-600 text-white border-none rounded-md font-semibold flex items-center gap-2 hover:bg-github-blue-600 dark:hover:bg-github-blue-700 ${
-                importing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-              }`}
-            >
-              <FiDownload size={16} />
-              {importing ? 'インポート中...' : 'インポート'}
-            </button>
-          </div>
-          <PluginList
-            plugins={plugins}
-            onPluginSelect={handlePluginSelect}
-            onPluginDelete={handlePluginDelete}
-            onPluginToggle={handlePluginToggle}
-            onPluginExport={handlePluginExport}
-            onPluginEdit={(plugin) => onEditPlugin(plugin)}
-          />
-        </>
+        <PluginList
+          plugins={plugins}
+          onPluginSelect={handlePluginSelect}
+          onPluginDelete={handlePluginDelete}
+          onPluginToggle={handlePluginToggle}
+          onPluginExport={handlePluginExport}
+          onPluginEdit={(plugin) => onEditPlugin(plugin)}
+          onImport={handleImport}
+          importing={importing}
+        />
       )}
     </div>
   );

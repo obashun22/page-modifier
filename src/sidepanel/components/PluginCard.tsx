@@ -45,7 +45,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
 
   return (
     <div
-      className="relative p-4 rounded-lg bg-gray-50 dark:bg-gray-800"
+      className="relative p-4 rounded-lg bg-github-gray-50 dark:bg-gray-800"
       style={{ border: `2px solid ${getBorderColor()}` }}
     >
       {/* 削除ボタン（referencingモード時のみ右上に表示） */}
@@ -114,7 +114,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
           {onUndo && (
             <button
               onClick={onUndo}
-              className="px-4 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="px-4 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-github-gray-300 dark:border-gray-600 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5 hover:bg-github-gray-50 dark:hover:bg-gray-600"
             >
               <FaUndo size={14} />
               元に戻す
@@ -133,7 +133,7 @@ export default function PluginCard({ plugin, mode, onApprove, onReject, onDismis
           </button>
           <button
             onClick={onReject}
-            className="flex-1 px-4 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-600"
+            className="flex-1 px-4 py-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-github-gray-300 dark:border-gray-600 rounded-md cursor-pointer font-semibold flex items-center justify-center gap-1.5 hover:bg-github-gray-50 dark:hover:bg-gray-600"
           >
             <FaTimes size={14} />
             キャンセル

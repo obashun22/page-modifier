@@ -40,7 +40,7 @@ export default function MessageItem({ message }: MessageItemProps) {
         {/* メッセージバブル */}
         <div
           className={`px-3.5 py-2.5 rounded-[18px] text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${
-            isUser ? 'bg-github-blue-500 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+            isUser ? 'bg-github-blue-500 text-white' : 'bg-github-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
           }`}
         >
           {message.content}

@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { FiMessageSquare, FiEdit3, FiUpload, FiTrash2, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiMessageSquare, FiEdit3, FiUpload, FiTrash2, FiChevronDown, FiChevronUp, FiDownload } from 'react-icons/fi';
 import { MdToggleOn, MdToggleOff } from 'react-icons/md';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
@@ -18,6 +18,8 @@ interface PluginListProps {
   onPluginToggle: (pluginId: string, enabled: boolean) => void;
   onPluginExport: (pluginId: string) => void;
   onPluginEdit: (plugin: Plugin) => void;
+  onImport: () => void;
+  importing: boolean;
 }
 
 interface PluginItemProps {
@@ -40,29 +42,29 @@ function PluginItem({
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
   return (
-    <div className="p-4 mb-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700">
+    <div className="p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="m-0 text-base font-semibold text-gray-900 dark:text-gray-100">
               {pluginData.plugin.name}
             </h3>
-            <p className="mt-1 text-[13px] text-gray-600 dark:text-gray-400">
+            <p className="mt-1 text-[13px] text-github-gray-600 dark:text-gray-400">
               {pluginData.plugin.description || 'No description'}
             </p>
-            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Plugin ID: <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-900 dark:text-gray-100">
+            <div className="mt-2 text-xs text-github-gray-400 dark:text-gray-400">
+              Plugin ID: <span className="font-mono bg-github-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-200">
                 {pluginData.plugin.id}
               </span>
             </div>
-            <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-              Domain: <span className="font-mono bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-900 dark:text-gray-100">
+            <div className="mt-1.5 text-xs text-github-gray-400 dark:text-gray-400">
+              Domain: <span className="font-mono bg-github-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-200">
                 {pluginData.plugin.targetDomains.join(', ')}
               </span>
             </div>
             {/* 操作内容（ドロップダウン） */}
             <div
               onClick={() => setIsOperationsOpen(!isOperationsOpen)}
-              className="mt-1.5 cursor-pointer flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"
+              className="mt-1.5 cursor-pointer flex items-center gap-1 text-xs text-github-gray-400 dark:text-gray-400"
             >
               <span className="underline">{pluginData.plugin.operations.length} operations</span>
               {isOperationsOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
@@ -85,7 +87,7 @@ function PluginItem({
       </div>
 
         {isOperationsOpen && (
-          <div className="mt-2 py-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+          <div className="mt-2 py-3 bg-github-gray-50 dark:bg-gray-800 rounded-md">
             <div className="flex flex-col gap-2">
               {pluginData.plugin.operations.map((op, opIndex) => (
                 <OperationItem key={opIndex} operation={op} />
@@ -137,31 +139,61 @@ export default function PluginList({
   onPluginToggle,
   onPluginExport,
   onPluginEdit,
+  onImport,
+  importing,
 }: PluginListProps) {
   if (plugins.length === 0) {
     return (
-      <div className="py-10 px-5 text-center text-gray-600 flex-1 overflow-y-auto">
-        <p>プラグインがありません</p>
-        <p className="text-sm mt-2">
-          チャットでプラグインを作成するか、JSONファイルをインポートしてください
-        </p>
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-3 pt-3 flex justify-end">
+          <button
+            onClick={onImport}
+            disabled={importing}
+            className={`px-4 py-2 text-sm bg-github-blue-500 dark:bg-github-blue-600 text-white border-none rounded-md font-semibold flex items-center gap-2 hover:bg-github-blue-600 dark:hover:bg-github-blue-700 ${
+              importing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+            }`}
+          >
+            <FiDownload size={16} />
+            {importing ? 'インポート中...' : 'インポート'}
+          </button>
+        </div>
+        <div className="py-10 px-5 text-center text-github-gray-600">
+          <p>プラグインがありません</p>
+          <p className="text-sm mt-2">
+            チャットでプラグインを作成するか、JSONファイルをインポートしてください
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-3 flex-1 overflow-y-auto">
-      {plugins.map((pluginData) => (
-        <PluginItem
-          key={pluginData.plugin.id}
-          pluginData={pluginData}
-          onPluginSelect={onPluginSelect}
-          onPluginDelete={onPluginDelete}
-          onPluginToggle={onPluginToggle}
-          onPluginExport={onPluginExport}
-          onPluginEdit={onPluginEdit}
-        />
-      ))}
+    <div className="flex-1 overflow-y-auto">
+      <div className="px-3 pt-3 flex justify-end">
+        <button
+          onClick={onImport}
+          disabled={importing}
+          className={`px-4 py-2 text-sm bg-github-blue-500 dark:bg-github-blue-600 text-white border-none rounded-md font-semibold flex items-center gap-2 hover:bg-github-blue-600 dark:hover:bg-github-blue-700 ${
+            importing ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+          }`}
+        >
+          <FiDownload size={16} />
+          {importing ? 'インポート中...' : 'インポート'}
+        </button>
+      </div>
+      <div className="p-3">
+        {plugins.map((pluginData) => (
+          <PluginItem
+            key={pluginData.plugin.id}
+            pluginData={pluginData}
+            onPluginSelect={onPluginSelect}
+            onPluginDelete={onPluginDelete}
+            onPluginToggle={onPluginToggle}
+            onPluginExport={onPluginExport}
+            onPluginEdit={onPluginEdit}
+          />
+        ))}
+      </div>
     </div>
   );
 }
