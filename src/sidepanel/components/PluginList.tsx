@@ -165,7 +165,7 @@ export default function PluginList({
                 <MdToggleOff size={48} color="#6c757d" />
               )}
             </button>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
               すべて
             </span>
           </div>
@@ -208,7 +208,7 @@ export default function PluginList({
               <MdToggleOff size={48} color="#6c757d" />
             )}
           </button>
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
             すべて
           </span>
         </div>
