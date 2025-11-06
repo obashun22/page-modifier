@@ -20,6 +20,8 @@ interface PluginListProps {
   onPluginEdit: (plugin: Plugin) => void;
   onImport: () => void;
   importing: boolean;
+  autoApplyPlugins: boolean;
+  onToggleAutoApply: (enabled: boolean) => void;
 }
 
 interface PluginItemProps {
@@ -29,6 +31,7 @@ interface PluginItemProps {
   onPluginToggle: (pluginId: string, enabled: boolean) => void;
   onPluginExport: (pluginId: string) => void;
   onPluginEdit: (plugin: Plugin) => void;
+  autoApplyPlugins: boolean;
 }
 
 function PluginItem({
@@ -38,11 +41,12 @@ function PluginItem({
   onPluginToggle,
   onPluginExport,
   onPluginEdit,
+  autoApplyPlugins,
 }: PluginItemProps) {
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
   return (
-    <div className="p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700">
+    <div className={`p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700 ${!autoApplyPlugins ? 'opacity-40' : ''}`}>
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="m-0 text-base font-semibold text-gray-900 dark:text-gray-100">
@@ -141,11 +145,32 @@ export default function PluginList({
   onPluginEdit,
   onImport,
   importing,
+  autoApplyPlugins,
+  onToggleAutoApply,
 }: PluginListProps) {
   if (plugins.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto">
-        <div className="px-3 pt-3 flex justify-end">
+        <div className="px-3 pt-3 flex justify-between items-center">
+          {/* 全体スイッチ */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onToggleAutoApply(!autoApplyPlugins)}
+              className="p-0 w-12 h-7 bg-transparent border-none cursor-pointer flex items-center justify-center"
+              title={autoApplyPlugins ? 'すべてのプラグインを無効化' : 'すべてのプラグインを有効化'}
+            >
+              {autoApplyPlugins ? (
+                <MdToggleOn size={48} color="#28a745" />
+              ) : (
+                <MdToggleOff size={48} color="#6c757d" />
+              )}
+            </button>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              すべて
+            </span>
+          </div>
+
+          {/* インポートボタン */}
           <button
             onClick={onImport}
             disabled={importing}
@@ -169,7 +194,26 @@ export default function PluginList({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="px-3 pt-3 flex justify-end">
+      <div className="px-3 pt-3 flex justify-between items-center">
+        {/* 全体スイッチ */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onToggleAutoApply(!autoApplyPlugins)}
+            className="p-0 w-12 h-7 bg-transparent border-none cursor-pointer flex items-center justify-center"
+            title={autoApplyPlugins ? 'すべてのプラグインを無効化' : 'すべてのプラグインを有効化'}
+          >
+            {autoApplyPlugins ? (
+              <MdToggleOn size={48} color="#28a745" />
+            ) : (
+              <MdToggleOff size={48} color="#6c757d" />
+            )}
+          </button>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            すべて
+          </span>
+        </div>
+
+        {/* インポートボタン */}
         <button
           onClick={onImport}
           disabled={importing}
@@ -191,6 +235,7 @@ export default function PluginList({
             onPluginToggle={onPluginToggle}
             onPluginExport={onPluginExport}
             onPluginEdit={onPluginEdit}
+            autoApplyPlugins={autoApplyPlugins}
           />
         ))}
       </div>

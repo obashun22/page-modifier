@@ -90,13 +90,20 @@ class ContentScript {
    * プラグインを実行
    */
   private async executePlugins(plugins: Plugin[]): Promise<void> {
-    // 現在のセキュリティレベルを取得
+    // 現在の設定を取得
     const settingsResponse = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
     const securityLevel: SecurityLevel = settingsResponse.settings?.securityLevel || 'safe';
+    const autoApplyPlugins: boolean = settingsResponse.settings?.autoApplyPlugins ?? true;
+
+    // 全体の自動適用が無効の場合、すべてのプラグインをスキップ
+    if (!autoApplyPlugins) {
+      console.log('[PageModifier] Auto-apply is disabled globally. Skipping all plugins.');
+      return;
+    }
 
     // プラグインは古い順に実行（配列の逆順 = 最も古いプラグインから）
     for (const plugin of plugins.slice().reverse()) {
-      // 自動適用フラグチェック
+      // 個別プラグインの自動適用フラグチェック
       if (!plugin.autoApply) {
         console.log(`[PageModifier] Skipping plugin ${plugin.id}: autoApply is false`);
         continue;

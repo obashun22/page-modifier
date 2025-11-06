@@ -19,9 +19,11 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   const [plugins, setPlugins] = useState<PluginData[]>([]);
   const [selectedPluginData, setSelectedPluginData] = useState<PluginData | null>(null);
   const [importing, setImporting] = useState(false);
+  const [settings, setSettings] = useState<Settings | null>(null);
 
   useEffect(() => {
     loadPlugins();
+    loadSettings();
 
     // chrome.storageの変更を監視してプラグイン一覧を自動更新
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
@@ -29,6 +31,11 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
       if (changes['page_modifier_plugins']) {
         console.log('[PluginManagementView] Plugins updated in storage, reloading...');
         loadPlugins();
+      }
+      // 設定が変更された場合
+      if (changes['page_modifier_settings']) {
+        console.log('[PluginManagementView] Settings updated in storage, reloading...');
+        loadSettings();
       }
     };
 
@@ -46,6 +53,16 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
 
     if (response.success) {
       setPlugins(response.plugins);
+    }
+  };
+
+  const loadSettings = async () => {
+    const response = await chrome.runtime.sendMessage({
+      type: 'GET_SETTINGS',
+    });
+
+    if (response.success) {
+      setSettings(response.settings);
     }
   };
 
@@ -163,6 +180,31 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     input.click();
   };
 
+  const handleToggleAutoApply = async (enabled: boolean) => {
+    if (!settings) return;
+
+    const updatedSettings = { ...settings, autoApplyPlugins: enabled };
+
+    await chrome.runtime.sendMessage({
+      type: 'UPDATE_SETTINGS',
+      settings: updatedSettings,
+    });
+
+    setSettings(updatedSettings);
+
+    // アクティブなタブをページリロード
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      for (const tab of tabs) {
+        if (tab.id) {
+          await chrome.tabs.reload(tab.id);
+        }
+      }
+    } catch (error) {
+      console.error('タブのリロードに失敗しました', error);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       {selectedPluginData ? (
@@ -181,6 +223,8 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
           onPluginEdit={(plugin) => onEditPlugin(plugin)}
           onImport={handleImport}
           importing={importing}
+          autoApplyPlugins={settings?.autoApplyPlugins ?? true}
+          onToggleAutoApply={handleToggleAutoApply}
         />
       )}
     </div>
