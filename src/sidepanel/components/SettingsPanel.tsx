@@ -108,23 +108,6 @@ export default function SettingsPanel({ isDarkMode, onToggleDarkMode }: Settings
       </div>
 
       <div className="mb-5">
-        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-900 dark:text-gray-100">
-          <input
-            type="checkbox"
-            checked={settings.showNotifications}
-            onChange={(e) =>
-              setSettings({ ...settings, showNotifications: e.target.checked })
-            }
-            className="cursor-pointer"
-          />
-          <span>通知を表示する</span>
-        </label>
-        <p className="mt-1 ml-6 text-xs text-gray-600 dark:text-gray-400">
-          プラグインの実行や更新時に通知を表示します
-        </p>
-      </div>
-
-      <div className="mb-5">
         <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">
           セキュリティレベル
         </label>

@@ -29,7 +29,6 @@ export interface PluginData {
 /** 全体設定 */
 export interface Settings {
   autoApplyPlugins: boolean;          // プラグイン自動適用
-  showNotifications: boolean;         // 通知表示
   theme: 'light' | 'dark' | 'auto';   // テーマ
   apiKey?: string;                    // Claude APIキー（暗号化推奨）
   securityLevel: SecurityLevel;       // セキュリティレベル
@@ -50,7 +49,6 @@ export interface StorageData {
 /** デフォルト設定 */
 export const DEFAULT_SETTINGS: Settings = {
   autoApplyPlugins: true,
-  showNotifications: true,
   theme: 'auto',
   securityLevel: 'advanced',
 };
