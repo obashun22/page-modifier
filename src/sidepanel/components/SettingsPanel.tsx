@@ -42,11 +42,9 @@ export default function SettingsPanel({ isDarkMode, onToggleDarkMode }: Settings
         settings,
       });
 
-      // セキュリティレベルまたは自動適用設定が変更された場合、アクティブなタブをリロード
+      // セキュリティレベルが変更された場合、アクティブなタブをリロード
       if (previousSettings) {
-        const needsReload =
-          settings.securityLevel !== previousSettings.securityLevel ||
-          settings.autoApplyPlugins !== previousSettings.autoApplyPlugins;
+        const needsReload = settings.securityLevel !== previousSettings.securityLevel;
 
         if (needsReload) {
           await reloadActiveTabs();
@@ -106,23 +104,6 @@ export default function SettingsPanel({ isDarkMode, onToggleDarkMode }: Settings
         </button>
         <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
           ダークモードとライトモードを切り替えます
-        </p>
-      </div>
-
-      <div className="mb-5">
-        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-900 dark:text-gray-100">
-          <input
-            type="checkbox"
-            checked={settings.autoApplyPlugins}
-            onChange={(e) =>
-              setSettings({ ...settings, autoApplyPlugins: e.target.checked })
-            }
-            className="cursor-pointer"
-          />
-          <span>プラグインを自動的に適用する</span>
-        </label>
-        <p className="mt-1 ml-6 text-xs text-gray-600 dark:text-gray-400">
-          有効化されたプラグインを対象ドメインで自動的に実行します
         </p>
       </div>
 
