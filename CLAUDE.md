@@ -10,12 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 技術スタック
 
-- **ビルド**: Vite 5.4+ (マルチエントリーポイント設定が必要)
-- **フロントエンド**: React 18 + TypeScript 5.6
+- **ビルド**: Vite 5.4+ + @crxjs/vite-plugin (Chrome Extension専用プラグイン)
+- **フロントエンド**: React 18 + TypeScript 5.6 + Tailwind CSS 3.4
 - **拡張機能**: Chrome Extension Manifest V3
-- **AI統合**: Anthropic Claude API
+- **AI統合**: Anthropic Claude API (@anthropic-ai/sdk)
 - **バリデーション**: Zod
-- **テスト**: Vitest + @testing-library/react + Playwright
+- **テスト**: Vitest + @testing-library/react (jsdom環境)
 
 ## アーキテクチャ
 
@@ -39,7 +39,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 │  ├─ Plugin Engine                        │
 │  ├─ Element Selector                     │
 │  ├─ Event Manager                        │
-│  └─ MutationObserver                     │
+│  ├─ MutationObserver                     │
+│  └─ Main World Script (CSP回避)         │
 └─────────────────────────────────────────┘
 ```
 
@@ -55,16 +56,32 @@ src/
 │   ├── plugin-engine.ts
 │   ├── element-selector.ts
 │   ├── event-manager.ts
-│   └── operations/    # insert, remove, hide, style等
+│   ├── main-world-script.ts    # MAIN World実行スクリプト
+│   └── notification-utils.ts
 ├── sidepanel/         # Side Panel UI
 │   ├── App.tsx
-│   ├── components/
-│   └── services/
+│   ├── main.tsx
+│   ├── index.html
+│   ├── index.css
+│   ├── components/    # NavigationBar, ChatView, PluginManagementView等
+│   └── services/      # claude-api-client.ts, ai-service.ts
 ├── shared/            # 共有型定義・バリデーション
 │   ├── types.ts
 │   ├── plugin-schema.ts
-│   └── validator.ts
-└── utils/
+│   ├── validator.ts
+│   ├── chat-types.ts
+│   ├── storage-types.ts
+│   ├── plugin-security-checker.ts
+│   ├── security-analyzer.ts
+│   └── url-validator.ts
+└── utils/             # plugin-utils.ts, uuid.ts
+tests/
+├── unit/              # ユニットテスト
+│   ├── content/
+│   ├── shared/
+│   └── utils/
+├── fixtures/          # テストデータ
+└── setup.ts           # テストセットアップ
 ```
 
 ### プラグインJSON設計
@@ -177,63 +194,78 @@ npm run build
 ### テスト実行
 
 ```bash
-# 全テスト
+# 全テスト（watch mode）
 npm test
 
-# ユニットテストのみ
+# ユニットテストのみ（一度だけ実行）
 npm run test:unit
-
-# 統合テスト
-npm run test:integration
-
-# E2Eテスト
-npm run test:e2e
 
 # カバレッジレポート
 npm run test:coverage
 ```
 
+**テスト環境:**
+- Vitest + jsdom環境でユニットテストを実行
+- 現在実装済み: plugin-schema、plugin-utils、security-analyzerのユニットテスト
+- テストファイル: `tests/unit/` ディレクトリ配下
+
 ### Vite設定の重要ポイント
 
-Chrome Extensionは複数エントリーポイントが必要：
+**@crxjs/vite-plugin**を使用してChrome Extensionをビルド：
 
 ```typescript
 // vite.config.ts
-build: {
-  rollupOptions: {
-    input: {
-      sidepanel: 'src/sidepanel/index.html',
-      background: 'src/background/service-worker.ts',
-      content: 'src/content/content-script.ts',
+import { crx } from '@crxjs/vite-plugin';
+import manifest from './manifest.json';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    crx({ manifest }),  // manifest.jsonから自動でエントリーポイントを設定
+  ],
+  build: {
+    rollupOptions: {
+      input: {
+        // MAIN World Scriptを個別にビルド
+        'main-world-script': resolve(__dirname, 'src/content/main-world-script.ts'),
+      },
+      output: {
+        entryFileNames: (chunkInfo) => {
+          if (chunkInfo.name === 'main-world-script') {
+            return 'assets/main-world-script.js';
+          }
+          return 'assets/[name]-[hash].js';
+        },
+      },
     },
   },
-}
+});
 ```
 
-変更後は拡張機能のリロードが必要（HMRは動作しない）。
+**ポイント:**
+- manifest.jsonで定義されたエントリーポイント（background, content_scripts, side_panel）は自動で処理される
+- main-world-script.tsは別途rollupOptionsで個別ビルドが必要
+- 変更後は拡張機能のリロードが必要（HMRは動作しない）
 
-## 実装計画書
+## 実装状況
 
-`docs/plans/`に14の詳細実装計画書があります：
+プロジェクトの主要機能は実装済みです：
 
-| Phase | 計画書 | 内容 |
-|-------|--------|------|
-| 1 | 00_project_setup | プロジェクトセットアップ |
-| 1 | 01_plugin_schema | プラグインスキーマ・型定義 |
-| 2 | 02_plugin_storage | chrome.storageでのプラグイン管理 |
-| 2 | 03_plugin_engine | JSON解釈・DOM操作エンジン |
-| 2 | 04_operations | 各種操作（insert, remove等）実装 |
-| 3 | 05_element_selector | 要素選択UI・セレクター生成 |
-| 3 | 06_event_handling | イベント・アクション処理 |
-| 3 | 07_content_script | Content Scriptメイン実装 |
-| 4 | 08_background_worker | Service Workerメイン実装 |
-| 5 | 09_chat_ui | チャットインターフェース |
-| 6 | 10_ai_integration | Claude API統合 |
-| 5 | 11_plugin_management_ui | プラグイン管理画面 |
-| 7 | 12_security | セキュリティ対策・サンドボックス |
-| 8 | 13_testing | テスト戦略・実装 |
-
-各計画書には実装手順、コード例、依存関係、テスト観点が記載されています。
+- ✅ プラグインスキーマ・型定義（Zod + TypeScript）
+- ✅ chrome.storageでのプラグイン管理
+- ✅ JSON解釈・DOM操作エンジン（PluginEngine）
+- ✅ 各種操作（insert, remove, hide, show, style, modify, replace, execute）
+- ✅ 要素選択UI・セレクター生成
+- ✅ イベント・アクション処理
+- ✅ Content Script実装
+- ✅ Background Service Worker実装
+- ✅ チャットインターフェース
+- ✅ Claude API統合
+- ✅ プラグイン管理UI
+- ✅ セキュリティチェック（3段階のセキュリティレベル）
+- ✅ Main World Script（CSP制約回避）
+- ✅ Storage API（window.pluginStorage）
+- 🟡 テスト（ユニットテストのみ実装済み）
 
 ## セキュリティ
 
@@ -273,22 +305,41 @@ build: {
    - ユーザー各自のAPIキー設定が必要
    - レート制限・トークン数の考慮
 
-## ドキュメント規約
+## 開発規約
 
 ユーザーのグローバルCLAUDE.md (`~/.claude/CLAUDE.md`) に記載の規約に従う：
 
-- **ドキュメント配置**:
+- **バージョン管理**:
+  - 機能ごとにブランチを切って開発
+  - 完成次第mainブランチにマージ
+  - mainブランチは常に正常に動作する状態を維持
+
+- **ドキュメント管理**（必要に応じて作成）:
   - `docs/requirements/`: 要件定義書
   - `docs/designs/`: 設計書
-  - `docs/plans/`: 実装計画書（作成済み）
   - `docs/progress/`: 進捗管理
 
-- **進捗管理**: `docs/progress/`にタスクリストとプログレスバー付きドキュメントを作成
-
-- **バージョン管理**: 機能ごとにブランチを切り、完成後mainにマージ
+- **コード管理**:
+  - 命名規則を明確にする
+  - 適切にコメントを記載する
+  - 過剰な実装を避ける
+  - 再利用性や保守性に留意する
 
 ## 参考情報
 
-- Chrome Extension Manifest V3: https://developer.chrome.com/docs/extensions/mv3/
-- Anthropic Claude API: https://docs.anthropic.com/
-- Vite for Chrome Extension: マルチエントリーポイント設定が必須
+### 公式ドキュメント
+- [Chrome Extension Manifest V3](https://developer.chrome.com/docs/extensions/mv3/)
+- [Chrome Extension Match Patterns](https://developer.chrome.com/docs/extensions/develop/concepts/match-patterns)
+- [Anthropic Claude API](https://docs.anthropic.com/)
+- [Vite](https://vitejs.dev/)
+- [@crxjs/vite-plugin](https://crxjs.dev/vite-plugin/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Zod](https://zod.dev/)
+
+### 主要技術
+- **React 18**: UIライブラリ
+- **TypeScript 5.6**: 型安全性
+- **Vite + @crxjs/vite-plugin**: ビルドツール（Chrome Extension専用）
+- **Tailwind CSS**: ユーティリティファーストCSS
+- **Zod**: スキーマバリデーション
+- **Vitest**: テストフレームワーク
