@@ -60,7 +60,7 @@ export function hasCustomJSAction(plugin: Plugin): boolean {
     if (operation.element?.events) {
       for (const event of operation.element.events) {
         // アクションのカスタムJSをチェック
-        if (event.action.type === 'custom' && event.action.code) {
+        if (event.action.type === 'custom' && event.action.params.code) {
           return true;
         }
         // イベント条件のカスタムコードをチェック

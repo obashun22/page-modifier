@@ -80,27 +80,96 @@ export const ConditionSchema = z.object({
 
 // ==================== アクションスキーマ ====================
 
-/** アクションスキーマ */
-export const ActionSchema = z.object({
-  type: z.enum([
-    'copyText',
-    'navigate',
-    'toggleClass',
-    'addClass',
-    'removeClass',
-    'style',
-    'toggle',
-    'custom',
-    'apiCall',
-  ]),
+/** copyTextアクション用パラメータスキーマ */
+const CopyTextParamsSchema = z.object({
   selector: z.string().optional(),
   value: z.string().optional(),
-  className: z.string().optional(),
-  style: StyleObjectSchema.optional(),
-  code: z.string().optional(),
-  url: z.string().optional(),
-  notification: z.string().optional(),
-}) satisfies z.ZodType<Action>;
+});
+
+/** navigateアクション用パラメータスキーマ */
+const NavigateParamsSchema = z.object({
+  url: z.string().min(1),
+});
+
+/** クラス操作アクション用パラメータスキーマ */
+const ClassParamsSchema = z.object({
+  className: z.string().min(1),
+  selector: z.string().optional(),
+});
+
+/** styleアクション用パラメータスキーマ */
+const StyleParamsSchema = z.object({
+  style: StyleObjectSchema,
+  selector: z.string().optional(),
+});
+
+/** toggleアクション用パラメータスキーマ */
+const ToggleParamsSchema = z.object({
+  selector: z.string().optional(),
+});
+
+/** customアクション用パラメータスキーマ */
+const CustomParamsSchema = z.object({
+  code: z.string().min(1),
+  selector: z.string().optional(),
+});
+
+/** apiCallアクション用パラメータスキーマ */
+const ApiCallParamsSchema = z.object({
+  url: z.string().min(1),
+  method: z.string().optional(),
+  headers: z.record(z.string()).optional(),
+  data: z.any().optional(),
+});
+
+/** アクションスキーマ（Discriminated Union） */
+export const ActionSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('copyText'),
+    params: CopyTextParamsSchema,
+    notification: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('navigate'),
+    params: NavigateParamsSchema,
+    notification: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('toggleClass'),
+    params: ClassParamsSchema,
+    notification: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('addClass'),
+    params: ClassParamsSchema,
+    notification: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('removeClass'),
+    params: ClassParamsSchema,
+    notification: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('style'),
+    params: StyleParamsSchema,
+    notification: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('toggle'),
+    params: ToggleParamsSchema,
+    notification: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('custom'),
+    params: CustomParamsSchema,
+    notification: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal('apiCall'),
+    params: ApiCallParamsSchema,
+    notification: z.string().optional(),
+  }),
+]) satisfies z.ZodType<Action>;
 
 // ==================== イベントスキーマ ====================
 

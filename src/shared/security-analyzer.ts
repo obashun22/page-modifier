@@ -150,7 +150,7 @@ export class SecurityAnalyzer {
     // element.eventsの中のcustomアクションをチェック
     if (operation.element?.events) {
       const hasCustomAction = operation.element.events.some(
-        (event) => event.action.type === 'custom' && event.action.code
+        (event) => event.action.type === 'custom' && event.action.params.code
       );
       if (hasCustomAction) {
         return true;
@@ -206,7 +206,7 @@ export class SecurityAnalyzer {
     const apiAction = operation.element?.events?.find(
       (event) => event.action.type === 'apiCall'
     );
-    return apiAction?.action.url || null;
+    return apiAction?.action.type === 'apiCall' ? apiAction.action.params.url : null;
   }
 
   /**
@@ -232,7 +232,15 @@ export class SecurityAnalyzer {
   private findSuspiciousUrls(operation: Operation): string | null {
     if (operation.element?.events) {
       for (const event of operation.element.events) {
-        const url = event.action.url;
+        let url: string | undefined;
+
+        // navigateまたはapiCallアクションの場合のみURLを取得
+        if (event.action.type === 'navigate') {
+          url = event.action.params.url;
+        } else if (event.action.type === 'apiCall') {
+          url = event.action.params.url;
+        }
+
         if (url) {
           // javascript:スキーム
           if (url.toLowerCase().startsWith('javascript:')) {

@@ -371,28 +371,30 @@ export class PluginEngine {
           await this.actionNavigate(action);
           break;
         case 'toggleClass':
-          this.actionToggleClass(action, element);
+          this.actionToggleClass(action, element, parentContext);
           break;
         case 'addClass':
-          this.actionAddClass(action, element);
+          this.actionAddClass(action, element, parentContext);
           break;
         case 'removeClass':
-          this.actionRemoveClass(action, element);
+          this.actionRemoveClass(action, element, parentContext);
           break;
         case 'style':
-          this.actionStyle(action, element);
+          this.actionStyle(action, element, parentContext);
           break;
         case 'toggle':
-          this.actionToggle(action, element);
+          this.actionToggle(action, element, parentContext);
           break;
         case 'custom':
-          this.actionCustom(action, element, event);
+          await this.actionCustom(action, element, event);
           break;
         case 'apiCall':
           await this.actionApiCall(action);
           break;
         default:
-          console.warn(`[PluginEngine] Unknown action type: ${action.type}`);
+          // TypeScriptの exhaustiveness check
+          const _exhaustive: never = action;
+          console.warn(`[PluginEngine] Unknown action type:`, _exhaustive);
       }
     } catch (error) {
       console.error('[PluginEngine] Action execution failed:', error);
@@ -534,17 +536,17 @@ export class PluginEngine {
   /**
    * テキストをコピー
    */
-  private async actionCopyText(action: Action, element: HTMLElement, parentContext: HTMLElement): Promise<void> {
+  private async actionCopyText(action: Extract<Action, { type: 'copyText' }>, element: HTMLElement, parentContext: HTMLElement): Promise<void> {
     let text: string;
 
-    if (action.value) {
+    if (action.params.value) {
       // 固定値を使用（テンプレート変数展開）
-      text = await resolveTemplateVariables(action.value);
-    } else if (action.selector) {
+      text = await resolveTemplateVariables(action.params.value);
+    } else if (action.params.selector) {
       // セレクターで対象を取得
-      const targetEl = this.resolveActionSelector(action.selector, element, parentContext)[0];
+      const targetEl = this.resolveActionSelector(action.params.selector, element, parentContext)[0];
       if (!targetEl) {
-        console.error(`[PluginEngine] Target not found: ${action.selector}`);
+        console.error(`[PluginEngine] Target not found: ${action.params.selector}`);
         return;
       }
       text = targetEl.textContent || '';
@@ -570,14 +572,9 @@ export class PluginEngine {
   /**
    * ページ遷移
    */
-  private async actionNavigate(action: Action): Promise<void> {
-    if (!action.url) {
-      console.error('[PluginEngine] Navigate action requires url');
-      return;
-    }
-
+  private async actionNavigate(action: Extract<Action, { type: 'navigate' }>): Promise<void> {
     // テンプレート変数展開
-    const url = await resolveTemplateVariables(action.url);
+    const url = await resolveTemplateVariables(action.params.url);
 
     // セキュリティチェック: javascript:スキームを禁止
     if (url.toLowerCase().startsWith('javascript:')) {
@@ -592,45 +589,61 @@ export class PluginEngine {
   /**
    * クラスを切り替え
    */
-  private actionToggleClass(action: Action, element: HTMLElement): void {
-    if (action.className) {
-      element.classList.toggle(action.className);
+  private actionToggleClass(action: Extract<Action, { type: 'toggleClass' }>, element: HTMLElement, parentContext: HTMLElement): void {
+    const target = action.params.selector
+      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
+      : element;
+
+    if (target) {
+      target.classList.toggle(action.params.className);
     }
   }
 
   /**
    * クラスを追加
    */
-  private actionAddClass(action: Action, element: HTMLElement): void {
-    if (action.className) {
-      element.classList.add(action.className);
+  private actionAddClass(action: Extract<Action, { type: 'addClass' }>, element: HTMLElement, parentContext: HTMLElement): void {
+    const target = action.params.selector
+      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
+      : element;
+
+    if (target) {
+      target.classList.add(action.params.className);
     }
   }
 
   /**
    * クラスを削除
    */
-  private actionRemoveClass(action: Action, element: HTMLElement): void {
-    if (action.className) {
-      element.classList.remove(action.className);
+  private actionRemoveClass(action: Extract<Action, { type: 'removeClass' }>, element: HTMLElement, parentContext: HTMLElement): void {
+    const target = action.params.selector
+      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
+      : element;
+
+    if (target) {
+      target.classList.remove(action.params.className);
     }
   }
 
   /**
    * スタイルを適用
    */
-  private actionStyle(action: Action, element: HTMLElement): void {
-    if (action.style) {
-      Object.assign(element.style, action.style);
+  private actionStyle(action: Extract<Action, { type: 'style' }>, element: HTMLElement, parentContext: HTMLElement): void {
+    const target = action.params.selector
+      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
+      : element;
+
+    if (target) {
+      Object.assign(target.style, action.params.style);
     }
   }
 
   /**
    * 表示/非表示を切り替え
    */
-  private actionToggle(action: Action, element: HTMLElement): void {
-    const target = action.selector
-      ? this.resolveActionSelector(action.selector, element, element.parentElement as HTMLElement)[0]
+  private actionToggle(action: Extract<Action, { type: 'toggle' }>, element: HTMLElement, parentContext: HTMLElement): void {
+    const target = action.params.selector
+      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
       : element;
 
     if (target) {
@@ -641,12 +654,10 @@ export class PluginEngine {
   /**
    * カスタムJS実行（サンドボックス化）
    */
-  private async actionCustom(action: Action, _element: HTMLElement, event?: UIEvent): Promise<void> {
-    if (!action.code) return;
-
+  private async actionCustom(action: Extract<Action, { type: 'custom' }>, _element: HTMLElement, event?: UIEvent): Promise<void> {
     // セキュリティレベルの確認
     const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
-    
+
     if (settings.settings?.securityLevel !== 'advanced') {
       console.warn('[PluginEngine] Custom JS requires security level "advanced"');
       showNotification(
@@ -667,8 +678,8 @@ export class PluginEngine {
         {
           type: 'EXECUTE_CUSTOM_JS',
           requestId,
-          code: action.code,
-          selector: action.selector,
+          code: action.params.code,
+          selector: action.params.selector,
           context: {
             event: event
               ? {
@@ -732,14 +743,9 @@ export class PluginEngine {
   /**
    * 外部API呼び出し
    */
-  private async actionApiCall(action: Action): Promise<void> {
-    if (!action.url) {
-      console.error('[PluginEngine] apiCall requires url');
-      return;
-    }
-
+  private async actionApiCall(action: Extract<Action, { type: 'apiCall' }>): Promise<void> {
     // テンプレート変数展開
-    const url = await resolveTemplateVariables(action.url);
+    const url = await resolveTemplateVariables(action.params.url);
 
     // セキュリティチェック: HTTPSのみ許可
     if (!url.toLowerCase().startsWith('https://')) {
@@ -749,9 +755,9 @@ export class PluginEngine {
     }
 
     fetch(url, {
-      method: action.method || 'GET',
-      headers: action.headers,
-      body: action.data ? JSON.stringify(action.data) : undefined,
+      method: action.params.method || 'GET',
+      headers: action.params.headers,
+      body: action.params.data ? JSON.stringify(action.params.data) : undefined,
     })
       .then((res) => res.json())
       .then((data) => {
@@ -834,7 +840,12 @@ export class PluginEngine {
 
     // actionCustomと同じロジックでスクリプト実行
     await this.actionCustom(
-      { type: 'custom', code: operation.code },
+      {
+        type: 'custom',
+        params: {
+          code: operation.code,
+        },
+      },
       document.body
     );
 

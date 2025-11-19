@@ -81,20 +81,59 @@ export interface Condition {
 
 // ==================== アクション ====================
 
-/** アクション定義 */
-export interface Action {
-  type: ActionType;
-  selector?: string;           // ターゲット要素
-  value?: string;              // 値（copyText等で使用）
-  className?: string;          // クラス名（toggleClass等）
-  style?: StyleObject;         // スタイル
-  code?: string;               // カスタムコード
-  url?: string;                // URL（navigate等）
-  notification?: string;       // 通知メッセージ
-  method?: string;             // HTTPメソッド（apiCall用）
-  headers?: Record<string, string>; // HTTPヘッダー（apiCall用）
-  data?: any;                  // リクエストデータ（apiCall用）
+/** copyText アクション用パラメータ */
+export interface CopyTextParams {
+  selector?: string;           // コピー元要素のセレクター（未指定時は要素自身）
+  value?: string;              // コピーする固定値（テンプレート変数使用可）
 }
+
+/** navigate アクション用パラメータ */
+export interface NavigateParams {
+  url: string;                 // 遷移先URL（テンプレート変数使用可）
+}
+
+/** クラス操作アクション用パラメータ */
+export interface ClassParams {
+  className: string;           // 操作対象のクラス名
+  selector?: string;           // ターゲット要素（未指定時は要素自身）
+}
+
+/** style アクション用パラメータ */
+export interface StyleParams {
+  style: StyleObject;          // 適用するスタイル
+  selector?: string;           // ターゲット要素（未指定時は要素自身）
+}
+
+/** toggle アクション用パラメータ */
+export interface ToggleParams {
+  selector?: string;           // 切り替え対象要素（未指定時は要素自身）
+}
+
+/** custom アクション用パラメータ */
+export interface CustomParams {
+  code: string;                // 実行するカスタムJavaScriptコード
+  selector?: string;           // 対象要素のセレクター
+}
+
+/** apiCall アクション用パラメータ */
+export interface ApiCallParams {
+  url: string;                 // APIエンドポイントURL（テンプレート変数使用可）
+  method?: string;             // HTTPメソッド（デフォルト: GET）
+  headers?: Record<string, string>; // HTTPヘッダー
+  data?: any;                  // リクエストボディデータ
+}
+
+/** アクション定義（Discriminated Union） */
+export type Action =
+  | { type: 'copyText'; params: CopyTextParams; notification?: string }
+  | { type: 'navigate'; params: NavigateParams; notification?: string }
+  | { type: 'toggleClass'; params: ClassParams; notification?: string }
+  | { type: 'addClass'; params: ClassParams; notification?: string }
+  | { type: 'removeClass'; params: ClassParams; notification?: string }
+  | { type: 'style'; params: StyleParams; notification?: string }
+  | { type: 'toggle'; params: ToggleParams; notification?: string }
+  | { type: 'custom'; params: CustomParams; notification?: string }
+  | { type: 'apiCall'; params: ApiCallParams; notification?: string };
 
 // ==================== イベント ====================
 
