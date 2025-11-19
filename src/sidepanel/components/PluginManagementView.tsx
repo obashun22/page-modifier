@@ -180,10 +180,10 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     input.click();
   };
 
-  const handleToggleAutoApply = async (enabled: boolean) => {
+  const handleTogglePluginsEnabled = async (enabled: boolean) => {
     if (!settings) return;
 
-    const updatedSettings = { ...settings, autoApplyPlugins: enabled };
+    const updatedSettings = { ...settings, pluginsEnabled: enabled };
 
     await chrome.runtime.sendMessage({
       type: 'UPDATE_SETTINGS',
@@ -223,8 +223,8 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
           onPluginEdit={(plugin) => onEditPlugin(plugin)}
           onImport={handleImport}
           importing={importing}
-          autoApplyPlugins={settings?.autoApplyPlugins ?? true}
-          onToggleAutoApply={handleToggleAutoApply}
+          pluginsEnabled={settings?.pluginsEnabled ?? true}
+          onTogglePluginsEnabled={handleTogglePluginsEnabled}
         />
       )}
     </div>

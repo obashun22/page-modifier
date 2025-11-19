@@ -7,17 +7,84 @@ import { PluginSchema } from '../../../src/shared/plugin-schema';
 
 describe('PluginSchema', () => {
   describe('Valid plugins', () => {
-    it('should validate a minimal valid plugin', () => {
+    it('should validate a plugin with Match Pattern (full format)', () => {
       const validPlugin = {
-        id: 'test-plugin',
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Plugin',
+        version: '1.0.0',
+        targetDomains: ['https://example.com/*'],
+        enabled: true,
+        operations: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            description: '',
+            type: 'hide',
+            selector: '.element',
+          },
+        ],
+      };
+
+      const result = PluginSchema.safeParse(validPlugin);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate a plugin with domain name (legacy format)', () => {
+      const validPlugin = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Test Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
-            id: 'op-1',
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            description: '',
+            type: 'hide',
+            selector: '.element',
+          },
+        ],
+      };
+
+      const result = PluginSchema.safeParse(validPlugin);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate multiple Match Patterns', () => {
+      const validPlugin = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Plugin',
+        version: '1.0.0',
+        targetDomains: [
+          'https://github.com/*',
+          '*://*.github.com/*',
+          'example.com', // 後方互換
+        ],
+        enabled: true,
+        operations: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            description: '',
+            type: 'hide',
+            selector: '.element',
+          },
+        ],
+      };
+
+      const result = PluginSchema.safeParse(validPlugin);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate wildcard patterns', () => {
+      const validPlugin = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Plugin',
+        version: '1.0.0',
+        targetDomains: ['*://*/*'], // すべてのHTTP/HTTPSサイト
+        enabled: true,
+        operations: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            description: '',
             type: 'hide',
             selector: '.element',
           },
@@ -30,15 +97,15 @@ describe('PluginSchema', () => {
 
     it('should validate a plugin with insert operation', () => {
       const pluginWithInsert = {
-        id: 'insert-plugin',
+        id: '123e4567-e89b-12d3-a456-426614174002',
         name: 'Insert Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
-            id: 'op-1',
+            id: '123e4567-e89b-12d3-a456-426614174003',
+            description: '',
             type: 'insert',
             selector: '.container',
             position: 'beforeend',
@@ -56,15 +123,15 @@ describe('PluginSchema', () => {
 
     it('should validate recursive element structure', () => {
       const pluginWithChildren = {
-        id: 'nested-plugin',
+        id: '123e4567-e89b-12d3-a456-426614174004',
         name: 'Nested Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
-            id: 'op-1',
+            id: '123e4567-e89b-12d3-a456-426614174005',
+            description: '',
             type: 'insert',
             selector: 'body',
             element: {
@@ -93,14 +160,76 @@ describe('PluginSchema', () => {
   });
 
   describe('Invalid plugins', () => {
+    it('should reject invalid Match Pattern (wildcard in middle)', () => {
+      const invalidPlugin = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Plugin',
+        version: '1.0.0',
+        targetDomains: ['https://www.*.com/*'], // ワイルドカードが中央にある
+        enabled: true,
+        operations: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            description: '',
+            type: 'hide',
+            selector: '.element',
+          },
+        ],
+      };
+
+      const result = PluginSchema.safeParse(invalidPlugin);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid Match Pattern (invalid scheme)', () => {
+      const invalidPlugin = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Plugin',
+        version: '1.0.0',
+        targetDomains: ['ftp://example.com/*'], // 無効なスキーム
+        enabled: true,
+        operations: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            description: '',
+            type: 'hide',
+            selector: '.element',
+          },
+        ],
+      };
+
+      const result = PluginSchema.safeParse(invalidPlugin);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty targetDomains', () => {
+      const invalidPlugin = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Plugin',
+        version: '1.0.0',
+        targetDomains: [],
+        enabled: true,
+        operations: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            description: '',
+            type: 'hide',
+            selector: '.element',
+          },
+        ],
+      };
+
+      const result = PluginSchema.safeParse(invalidPlugin);
+      expect(result.success).toBe(false);
+    });
+
     it('should reject invalid version format', () => {
       const invalidPlugin = {
-        id: 'test-plugin',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Test Plugin',
         version: 'invalid',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [],
       };
 
@@ -110,15 +239,15 @@ describe('PluginSchema', () => {
 
     it('should reject invalid operation type', () => {
       const invalidPlugin = {
-        id: 'test-plugin',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Test Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
-            id: 'op-1',
+            id: '123e4567-e89b-12d3-a456-426614174001',
+            description: '',
             type: 'invalid-type',
             selector: '.container',
           },
@@ -135,8 +264,7 @@ describe('PluginSchema', () => {
         // name missing
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [],
       };
 

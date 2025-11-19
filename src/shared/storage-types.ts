@@ -28,7 +28,7 @@ export interface PluginData {
 
 /** 全体設定 */
 export interface Settings {
-  autoApplyPlugins: boolean;          // プラグイン自動適用
+  pluginsEnabled: boolean;            // プラグイン機能全体の有効/無効（マスタースイッチ）
   theme: 'light' | 'dark' | 'auto';   // テーマ
   apiKey?: string;                    // Claude APIキー（暗号化推奨）
   securityLevel: SecurityLevel;       // セキュリティレベル
@@ -48,7 +48,7 @@ export interface StorageData {
 
 /** デフォルト設定 */
 export const DEFAULT_SETTINGS: Settings = {
-  autoApplyPlugins: true,
+  pluginsEnabled: true,
   theme: 'auto',
   securityLevel: 'advanced',
 };

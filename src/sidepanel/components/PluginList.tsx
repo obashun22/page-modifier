@@ -20,8 +20,8 @@ interface PluginListProps {
   onPluginEdit: (plugin: Plugin) => void;
   onImport: () => void;
   importing: boolean;
-  autoApplyPlugins: boolean;
-  onToggleAutoApply: (enabled: boolean) => void;
+  pluginsEnabled: boolean;
+  onTogglePluginsEnabled: (enabled: boolean) => void;
 }
 
 interface PluginItemProps {
@@ -31,7 +31,7 @@ interface PluginItemProps {
   onPluginToggle: (pluginId: string, enabled: boolean) => void;
   onPluginExport: (pluginId: string) => void;
   onPluginEdit: (plugin: Plugin) => void;
-  autoApplyPlugins: boolean;
+  pluginsEnabled: boolean;
 }
 
 function PluginItem({
@@ -41,12 +41,12 @@ function PluginItem({
   onPluginToggle,
   onPluginExport,
   onPluginEdit,
-  autoApplyPlugins,
+  pluginsEnabled,
 }: PluginItemProps) {
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
   return (
-    <div className={`p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700 ${!autoApplyPlugins ? 'opacity-40' : ''}`}>
+    <div className={`p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700 ${!pluginsEnabled ? 'opacity-40' : ''}`}>
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="m-0 text-base font-semibold text-gray-900 dark:text-gray-100">
@@ -55,12 +55,17 @@ function PluginItem({
             <p className="mt-1 text-[13px] text-gray-500 dark:text-gray-400">
               {pluginData.plugin.description || 'No description'}
             </p>
-            <div className="mt-2 text-xs text-github-gray-400 dark:text-gray-400">
+            <div className="mt-1.5 text-xs text-github-gray-400 dark:text-gray-400">
               Plugin ID: <span className="font-mono bg-github-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-200">
                 {pluginData.plugin.id}
               </span>
             </div>
-            <div className="mt-1.5 text-xs text-github-gray-400 dark:text-gray-400">
+            <div className="mt-1 text-xs text-github-gray-400 dark:text-gray-400">
+              Version: <span className="font-mono bg-github-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-200">
+                {pluginData.plugin.version}
+              </span>
+            </div>
+            <div className="mt-1 text-xs text-github-gray-400 dark:text-gray-400">
               Domain: <span className="font-mono bg-github-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-200">
                 {pluginData.plugin.targetDomains.join(', ')}
               </span>
@@ -68,7 +73,7 @@ function PluginItem({
             {/* 操作内容（ドロップダウン） */}
             <div
               onClick={() => setIsOperationsOpen(!isOperationsOpen)}
-              className="mt-1.5 cursor-pointer flex items-center gap-1 text-xs text-github-gray-400 dark:text-gray-400"
+              className="mt-1 cursor-pointer flex items-center gap-1 text-xs text-github-gray-400 dark:text-gray-400"
             >
               <span className="underline">{pluginData.plugin.operations.length} operations</span>
               {isOperationsOpen ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
@@ -145,8 +150,8 @@ export default function PluginList({
   onPluginEdit,
   onImport,
   importing,
-  autoApplyPlugins,
-  onToggleAutoApply,
+  pluginsEnabled,
+  onTogglePluginsEnabled,
 }: PluginListProps) {
   if (plugins.length === 0) {
     return (
@@ -155,11 +160,11 @@ export default function PluginList({
           {/* 全体スイッチ */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onToggleAutoApply(!autoApplyPlugins)}
+              onClick={() => onTogglePluginsEnabled(!pluginsEnabled)}
               className="p-0 w-12 h-7 bg-transparent border-none cursor-pointer flex items-center justify-center"
-              title={autoApplyPlugins ? 'すべてのプラグインを無効化' : 'すべてのプラグインを有効化'}
+              title={pluginsEnabled ? 'プラグイン機能を無効化' : 'プラグイン機能を有効化'}
             >
-              {autoApplyPlugins ? (
+              {pluginsEnabled ? (
                 <MdToggleOn size={48} color="#28a745" />
               ) : (
                 <MdToggleOff size={48} color="#6c757d" />
@@ -198,11 +203,11 @@ export default function PluginList({
         {/* 全体スイッチ */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => onToggleAutoApply(!autoApplyPlugins)}
+            onClick={() => onTogglePluginsEnabled(!pluginsEnabled)}
             className="p-0 w-12 h-7 bg-transparent border-none cursor-pointer flex items-center justify-center"
-            title={autoApplyPlugins ? 'すべてのプラグインを無効化' : 'すべてのプラグインを有効化'}
+            title={pluginsEnabled ? 'プラグイン機能を無効化' : 'プラグイン機能を有効化'}
           >
-            {autoApplyPlugins ? (
+            {pluginsEnabled ? (
               <MdToggleOn size={48} color="#28a745" />
             ) : (
               <MdToggleOff size={48} color="#6c757d" />
@@ -235,7 +240,7 @@ export default function PluginList({
             onPluginToggle={onPluginToggle}
             onPluginExport={onPluginExport}
             onPluginEdit={onPluginEdit}
-            autoApplyPlugins={autoApplyPlugins}
+            pluginsEnabled={pluginsEnabled}
           />
         ))}
       </div>

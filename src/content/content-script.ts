@@ -93,19 +93,19 @@ class ContentScript {
     // 現在の設定を取得
     const settingsResponse = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
     const securityLevel: SecurityLevel = settingsResponse.settings?.securityLevel || 'safe';
-    const autoApplyPlugins: boolean = settingsResponse.settings?.autoApplyPlugins ?? true;
+    const pluginsEnabled: boolean = settingsResponse.settings?.pluginsEnabled ?? true;
 
-    // 全体の自動適用が無効の場合、すべてのプラグインをスキップ
-    if (!autoApplyPlugins) {
-      console.log('[PageModifier] Auto-apply is disabled globally. Skipping all plugins.');
+    // プラグイン機能全体が無効の場合、すべてのプラグインをスキップ
+    if (!pluginsEnabled) {
+      console.log('[PageModifier] Plugin system is disabled globally. Skipping all plugins.');
       return;
     }
 
     // プラグインは古い順に実行（配列の逆順 = 最も古いプラグインから）
     for (const plugin of plugins.slice().reverse()) {
-      // 個別プラグインの自動適用フラグチェック
-      if (!plugin.autoApply) {
-        console.log(`[PageModifier] Skipping plugin ${plugin.id}: autoApply is false`);
+      // 個別プラグインの有効化フラグチェック
+      if (!plugin.enabled) {
+        console.log(`[PageModifier] Skipping plugin ${plugin.id}: plugin is disabled`);
         continue;
       }
 

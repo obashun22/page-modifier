@@ -186,13 +186,12 @@ JSONで応答する場合は、以下のスキーマに従ってください：
 
 \`\`\`typescript
 interface Plugin {
-  id: string;                    // ユニークID（kebab-case）
+  id: string;                    // ユニークID（UUID形式）
   name: string;                  // プラグイン名
   version: string;               // バージョン（semver: "1.0.0"）
   description: string;           // 説明
-  author?: string;               // 作成者
-  targetDomains: string[];       // 対象ドメイン
-  autoApply: boolean;            // 自動適用（通常true）
+  targetDomains: string[];       // 対象Match Pattern（Chrome Extension形式）
+  enabled: boolean;              // 有効化フラグ（通常true）
   operations: Operation[];       // 操作の配列
 }
 
@@ -242,6 +241,72 @@ interface Condition {
 }
 \`\`\`
 
+## targetDomains（Match Pattern）について
+
+\`targetDomains\`には、Chrome Extension Match Pattern形式を使用してください。
+
+### Match Pattern形式
+
+基本構造: \`<scheme>://<host>/<path>\`
+
+#### scheme（スキーム）
+- \`http\`: HTTPのみ
+- \`https\`: HTTPSのみ
+- \`*\`: HTTPまたはHTTPS（両方）
+- \`file\`: ローカルファイル
+
+#### host（ホスト）
+- 完全一致: \`example.com\`
+- サブドメイン: \`*.example.com\`（api.example.com、www.example.comなどにマッチ）
+- すべて: \`*\`
+
+#### path（パス）
+- すべてのパス: \`/*\`
+- 特定パス: \`/path/*\`
+
+### Match Pattern例
+
+\`\`\`json
+// HTTPSのみ、特定ドメイン
+"targetDomains": ["https://github.com/*"]
+
+// HTTPとHTTPS両方、特定ドメイン
+"targetDomains": ["*://example.com/*"]
+
+// サブドメインを含む
+"targetDomains": ["*://*.google.com/*"]
+
+// 複数のドメイン
+"targetDomains": [
+  "https://github.com/*",
+  "https://*.github.com/*"
+]
+
+// すべてのHTTPSサイト
+"targetDomains": ["https://*/*"]
+
+// すべてのサイト（HTTP/HTTPS）
+"targetDomains": ["*://*/*"]
+\`\`\`
+
+### 重要な注意事項
+
+1. **ワイルドカードの位置**: ホストでのワイルドカードは先頭のみ許可（\`*.example.com\`はOK、\`www.*.com\`はNG）
+2. **\`*.example.com\`の挙動**: サブドメインのみにマッチし、\`example.com\`自体は含まない
+3. **トップレベルドメイン指定不可**: \`https://google/*\`のような指定は不可。個別に\`https://google.com/*\`、\`https://google.co.jp/*\`を指定する
+4. **パスは必須**: \`/*\`を末尾に付ける
+
+### 後方互換性（ドメイン名のみ）
+
+以下の形式も引き続きサポートされます（非推奨）：
+
+\`\`\`json
+"targetDomains": ["example.com"]  // 自動的にhttps://example.com/*として扱われる
+"targetDomains": ["*.example.com"]  // 自動的にhttps://*.example.com/*として扱われる
+\`\`\`
+
+**推奨**: 新しいプラグインでは必ず完全なMatch Pattern形式を使用してください。
+
 ## 出力形式
 
 必ず以下の形式で出力してください：
@@ -252,9 +317,8 @@ interface Condition {
   "name": "プラグイン名",
   "version": "1.0.0",
   "description": "説明",
-  "targetDomains": ["example.com"],
-  "autoApply": true,
-  "priority": 500,
+  "targetDomains": ["https://example.com/*"],
+  "enabled": true,
   "operations": [...]
 }
 \`\`\`
@@ -287,9 +351,8 @@ interface Condition {
   "name": "シンプルコピーボタン",
   "version": "1.0.0",
   "description": "ページURLをコピーするボタンを追加",
-  "author": "AI Generated",
-  "targetDomains": ["*"],
-  "autoApply": true,
+  "targetDomains": ["*://*/*"],
+  "enabled": true,
   "operations": [
     {
       "id": "insert-copy-button",
@@ -342,9 +405,8 @@ interface Condition {
   "name": "初回実行スクリプト",
   "version": "1.0.0",
   "description": "ページ読み込み時に1度だけ実行",
-  "author": "AI Generated",
-  "targetDomains": ["example.com"],
-  "autoApply": true,
+  "targetDomains": ["https://example.com/*"],
+  "enabled": true,
   "operations": [
     {
       "id": "log-once",
@@ -365,9 +427,8 @@ DOM変更検知時も毎回実行する場合は、**必ず冪等性を確保**�
   "name": "動的に追加される要素の処理",
   "version": "1.0.0",
   "description": "新しく追加された商品カードにバッジを追加",
-  "author": "AI Generated",
-  "targetDomains": ["example.com"],
-  "autoApply": true,
+  "targetDomains": ["https://example.com/*"],
+  "enabled": true,
   "operations": [
     {
       "id": "add-badge-to-new-items",
@@ -389,9 +450,8 @@ DOM変更検知時も毎回実行する場合は、**必ず冪等性を確保**�
   "name": "時刻表示の追加と更新",
   "version": "1.0.0",
   "description": "ヘッダー下に時刻表示を追加し、1秒ごとに更新",
-  "author": "AI Generated",
-  "targetDomains": ["example.com"],
-  "autoApply": true,
+  "targetDomains": ["https://example.com/*"],
+  "enabled": true,
   "operations": [
     {
       "id": "insert-time-display",
@@ -461,8 +521,8 @@ window.pluginStorage = {
   "name": "訪問回数カウンター",
   "version": "1.0.0",
   "description": "ページの訪問回数を記録して表示",
-  "targetDomains": ["*"],
-  "autoApply": true,
+  "targetDomains": ["*://*/*"],
+  "enabled": true,
   "operations": [
     {
       "id": "insert-counter",
@@ -505,8 +565,8 @@ window.pluginStorage = {
   "name": "ダークモード切り替え",
   "version": "1.0.0",
   "description": "全ページでダークモードを切り替え",
-  "targetDomains": ["*"],
-  "autoApply": true,
+  "targetDomains": ["*://*/*"],
+  "enabled": true,
   "operations": [
     {
       "id": "insert-toggle-button",
@@ -560,8 +620,8 @@ window.pluginStorage = {
   "name": "フォーム自動保存",
   "version": "1.0.0",
   "description": "テキストエリアの内容を自動保存",
-  "targetDomains": ["example.com"],
-  "autoApply": true,
+  "targetDomains": ["https://example.com/*"],
+  "enabled": true,
   "operations": [
     {
       "id": "setup-autosave",

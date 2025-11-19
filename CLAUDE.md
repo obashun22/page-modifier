@@ -76,25 +76,29 @@ interface Plugin {
   id: string;
   name: string;
   version: string;  // semver
-  targetDomains: string[];
-  autoApply: boolean;
-  priority: number;  // 0-1000
+  targetDomains: string[];  // Chrome Extension Match Pattern形式
+  enabled: boolean;
   operations: Operation[];
 }
 
 interface Operation {
   id: string;
-  type: 'insert' | 'remove' | 'hide' | 'show' | 'style' | 'modify' | 'replace';
-  selector: string;
+  type: 'insert' | 'remove' | 'hide' | 'show' | 'style' | 'modify' | 'replace' | 'execute';
+  selector?: string;  // execute以外では必須
   element?: Element;  // 階層的な子要素をサポート
   events?: Event[];
   condition?: Condition;
+  code?: string;  // executeタイプで使用
+  run?: 'once' | 'always';  // executeタイプの実行タイミング
 }
 ```
 
 **重要な設計ポイント:**
+- **targetDomains**: Chrome Extension Match Pattern形式（`https://example.com/*`, `*://*.github.com/*`等）をサポート
+  - 後方互換性のため、ドメイン名のみ（`example.com`）も許可
 - `Element.children`は再帰的構造をサポート（最大10階層推奨）
 - 一つのプラグインで複数の`operations`を定義可能
+- プラグインは配列の逆順（古い順）に実行される
 - 特殊セレクター構文: `parent`, `ancestor(.class)`, `next`, `prev`
 
 ### メッセージパッシング

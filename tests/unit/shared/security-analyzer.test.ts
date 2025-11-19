@@ -3,8 +3,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { SecurityAnalyzer, SecurityLevel } from '../../../src/shared/security-analyzer';
+import { SecurityAnalyzer } from '../../../src/shared/security-analyzer';
 import type { Plugin } from '../../../src/shared/types';
+import type { SecurityLevel } from '../../../src/shared/storage-types';
 
 describe('SecurityAnalyzer', () => {
   const analyzer = new SecurityAnalyzer();
@@ -16,11 +17,11 @@ describe('SecurityAnalyzer', () => {
         name: 'Safe Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
             id: 'op-1',
+            description: '',
             type: 'style',
             selector: '.element',
             style: {
@@ -31,7 +32,7 @@ describe('SecurityAnalyzer', () => {
       };
 
       const analysis = analyzer.analyze(safePlugin);
-      expect(analysis.level).toBe(SecurityLevel.SAFE);
+      expect(analysis.level).toBe('safe' as SecurityLevel);
       expect(analysis.risks).toHaveLength(0);
     });
   });
@@ -43,11 +44,11 @@ describe('SecurityAnalyzer', () => {
         name: 'Moderate Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
             id: 'op-1',
+            description: '',
             type: 'insert',
             selector: '#specific-element',
             element: {
@@ -59,7 +60,7 @@ describe('SecurityAnalyzer', () => {
       };
 
       const analysis = analyzer.analyze(moderatePlugin);
-      expect(analysis.level).toBe(SecurityLevel.MODERATE);
+      expect(analysis.level).toBe('moderate' as SecurityLevel);
       expect(analysis.risks).toHaveLength(1);
       expect(analysis.risks[0].type).toBe('inner_html');
     });
@@ -70,11 +71,11 @@ describe('SecurityAnalyzer', () => {
         name: 'API Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
             id: 'op-1',
+            description: '',
             type: 'insert',
             selector: 'body',
             element: {
@@ -95,7 +96,7 @@ describe('SecurityAnalyzer', () => {
       };
 
       const analysis = analyzer.analyze(apiPlugin);
-      expect(analysis.level).toBe(SecurityLevel.MODERATE);
+      expect(analysis.level).toBe('moderate' as SecurityLevel);
       const apiRisk = analysis.risks.find((r) => r.type === 'external_api');
       expect(apiRisk).toBeDefined();
     });
@@ -108,11 +109,11 @@ describe('SecurityAnalyzer', () => {
         name: 'Advanced Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
             id: 'op-1',
+            description: '',
             type: 'insert',
             selector: 'body',
             element: {
@@ -133,7 +134,7 @@ describe('SecurityAnalyzer', () => {
       };
 
       const analysis = analyzer.analyze(advancedPlugin);
-      expect(analysis.level).toBe(SecurityLevel.ADVANCED);
+      expect(analysis.level).toBe('advanced' as SecurityLevel);
       expect(analysis.risks.some((r) => r.type === 'custom_js')).toBe(true);
     });
 
@@ -143,11 +144,11 @@ describe('SecurityAnalyzer', () => {
         name: 'Suspicious Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
             id: 'op-1',
+            description: '',
             type: 'insert',
             selector: 'body',
             element: {
@@ -168,7 +169,7 @@ describe('SecurityAnalyzer', () => {
       };
 
       const analysis = analyzer.analyze(suspiciousPlugin);
-      expect(analysis.level).toBe(SecurityLevel.ADVANCED);
+      expect(analysis.level).toBe('advanced' as SecurityLevel);
       expect(analysis.risks.some((r) => r.type === 'suspicious_url')).toBe(true);
     });
   });
@@ -180,11 +181,11 @@ describe('SecurityAnalyzer', () => {
         name: 'Risky Plugin',
         version: '1.0.0',
         targetDomains: ['example.com'],
-        autoApply: true,
-        priority: 500,
+        enabled: true,
         operations: [
           {
             id: 'op-1',
+            description: '',
             type: 'insert',
             selector: 'body',
             element: {

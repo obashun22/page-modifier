@@ -125,7 +125,7 @@ export type ScriptRun = 'once' | 'always';
 
 /** 操作定義 */
 export interface Operation {
-  id: string;                  // 操作の一意識別子
+  id: string;                  // 操作の一意識別子（UUID形式）
   description: string;         // 操作の説明（必須、空文字列可）
   type: OperationType;         // 操作タイプ
   selector?: SelectorString;   // CSSセレクター（execute以外では必須）
@@ -142,13 +142,13 @@ export interface Operation {
 
 /** プラグイン定義 */
 export interface Plugin {
-  id: string;                  // 一意識別子
+  id: string;                  // 一意識別子（UUID形式）
   name: string;                // 表示名
   version: string;             // バージョン（semver）
-  author?: string;             // 作成者
   description?: string;        // 説明
-  targetDomains: string[];     // 適用対象ドメイン（ワイルドカード対応）
-  autoApply: boolean;          // 自動適用フラグ
+  targetDomains: string[];     // Chrome Extension Match Pattern形式（例: "https://example.com/*", "*://*.github.com/*"）
+                               // 後方互換性のため、ドメイン名のみ（例: "example.com", "*.github.com"）も許可
+  enabled: boolean;            // 有効化フラグ
   operations: Operation[];     // 操作の配列
 }
 

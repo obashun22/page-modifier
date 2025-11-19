@@ -13,6 +13,7 @@ import type {
   Action,
   Condition,
 } from './types';
+import { parseMatchPattern } from '../utils/plugin-utils';
 
 // ==================== 基本スキーマ ====================
 
@@ -21,6 +22,51 @@ export const StyleObjectSchema = z.record(z.string());
 
 /** 属性オブジェクトスキーマ */
 export const AttributeObjectSchema = z.record(z.string());
+
+/**
+ * Match Patternバリデーター
+ *
+ * Chrome Extension Match Pattern形式または後方互換のドメイン名形式を許可
+ *
+ * 有効な形式:
+ * - Match Pattern: "https://example.com/*", "*://*.github.com/*", "<all_urls>"
+ * - ドメイン名（後方互換）: "example.com", "*.github.com", "*"
+ */
+const MatchPatternSchema = z.string().refine(
+  (value) => {
+    // 空文字列は不可
+    if (value.length === 0) {
+      return false;
+    }
+
+    // Match Pattern形式の場合
+    if (value.includes('://')) {
+      const parsed = parseMatchPattern(value);
+      return parsed !== null;
+    }
+
+    // ドメイン名のみの場合（後方互換性）
+    // ワイルドカードは先頭のみ許可
+    if (value.includes('*')) {
+      // '*'のみ、または '*.domain.com' 形式
+      if (value === '*') {
+        return true;
+      }
+      if (value.startsWith('*.')) {
+        // *.の後にドメイン名があるか確認
+        const domain = value.substring(2);
+        return domain.length > 0 && domain.includes('.');
+      }
+      return false;
+    }
+
+    // 通常のドメイン名（ドットを含む必要がある）
+    return value.includes('.');
+  },
+  {
+    message: '無効なMatch Patternまたはドメイン形式です。有効な例: "https://example.com/*", "*://*.github.com/*", "example.com", "*.github.com"',
+  }
+);
 
 // ==================== 条件スキーマ ====================
 
@@ -100,7 +146,7 @@ export const ElementSchema: z.ZodType<Element> = z.lazy(() =>
 
 /** 操作スキーマ */
 export const OperationSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().uuid('idはUUID形式である必要があります'),
   description: z.string(),
   type: z.enum(['insert', 'remove', 'hide', 'show', 'style', 'modify', 'replace', 'execute']),
   selector: z.string().optional(),
@@ -147,13 +193,12 @@ export const OperationSchema = z.object({
  * プラグインJSONの完全なバリデーション
  */
 export const PluginSchema = z.object({
-  id: z.string().min(1),
+  id: z.string().uuid('idはUUID形式である必要があります'),
   name: z.string().min(1),
   version: z.string().regex(/^\d+\.\d+\.\d+$/, 'バージョンはsemver形式（例: 1.0.0）である必要があります'),
-  author: z.string().optional(),
   description: z.string().optional(),
-  targetDomains: z.array(z.string().min(1)).min(1, '少なくとも1つのドメインを指定してください'),
-  autoApply: z.boolean(),
+  targetDomains: z.array(MatchPatternSchema).min(1, '少なくとも1つのMatch Patternを指定してください'),
+  enabled: z.boolean(),
   operations: z.array(OperationSchema).min(1, '少なくとも1つの操作を指定してください'),
 }) satisfies z.ZodType<Plugin>;
 

@@ -30,6 +30,41 @@ chrome.action.onClicked.addListener(async (tab) => {
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('[PageModifier] Extension installed', details);
 
+  // マイグレーション処理（autoApply → enabled, autoApplyPlugins → pluginsEnabled）
+  if (details.reason === 'update') {
+    console.log('[PageModifier] Running migration...');
+    try {
+      // プラグインのマイグレーション
+      const allPlugins = await pluginStorage.getAllPlugins();
+      for (const pluginData of allPlugins) {
+        const plugin: any = pluginData.plugin;
+        if ('autoApply' in plugin && !('enabled' in plugin)) {
+          plugin.enabled = plugin.autoApply;
+          delete plugin.autoApply;
+          await pluginStorage.savePlugin(plugin);
+          console.log(`[PageModifier] Migrated plugin ${plugin.id}`);
+        }
+      }
+
+      // 設定のマイグレーション
+      const settings = await pluginStorage.getSettings();
+      const oldSettings: any = settings;
+      if ('autoApplyPlugins' in oldSettings && !('pluginsEnabled' in oldSettings)) {
+        const newSettings = {
+          ...oldSettings,
+          pluginsEnabled: oldSettings.autoApplyPlugins,
+        };
+        delete newSettings.autoApplyPlugins;
+        await pluginStorage.updateSettings(newSettings);
+        console.log('[PageModifier] Migrated settings');
+      }
+
+      console.log('[PageModifier] Migration completed');
+    } catch (error) {
+      console.error('[PageModifier] Migration failed:', error);
+    }
+  }
+
   // Initialize default settings
   pluginStorage.updateSettings(DEFAULT_SETTINGS).catch((error) => {
     console.error('[PageModifier] Failed to initialize settings:', error);
