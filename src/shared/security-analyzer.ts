@@ -81,13 +81,13 @@ export class SecurityAnalyzer {
         });
       }
 
-      // innerHTML使用検出
-      if (operation.element?.innerHTML) {
+      // innerHTML使用検出（insertタイプのみ）
+      if (operation.type === 'insert' && operation.params.element.innerHTML) {
         risks.push({
           type: 'inner_html',
           severity: 'medium',
           description: 'innerHTML使用によるXSSリスクがあります',
-          location: `operation[${index}].element`,
+          location: `operation[${index}].params.element`,
         });
       }
 
@@ -102,13 +102,13 @@ export class SecurityAnalyzer {
         });
       }
 
-      // 危険なセレクター検出
-      if (operation.selector && this.isDangerousSelector(operation.selector)) {
+      // 危険なセレクター検出（executeを除く）
+      if (operation.type !== 'execute' && this.isDangerousSelector(operation.params.selector)) {
         risks.push({
           type: 'dangerous_selector',
           severity: 'low',
           description: '広範囲なセレクターが使用されています',
-          location: `operation[${index}].selector`,
+          location: `operation[${index}].params.selector`,
         });
       }
 
@@ -143,25 +143,28 @@ export class SecurityAnalyzer {
    */
   private hasCustomJS(operation: Operation): boolean {
     // executeタイプのoperationのcodeフィールドをチェック
-    if (operation.type === 'execute' && operation.code) {
+    if (operation.type === 'execute' && operation.params.code) {
       return true;
     }
 
-    // element.eventsの中のcustomアクションをチェック
-    if (operation.element?.events) {
-      const hasCustomAction = operation.element.events.some(
-        (event) => event.action.type === 'custom' && event.action.params.code
-      );
-      if (hasCustomAction) {
-        return true;
+    // insertタイプのelement.eventsの中のcustomアクションをチェック
+    if (operation.type === 'insert') {
+      const element = operation.params.element;
+      if (element.events) {
+        const hasCustomAction = element.events.some(
+          (event) => event.action.type === 'custom' && event.action.params.code
+        );
+        if (hasCustomAction) {
+          return true;
+        }
       }
-    }
 
-    // 子要素も再帰的にチェック
-    if (operation.element?.children) {
-      return operation.element.children.some(
-        (child) => this.hasCustomJSInElement(child)
-      );
+      // 子要素も再帰的にチェック
+      if (element.children) {
+        return element.children.some(
+          (child) => this.hasCustomJSInElement(child)
+        );
+      }
     }
 
     return false;
@@ -193,8 +196,11 @@ export class SecurityAnalyzer {
    * 外部API呼び出しを検出
    */
   private hasExternalAPI(operation: Operation): boolean {
-    if (operation.element?.events) {
-      return operation.element.events.some((event) => event.action.type === 'apiCall');
+    if (operation.type === 'insert') {
+      const events = operation.params.element.events;
+      if (events) {
+        return events.some((event) => event.action.type === 'apiCall');
+      }
     }
     return false;
   }
@@ -203,10 +209,14 @@ export class SecurityAnalyzer {
    * API URLを抽出
    */
   private extractAPIUrl(operation: Operation): string | null {
-    const apiAction = operation.element?.events?.find(
-      (event) => event.action.type === 'apiCall'
-    );
-    return apiAction?.action.type === 'apiCall' ? apiAction.action.params.url : null;
+    if (operation.type === 'insert') {
+      const events = operation.params.element.events;
+      const apiAction = events?.find(
+        (event) => event.action.type === 'apiCall'
+      );
+      return apiAction?.action.type === 'apiCall' ? apiAction.action.params.url : null;
+    }
+    return null;
   }
 
   /**
@@ -230,31 +240,34 @@ export class SecurityAnalyzer {
    * 疑わしいURLを検出
    */
   private findSuspiciousUrls(operation: Operation): string | null {
-    if (operation.element?.events) {
-      for (const event of operation.element.events) {
-        let url: string | undefined;
+    if (operation.type === 'insert') {
+      const events = operation.params.element.events;
+      if (events) {
+        for (const event of events) {
+          let url: string | undefined;
 
-        // navigateまたはapiCallアクションの場合のみURLを取得
-        if (event.action.type === 'navigate') {
-          url = event.action.params.url;
-        } else if (event.action.type === 'apiCall') {
-          url = event.action.params.url;
-        }
-
-        if (url) {
-          // javascript:スキーム
-          if (url.toLowerCase().startsWith('javascript:')) {
-            return url;
+          // navigateまたはapiCallアクションの場合のみURLを取得
+          if (event.action.type === 'navigate') {
+            url = event.action.params.url;
+          } else if (event.action.type === 'apiCall') {
+            url = event.action.params.url;
           }
 
-          // data:スキーム
-          if (url.toLowerCase().startsWith('data:')) {
-            return url;
-          }
+          if (url) {
+            // javascript:スキーム
+            if (url.toLowerCase().startsWith('javascript:')) {
+              return url;
+            }
 
-          // 疑わしいドメイン（簡易チェック）
-          if (this.isSuspiciousDomain(url)) {
-            return url;
+            // data:スキーム
+            if (url.toLowerCase().startsWith('data:')) {
+              return url;
+            }
+
+            // 疑わしいドメイン（簡易チェック）
+            if (this.isSuspiciousDomain(url)) {
+              return url;
+            }
           }
         }
       }

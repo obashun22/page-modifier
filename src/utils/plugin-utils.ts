@@ -164,8 +164,9 @@ export function matchesDomain(url: string, pattern: string): boolean {
   if (parsed.host !== '*') {
     if (parsed.host.startsWith('*.')) {
       // ワイルドカードサブドメイン: *.example.com
+      // サブドメインのみにマッチ（ベースドメイン自体は含まない）
       const baseDomain = parsed.host.substring(2); // '*.example.com' -> 'example.com'
-      if (!urlObj.hostname.endsWith(`.${baseDomain}`) && urlObj.hostname !== baseDomain) {
+      if (!urlObj.hostname.endsWith(`.${baseDomain}`)) {
         return false;
       }
     } else {

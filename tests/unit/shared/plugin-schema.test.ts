@@ -18,8 +18,11 @@ describe('PluginSchema', () => {
           {
             id: '123e4567-e89b-12d3-a456-426614174001',
             description: '',
-            type: 'hide',
-            selector: '.element',
+            type: 'update',
+            params: {
+              selector: '.element',
+              style: { display: 'none' },
+            },
           },
         ],
       };
@@ -39,8 +42,11 @@ describe('PluginSchema', () => {
           {
             id: '123e4567-e89b-12d3-a456-426614174001',
             description: '',
-            type: 'hide',
-            selector: '.element',
+            type: 'update',
+            params: {
+              selector: '.element',
+              style: { display: 'none' },
+            },
           },
         ],
       };
@@ -64,8 +70,11 @@ describe('PluginSchema', () => {
           {
             id: '123e4567-e89b-12d3-a456-426614174001',
             description: '',
-            type: 'hide',
-            selector: '.element',
+            type: 'update',
+            params: {
+              selector: '.element',
+              style: { display: 'none' },
+            },
           },
         ],
       };
@@ -85,8 +94,11 @@ describe('PluginSchema', () => {
           {
             id: '123e4567-e89b-12d3-a456-426614174001',
             description: '',
-            type: 'hide',
-            selector: '.element',
+            type: 'update',
+            params: {
+              selector: '.element',
+              style: { display: 'none' },
+            },
           },
         ],
       };
@@ -107,11 +119,13 @@ describe('PluginSchema', () => {
             id: '123e4567-e89b-12d3-a456-426614174003',
             description: '',
             type: 'insert',
-            selector: '.container',
-            position: 'beforeend',
-            element: {
-              tag: 'div',
-              textContent: 'Hello World',
+            params: {
+              selector: '.container',
+              position: 'beforeend',
+              element: {
+                tag: 'div',
+                textContent: 'Hello World',
+              },
             },
           },
         ],
@@ -133,22 +147,25 @@ describe('PluginSchema', () => {
             id: '123e4567-e89b-12d3-a456-426614174005',
             description: '',
             type: 'insert',
-            selector: 'body',
-            element: {
-              tag: 'div',
-              attributes: {
-                class: 'parent',
+            params: {
+              selector: 'body',
+              position: 'beforeend',
+              element: {
+                tag: 'div',
+                attributes: {
+                  class: 'parent',
+                },
+                children: [
+                  {
+                    tag: 'span',
+                    textContent: 'Child 1',
+                  },
+                  {
+                    tag: 'span',
+                    textContent: 'Child 2',
+                  },
+                ],
               },
-              children: [
-                {
-                  tag: 'span',
-                  textContent: 'Child 1',
-                },
-                {
-                  tag: 'span',
-                  textContent: 'Child 2',
-                },
-              ],
             },
           },
         ],
@@ -171,8 +188,11 @@ describe('PluginSchema', () => {
           {
             id: '123e4567-e89b-12d3-a456-426614174001',
             description: '',
-            type: 'hide',
-            selector: '.element',
+            type: 'update',
+            params: {
+              selector: '.element',
+              style: { display: 'none' },
+            },
           },
         ],
       };
@@ -192,8 +212,11 @@ describe('PluginSchema', () => {
           {
             id: '123e4567-e89b-12d3-a456-426614174001',
             description: '',
-            type: 'hide',
-            selector: '.element',
+            type: 'update',
+            params: {
+              selector: '.element',
+              style: { display: 'none' },
+            },
           },
         ],
       };
@@ -213,8 +236,11 @@ describe('PluginSchema', () => {
           {
             id: '123e4567-e89b-12d3-a456-426614174001',
             description: '',
-            type: 'hide',
-            selector: '.element',
+            type: 'update',
+            params: {
+              selector: '.element',
+              style: { display: 'none' },
+            },
           },
         ],
       };

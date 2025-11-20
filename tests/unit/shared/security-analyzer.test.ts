@@ -22,10 +22,12 @@ describe('SecurityAnalyzer', () => {
           {
             id: 'op-1',
             description: '',
-            type: 'style',
-            selector: '.element',
-            style: {
-              color: 'red',
+            type: 'update',
+            params: {
+              selector: '.element',
+              style: {
+                color: 'red',
+              },
             },
           },
         ],
@@ -50,10 +52,13 @@ describe('SecurityAnalyzer', () => {
             id: 'op-1',
             description: '',
             type: 'insert',
-            selector: '#specific-element',
-            element: {
-              tag: 'div',
-              innerHTML: '<span>HTML</span>',
+            params: {
+              selector: '#specific-element',
+              position: 'beforeend',
+              element: {
+                tag: 'div',
+                innerHTML: '<span>HTML</span>',
+              },
             },
           },
         ],
@@ -77,19 +82,24 @@ describe('SecurityAnalyzer', () => {
             id: 'op-1',
             description: '',
             type: 'insert',
-            selector: 'body',
-            element: {
-              tag: 'button',
-              textContent: 'Click',
-              events: [
-                {
-                  type: 'click',
-                  action: {
-                    type: 'apiCall',
-                    url: 'https://api.example.com/data',
+            params: {
+              selector: 'body',
+              position: 'beforeend',
+              element: {
+                tag: 'button',
+                textContent: 'Click',
+                events: [
+                  {
+                    type: 'click',
+                    action: {
+                      type: 'apiCall',
+                      params: {
+                        url: 'https://api.example.com/data',
+                      },
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
           },
         ],
@@ -115,19 +125,24 @@ describe('SecurityAnalyzer', () => {
             id: 'op-1',
             description: '',
             type: 'insert',
-            selector: 'body',
-            element: {
-              tag: 'button',
-              textContent: 'Click',
-              events: [
-                {
-                  type: 'click',
-                  action: {
-                    type: 'custom',
-                    code: 'console.log("clicked")',
+            params: {
+              selector: 'body',
+              position: 'beforeend',
+              element: {
+                tag: 'button',
+                textContent: 'Click',
+                events: [
+                  {
+                    type: 'click',
+                    action: {
+                      type: 'custom',
+                      params: {
+                        code: 'console.log("clicked")',
+                      },
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
           },
         ],
@@ -150,19 +165,24 @@ describe('SecurityAnalyzer', () => {
             id: 'op-1',
             description: '',
             type: 'insert',
-            selector: 'body',
-            element: {
-              tag: 'a',
-              textContent: 'Link',
-              events: [
-                {
-                  type: 'click',
-                  action: {
-                    type: 'navigate',
-                    url: 'javascript:alert("xss")',
+            params: {
+              selector: 'body',
+              position: 'beforeend',
+              element: {
+                tag: 'a',
+                textContent: 'Link',
+                events: [
+                  {
+                    type: 'click',
+                    action: {
+                      type: 'navigate',
+                      params: {
+                        url: 'javascript:alert("xss")',
+                      },
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
           },
         ],
@@ -187,19 +207,24 @@ describe('SecurityAnalyzer', () => {
             id: 'op-1',
             description: '',
             type: 'insert',
-            selector: 'body',
-            element: {
-              tag: 'div',
-              innerHTML: '<script>alert("xss")</script>',
-              events: [
-                {
-                  type: 'click',
-                  action: {
-                    type: 'custom',
-                    code: 'alert("clicked")',
+            params: {
+              selector: 'body',
+              position: 'beforeend',
+              element: {
+                tag: 'div',
+                innerHTML: '<script>alert("xss")</script>',
+                events: [
+                  {
+                    type: 'click',
+                    action: {
+                      type: 'custom',
+                      params: {
+                        code: 'alert("clicked")',
+                      },
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
           },
         ],

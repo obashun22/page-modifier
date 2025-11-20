@@ -198,15 +198,31 @@ interface Plugin {
 interface Operation {
   id: string;                    // 操作ID
   description: string;           // 操作の説明（必須、空文字列可）
-  type: 'insert' | 'remove' | 'hide' | 'show' | 'style' | 'modify' | 'replace' | 'execute';
-  selector?: string;             // CSSセレクター（execute以外では必須）
-  position?: 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';  // insert時
-  element?: Element;             // 挿入する要素（insert/replace時）
-  style?: Record<string, string>;  // スタイル変更（style時）
-  textContent?: string;          // テキスト変更（modify時）
+  type: 'insert' | 'update' | 'delete' | 'execute';
+  params: InsertParams | UpdateParams | DeleteParams | ExecuteParams;  // 操作パラメータ
   condition?: Condition;         // 実行条件
-  code?: string;                 // 実行するJavaScriptコード（execute時）
-  run?: 'once' | 'always';       // 実行タイミング（execute時、デフォルト: 'once'）
+}
+
+interface InsertParams {
+  selector: string;              // 挿入基準となる要素のセレクター
+  position: 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
+  element: Element;              // 挿入する要素
+}
+
+interface UpdateParams {
+  selector: string;              // 更新対象要素のセレクター
+  style?: Record<string, string>;         // スタイル変更
+  attributes?: Record<string, string>;    // 属性変更
+  textContent?: string;                   // テキストコンテンツ変更
+}
+
+interface DeleteParams {
+  selector: string;              // 削除対象要素のセレクター
+}
+
+interface ExecuteParams {
+  code: string;                  // 実行するJavaScriptコード
+  run?: 'once' | 'always';       // 実行タイミング（デフォルト: 'once'）
 }
 
 interface Element {

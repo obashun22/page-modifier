@@ -159,12 +159,13 @@ export class PluginEngine {
   private async executeOperation(operation: Operation): Promise<OperationResult> {
     console.log(`[PluginEngine] Executing operation: ${operation.id} (${operation.type})`);
 
-    // executeは別処理
+    // executeは別処理（selectorが不要）
     if (operation.type === 'execute') {
       const operationKey = `${this.currentPluginId}-${operation.id}`;
 
       // run: 'once'（デフォルト）の場合、1度だけ実行
-      if (operation.run !== 'always' && this.executedOperations.has(operationKey)) {
+      const run = operation.params.run || 'once';
+      if (run === 'once' && this.executedOperations.has(operationKey)) {
         console.log(`[PluginEngine] Skipping execute ${operation.id}: already executed`);
         return {
           operationId: operation.id,
@@ -176,7 +177,7 @@ export class PluginEngine {
       await this.handleExecuteScript(operation);
 
       // run: 'once'の場合のみ実行済みマークを付ける
-      if (operation.run !== 'always') {
+      if (run === 'once') {
         this.executedOperations.add(operationKey);
       }
 
@@ -187,15 +188,11 @@ export class PluginEngine {
       };
     }
 
-    // セレクターで対象要素を取得
-    if (!operation.selector) {
-      throw new Error(`Operation ${operation.id} requires selector field`);
-    }
-
-    const targets = this.resolveSelector(operation.selector);
+    // セレクターで対象要素を取得（insert, update, deleteは全てselectorが必須）
+    const targets = this.resolveSelector(operation.params.selector);
 
     if (targets.length === 0) {
-      throw new Error(`No elements found for selector: ${operation.selector}`);
+      throw new Error(`No elements found for selector: ${operation.params.selector}`);
     }
 
     let elementsAffected = 0;
@@ -205,26 +202,16 @@ export class PluginEngine {
       case 'insert':
         elementsAffected = await this.handleInsert(targets, operation);
         break;
-      case 'remove':
-        elementsAffected = this.handleRemove(targets);
+      case 'update':
+        elementsAffected = this.handleUpdate(targets, operation);
         break;
-      case 'hide':
-        elementsAffected = this.handleHide(targets);
-        break;
-      case 'show':
-        elementsAffected = this.handleShow(targets);
-        break;
-      case 'style':
-        elementsAffected = this.handleStyle(targets, operation);
-        break;
-      case 'modify':
-        elementsAffected = this.handleModify(targets, operation);
-        break;
-      case 'replace':
-        elementsAffected = await this.handleReplace(targets, operation);
+      case 'delete':
+        elementsAffected = this.handleDelete(targets);
         break;
       default:
-        throw new Error(`Unknown operation type: ${operation.type}`);
+        // TypeScript exhaustiveness check
+        const _exhaustive: never = operation;
+        throw new Error(`Unknown operation type: ${(_exhaustive as any).type}`);
     }
 
     return {
@@ -406,11 +393,10 @@ export class PluginEngine {
   /**
    * insert操作: 要素を挿入
    */
-  private async handleInsert(targets: HTMLElement[], operation: Operation): Promise<number> {
-    if (!operation.element) {
-      throw new Error('Insert operation requires element definition');
-    }
-
+  private async handleInsert(
+    targets: HTMLElement[],
+    operation: Extract<Operation, { type: 'insert' }>
+  ): Promise<number> {
     let count = 0;
 
     for (const target of targets) {
@@ -420,19 +406,18 @@ export class PluginEngine {
         continue;
       }
 
-      const newElement = await this.createElement(operation.element!, target);
+      const newElement = await this.createElement(operation.params.element, target);
 
       // data属性で追跡可能にする
       newElement.dataset.pluginOperation = operation.id;
 
       // イベント登録
-      if (operation.element!.events) {
-        this.attachEvents(newElement, operation.element!.events, target);
+      if (operation.params.element.events) {
+        this.attachEvents(newElement, operation.params.element.events, target);
       }
 
       // 挿入
-      const position = operation.position || 'beforeend';
-      target.insertAdjacentElement(position, newElement);
+      target.insertAdjacentElement(operation.params.position, newElement);
       count++;
     }
 
@@ -449,86 +434,40 @@ export class PluginEngine {
   }
 
   /**
-   * remove操作: 要素を削除
+   * update操作: 要素を更新（スタイル/属性/コンテンツ）
    */
-  private handleRemove(targets: HTMLElement[]): number {
-    targets.forEach((target) => target.remove());
-    return targets.length;
-  }
-
-  /**
-   * hide操作: 要素を非表示
-   */
-  private handleHide(targets: HTMLElement[]): number {
+  private handleUpdate(
+    targets: HTMLElement[],
+    operation: Extract<Operation, { type: 'update' }>
+  ): number {
     targets.forEach((target) => {
-      target.style.display = 'none';
-    });
-    return targets.length;
-  }
+      // スタイル更新
+      if (operation.params.style) {
+        Object.assign(target.style, operation.params.style);
+      }
 
-  /**
-   * show操作: 要素を表示
-   */
-  private handleShow(targets: HTMLElement[]): number {
-    targets.forEach((target) => {
-      target.style.display = '';
-    });
-    return targets.length;
-  }
-
-  /**
-   * style操作: スタイルを適用
-   */
-  private handleStyle(targets: HTMLElement[], operation: Operation): number {
-    if (!operation.style) {
-      throw new Error('Style operation requires style definition');
-    }
-
-    targets.forEach((target) => {
-      Object.assign(target.style, operation.style);
-    });
-
-    return targets.length;
-  }
-
-  /**
-   * modify操作: 属性/コンテンツを変更
-   */
-  private handleModify(targets: HTMLElement[], operation: Operation): number {
-    targets.forEach((target) => {
-      if (operation.attributes) {
-        Object.entries(operation.attributes).forEach(([key, value]) => {
+      // 属性更新
+      if (operation.params.attributes) {
+        Object.entries(operation.params.attributes).forEach(([key, value]) => {
           target.setAttribute(key, value);
         });
       }
+
+      // テキストコンテンツ更新
+      if (operation.params.textContent !== undefined) {
+        target.textContent = operation.params.textContent;
+      }
     });
 
     return targets.length;
   }
 
   /**
-   * replace操作: 要素を置換
+   * delete操作: 要素を削除
    */
-  private async handleReplace(targets: HTMLElement[], operation: Operation): Promise<number> {
-    if (!operation.element) {
-      throw new Error('Replace operation requires element definition');
-    }
-
-    let count = 0;
-
-    for (const target of targets) {
-      const newElement = await this.createElement(operation.element!, target.parentElement || undefined);
-
-      // イベント登録
-      if (operation.element!.events) {
-        this.attachEvents(newElement, operation.element!.events, target.parentElement as HTMLElement);
-      }
-
-      target.replaceWith(newElement);
-      count++;
-    }
-
-    return count;
+  private handleDelete(targets: HTMLElement[]): number {
+    targets.forEach((target) => target.remove());
+    return targets.length;
   }
 
   // ==================== アクションハンドラー ====================
@@ -831,11 +770,7 @@ export class PluginEngine {
   /**
    * カスタムスクリプトを実行（execute operation）
    */
-  private async handleExecuteScript(operation: Operation): Promise<void> {
-    if (!operation.code) {
-      throw new Error('execute operation requires code field');
-    }
-
+  private async handleExecuteScript(operation: Extract<Operation, { type: 'execute' }>): Promise<void> {
     console.log(`[PluginEngine] Executing script: ${operation.id}`);
 
     // actionCustomと同じロジックでスクリプト実行
@@ -843,7 +778,7 @@ export class PluginEngine {
       {
         type: 'custom',
         params: {
-          code: operation.code,
+          code: operation.params.code,
         },
       },
       document.body
