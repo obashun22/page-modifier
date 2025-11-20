@@ -7,6 +7,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { IoSend } from 'react-icons/io5';
 import { FiMousePointer, FiPlus } from 'react-icons/fi';
+import { v4 as uuidv4 } from 'uuid';
 import MessageItem from './MessageItem';
 import PluginCard from './PluginCard';
 import { chatWithAI } from '../services/ai-service';
@@ -133,13 +134,24 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     }
   };
 
+  /**
+   * プラグインにIDを確保（IDがない場合はUUIDを生成）
+   */
+  const ensurePluginId = (plugin: Plugin): Plugin => {
+    if (!plugin.id) {
+      return { ...plugin, id: uuidv4() };
+    }
+    return plugin;
+  };
+
   // プラグイン一覧から編集対象プラグインが持ち込まれた時
   useEffect(() => {
     if (selectedPluginForEdit) {
+      const pluginWithId = ensurePluginId(selectedPluginForEdit);
       const pluginItem: ChatPlugin = {
         type: 'plugin',
         id: Date.now().toString(),
-        plugin: selectedPluginForEdit,
+        plugin: pluginWithId,
         mode: 'referencing',
         role: 'user',  // ユーザーが選択したプラグイン
         timestamp: Date.now(),
@@ -261,10 +273,11 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       } else if (response.type === 'plugin') {
         // プラグイン生成レスポンス
         const isEditing = selectedPluginForEdit !== null;
+        const pluginWithId = ensurePluginId(response.plugin);
         const pluginItem: ChatPlugin = {
           type: 'plugin',
           id: (Date.now() + 1).toString(),
-          plugin: response.plugin,
+          plugin: pluginWithId,
           mode: isEditing ? 'update_preview' : 'add_preview',
           role: 'assistant',  // AIが生成したプラグイン
           timestamp: Date.now(),
