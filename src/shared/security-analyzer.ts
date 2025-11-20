@@ -147,14 +147,30 @@ export class SecurityAnalyzer {
       return true;
     }
 
-    // insertタイプのelement.eventsの中のcustomアクションをチェック
+    // insertタイプのelement.eventsの中のcodeをチェック
     if (operation.type === 'insert') {
       const element = operation.params.element;
-      if (element.events) {
-        const hasCustomAction = element.events.some(
-          (event) => event.action.type === 'custom' && event.action.params.code
-        );
-        if (hasCustomAction) {
+      if (element.events && element.events.length > 0) {
+        // イベントコードが単純な外部API呼び出しのみの場合は custom_js とみなさない
+        const hasNonApiCode = element.events.some(event => {
+          // 外部API呼び出しパターンのみの場合は除外
+          const hasApiCall = /fetch\s*\(|XMLHttpRequest|axios\./i.test(event.code);
+          if (!hasApiCall) {
+            // API呼び出しがない場合は custom JS
+            return true;
+          }
+
+          // API呼び出しがある場合、他の危険なパターンがあるかチェック
+          const hasDangerousPatterns =
+            /eval\(|Function\(|setTimeout\(|setInterval\(/i.test(event.code) ||
+            /document\.(write|writeln|open|close)\(/i.test(event.code) ||
+            /\.innerHTML\s*=/i.test(event.code) ||
+            /(javascript|data|vbscript):/i.test(event.code);
+
+          return hasDangerousPatterns;
+        });
+
+        if (hasNonApiCode) {
           return true;
         }
       }
@@ -174,15 +190,34 @@ export class SecurityAnalyzer {
    * 要素内のカスタムJSを再帰的に検出
    */
   private hasCustomJSInElement(element: any): boolean {
-    if (element.events) {
-      // アクションのカスタムJSをチェック
-      if (element.events.some((event: any) => event.action.type === 'custom')) {
+    if (element.events && element.events.length > 0) {
+      // イベントコードが単純な外部API呼び出しのみの場合は custom_js とみなさない
+      const hasNonApiCode = element.events.some((event: any) => {
+        // 外部API呼び出しパターンのみの場合は除外
+        const hasApiCall = /fetch\s*\(|XMLHttpRequest|axios\./i.test(event.code);
+        if (!hasApiCall) {
+          // API呼び出しがない場合は custom JS
+          return true;
+        }
+
+        // API呼び出しがある場合、他の危険なパターンがあるかチェック
+        const hasDangerousPatterns =
+          /eval\(|Function\(|setTimeout\(|setInterval\(/i.test(event.code) ||
+          /document\.(write|writeln|open|close)\(/i.test(event.code) ||
+          /\.innerHTML\s*=/i.test(event.code) ||
+          /(javascript|data|vbscript):/i.test(event.code);
+
+        return hasDangerousPatterns;
+      });
+
+      if (hasNonApiCode) {
         return true;
       }
-      // イベント条件のカスタムコードをチェック
-      if (element.events.some((event: any) => event.condition?.type === 'custom' && event.condition.code)) {
-        return true;
-      }
+    }
+
+    // イベント条件のカスタムコードをチェック
+    if (element.events?.some((event: any) => event.condition?.type === 'custom' && event.condition.code)) {
+      return true;
     }
 
     if (element.children) {
@@ -194,12 +229,16 @@ export class SecurityAnalyzer {
 
   /**
    * 外部API呼び出しを検出
+   * （新設計ではイベントコードでAPI呼び出しを検出）
    */
   private hasExternalAPI(operation: Operation): boolean {
     if (operation.type === 'insert') {
       const events = operation.params.element.events;
       if (events) {
-        return events.some((event) => event.action.type === 'apiCall');
+        // イベントコード内でfetch/XMLHttpRequestを使用しているかチェック
+        return events.some((event) =>
+          /fetch\s*\(|XMLHttpRequest|axios\./i.test(event.code)
+        );
       }
     }
     return false;
@@ -207,14 +246,20 @@ export class SecurityAnalyzer {
 
   /**
    * API URLを抽出
+   * （新設計ではイベントコードからURL抽出を試みる）
    */
   private extractAPIUrl(operation: Operation): string | null {
     if (operation.type === 'insert') {
       const events = operation.params.element.events;
-      const apiAction = events?.find(
-        (event) => event.action.type === 'apiCall'
-      );
-      return apiAction?.action.type === 'apiCall' ? apiAction.action.params.url : null;
+      if (events) {
+        for (const event of events) {
+          // fetch('url') や fetch("url") のパターンを検索
+          const match = event.code.match(/fetch\s*\(\s*['"`]([^'"`]+)['"`]/);
+          if (match) {
+            return match[1];
+          }
+        }
+      }
     }
     return null;
   }
@@ -238,34 +283,26 @@ export class SecurityAnalyzer {
 
   /**
    * 疑わしいURLを検出
+   * （新設計ではイベントコード内のURLパターンを検出）
    */
   private findSuspiciousUrls(operation: Operation): string | null {
     if (operation.type === 'insert') {
       const events = operation.params.element.events;
       if (events) {
         for (const event of events) {
-          let url: string | undefined;
-
-          // navigateまたはapiCallアクションの場合のみURLを取得
-          if (event.action.type === 'navigate') {
-            url = event.action.params.url;
-          } else if (event.action.type === 'apiCall') {
-            url = event.action.params.url;
+          // javascript:、data:、vbscript: などの危険なスキームを検出
+          const match = event.code.match(/(javascript|data|vbscript):[^\s'"]+/i);
+          if (match) {
+            return match[0];
           }
 
-          if (url) {
-            // javascript:スキーム
-            if (url.toLowerCase().startsWith('javascript:')) {
-              return url;
-            }
-
-            // data:スキーム
-            if (url.toLowerCase().startsWith('data:')) {
-              return url;
-            }
-
-            // 疑わしいドメイン（簡易チェック）
-            if (this.isSuspiciousDomain(url)) {
+          // window.location や location.href での危険なURL設定を検出
+          const locationMatch = event.code.match(/(window\.)?location(\.href)?\s*=\s*['"`]([^'"`]+)['"`]/);
+          if (locationMatch) {
+            const url = locationMatch[3];
+            if (url.toLowerCase().startsWith('javascript:') ||
+                url.toLowerCase().startsWith('data:') ||
+                url.toLowerCase().startsWith('vbscript:')) {
               return url;
             }
           }
@@ -276,24 +313,6 @@ export class SecurityAnalyzer {
     return null;
   }
 
-  /**
-   * 疑わしいドメインかチェック
-   */
-  private isSuspiciousDomain(url: string): boolean {
-    try {
-      const urlObj = new URL(url);
-      const suspicious = [
-        // よくある詐欺サイトのパターン
-        /bit\.ly/,
-        /tinyurl/,
-        /\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/, // IPアドレス
-      ];
-
-      return suspicious.some((pattern) => pattern.test(urlObj.hostname));
-    } catch {
-      return false;
-    }
-  }
 
   /**
    * セキュリティレベルを決定

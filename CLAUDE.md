@@ -274,7 +274,7 @@ export default defineConfig({
 - ✅ JSON解釈・DOM操作エンジン（PluginEngine）
 - ✅ 各種操作（insert, update, delete, execute）
 - ✅ 要素選択UI・セレクター生成
-- ✅ イベント・アクション処理
+- ✅ イベント処理（JavaScriptコード実行）
 - ✅ Content Script実装
 - ✅ Background Service Worker実装
 - ✅ チャットインターフェース
@@ -290,8 +290,8 @@ export default defineConfig({
 ### 3段階のセキュリティレベル
 
 - 🟢 **Safe**: 基本DOM操作のみ（自動適用可）
-- 🟡 **Moderate**: 事前定義イベント、外部API（初回承認）
-- 🔴 **Advanced**: カスタムJS実行（毎回承認）
+- 🟡 **Moderate**: 外部API呼び出し、innerHTML使用（初回承認）
+- 🔴 **Advanced**: カスタムJavaScript実行（イベントハンドラー、execute操作）（毎回承認）
 
 ### 主要対策
 

@@ -31,7 +31,7 @@ export type InsertPosition =
   | 'beforeend'    // 対象要素の最後の子として
   | 'afterend';    // 対象要素の後
 
-// ==================== イベント・アクション ====================
+// ==================== イベント ====================
 
 /** イベントタイプ */
 export type EventType =
@@ -46,26 +46,12 @@ export type EventType =
   | 'keydown'
   | 'keyup';
 
-/** アクションタイプ */
-export type ActionType =
-  | 'copyText'        // テキストをコピー
-  | 'navigate'        // ページ遷移
-  | 'toggleClass'     // クラスを切り替え
-  | 'addClass'        // クラスを追加
-  | 'removeClass'     // クラスを削除
-  | 'style'           // スタイルを適用
-  | 'toggle'          // 表示/非表示切り替え
-  | 'custom'          // カスタムJS実行
-  | 'apiCall';        // 外部API呼び出し
-
 /** 条件タイプ */
 export type ConditionType =
   | 'exists'          // 要素が存在する
   | 'notExists'       // 要素が存在しない
   | 'matches'         // パターンにマッチ
   | 'custom';         // カスタム条件
-
-// ==================== 条件 ====================
 
 /** 実行条件 */
 export interface Condition {
@@ -75,68 +61,10 @@ export interface Condition {
   code?: string;          // カスタム条件コード
 }
 
-// ==================== アクション ====================
-
-/** copyText アクション用パラメータ */
-export interface CopyTextParams {
-  selector?: string;           // コピー元要素のセレクター（未指定時は要素自身）
-  value?: string;              // コピーする固定値（テンプレート変数使用可）
-}
-
-/** navigate アクション用パラメータ */
-export interface NavigateParams {
-  url: string;                 // 遷移先URL（テンプレート変数使用可）
-}
-
-/** クラス操作アクション用パラメータ */
-export interface ClassParams {
-  className: string;           // 操作対象のクラス名
-  selector?: string;           // ターゲット要素（未指定時は要素自身）
-}
-
-/** style アクション用パラメータ */
-export interface StyleParams {
-  style: StyleObject;          // 適用するスタイル
-  selector?: string;           // ターゲット要素（未指定時は要素自身）
-}
-
-/** toggle アクション用パラメータ */
-export interface ToggleParams {
-  selector?: string;           // 切り替え対象要素（未指定時は要素自身）
-}
-
-/** custom アクション用パラメータ */
-export interface CustomParams {
-  code: string;                // 実行するカスタムJavaScriptコード
-  selector?: string;           // 対象要素のセレクター
-}
-
-/** apiCall アクション用パラメータ */
-export interface ApiCallParams {
-  url: string;                 // APIエンドポイントURL（テンプレート変数使用可）
-  method?: string;             // HTTPメソッド（デフォルト: GET）
-  headers?: Record<string, string>; // HTTPヘッダー
-  data?: any;                  // リクエストボディデータ
-}
-
-/** アクション定義（Discriminated Union） */
-export type Action =
-  | { type: 'copyText'; params: CopyTextParams; notification?: string }
-  | { type: 'navigate'; params: NavigateParams; notification?: string }
-  | { type: 'toggleClass'; params: ClassParams; notification?: string }
-  | { type: 'addClass'; params: ClassParams; notification?: string }
-  | { type: 'removeClass'; params: ClassParams; notification?: string }
-  | { type: 'style'; params: StyleParams; notification?: string }
-  | { type: 'toggle'; params: ToggleParams; notification?: string }
-  | { type: 'custom'; params: CustomParams; notification?: string }
-  | { type: 'apiCall'; params: ApiCallParams; notification?: string };
-
-// ==================== イベント ====================
-
 /** イベントハンドラー定義 */
 export interface Event {
   type: EventType;             // イベントタイプ
-  action: Action;              // 実行するアクション
+  code: string;                // 実行するJavaScriptコード
   condition?: Condition;       // 実行条件
 }
 

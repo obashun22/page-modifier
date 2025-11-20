@@ -91,12 +91,7 @@ describe('SecurityAnalyzer', () => {
                 events: [
                   {
                     type: 'click',
-                    action: {
-                      type: 'apiCall',
-                      params: {
-                        url: 'https://api.example.com/data',
-                      },
-                    },
+                    code: "fetch('https://api.example.com/data').then(r => r.json()).then(console.log);",
                   },
                 ],
               },
@@ -134,12 +129,7 @@ describe('SecurityAnalyzer', () => {
                 events: [
                   {
                     type: 'click',
-                    action: {
-                      type: 'custom',
-                      params: {
-                        code: 'console.log("clicked")',
-                      },
-                    },
+                    code: 'console.log("clicked")',
                   },
                 ],
               },
@@ -174,12 +164,7 @@ describe('SecurityAnalyzer', () => {
                 events: [
                   {
                     type: 'click',
-                    action: {
-                      type: 'navigate',
-                      params: {
-                        url: 'javascript:alert("xss")',
-                      },
-                    },
+                    code: 'window.location.href = "javascript:alert(\\"xss\\")";',
                   },
                 ],
               },
@@ -216,12 +201,7 @@ describe('SecurityAnalyzer', () => {
                 events: [
                   {
                     type: 'click',
-                    action: {
-                      type: 'custom',
-                      params: {
-                        code: 'alert("clicked")',
-                      },
-                    },
+                    code: 'alert("clicked")',
                   },
                 ],
               },

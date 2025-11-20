@@ -9,7 +9,6 @@ import type {
   Operation,
   Element,
   Event,
-  Action,
   Condition,
 } from '../shared/types';
 import { EventManager } from './event-manager';
@@ -326,7 +325,7 @@ export class PluginEngine {
   private attachEvents(
     element: HTMLElement,
     events: Event[],
-    parentContext: HTMLElement
+    _parentContext: HTMLElement
   ): void {
     // EventManagerを使用してイベントリスナーを追跡
     this.eventManager.attachEvents(element, events, this.currentPluginId, async (event, eventObject) => {
@@ -335,56 +334,96 @@ export class PluginEngine {
         return;
       }
 
-      // アクション実行
-      await this.executeAction(event.action, element, parentContext, eventObject as any);
+      // カスタムコード実行
+      await this.executeEventCode(event.code, element, eventObject as any);
     });
   }
 
   /**
-   * アクションを実行
+   * イベントコードを実行
    */
-  private async executeAction(
-    action: Action,
-    element: HTMLElement,
-    parentContext: HTMLElement,
+  private async executeEventCode(
+    code: string,
+    _element: HTMLElement,
     event?: UIEvent
   ): Promise<void> {
+    // セキュリティレベルの確認
+    const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
+
+    if (settings.settings?.securityLevel !== 'advanced') {
+      console.warn('[PluginEngine] Event code execution requires security level "advanced"');
+      showNotification(
+        'イベントコードの実行にはセキュリティレベル「Advanced」が必要です',
+        5000,
+        'error'
+      );
+      throw new Error('Security level "advanced" required for event code execution');
+    }
+
     try {
-      switch (action.type) {
-        case 'copyText':
-          await this.actionCopyText(action, element, parentContext);
-          break;
-        case 'navigate':
-          await this.actionNavigate(action);
-          break;
-        case 'toggleClass':
-          this.actionToggleClass(action, element, parentContext);
-          break;
-        case 'addClass':
-          this.actionAddClass(action, element, parentContext);
-          break;
-        case 'removeClass':
-          this.actionRemoveClass(action, element, parentContext);
-          break;
-        case 'style':
-          this.actionStyle(action, element, parentContext);
-          break;
-        case 'toggle':
-          this.actionToggle(action, element, parentContext);
-          break;
-        case 'custom':
-          await this.actionCustom(action, element, event);
-          break;
-        case 'apiCall':
-          await this.actionApiCall(action);
-          break;
-        default:
-          // TypeScriptの exhaustiveness check
-          const _exhaustive: never = action;
-          console.warn(`[PluginEngine] Unknown action type:`, _exhaustive);
-      }
+      // リクエストIDを生成
+      const requestId = `event-code-${Date.now()}-${Math.random()}`;
+
+      // MAIN Worldにメッセージを送信
+      window.postMessage(
+        {
+          type: 'EXECUTE_CUSTOM_JS',
+          requestId,
+          code,
+          selector: null,
+          context: {
+            event: event
+              ? {
+                  type: event.type,
+                  target: event.target ? {
+                    tagName: (event.target as HTMLElement).tagName,
+                    id: (event.target as HTMLElement).id,
+                    className: (event.target as HTMLElement).className,
+                  } : null,
+                }
+              : null,
+          },
+        },
+        '*'
+      );
+
+      // MAIN Worldからのレスポンスを待つ
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          window.removeEventListener('message', handler);
+          reject(new Error('Event code execution timeout'));
+        }, 5000);
+
+        const handler = (messageEvent: MessageEvent) => {
+          if (messageEvent.source !== window) return;
+
+          const response = messageEvent.data;
+
+          if (response.type === 'CUSTOM_JS_RESULT' && response.requestId === requestId) {
+            clearTimeout(timeout);
+            window.removeEventListener('message', handler);
+
+            if (response.success) {
+              console.log('[PluginEngine] Event code executed successfully');
+              resolve();
+            } else {
+              console.error('[PluginEngine] Event code execution failed:', response.error);
+              showNotification(
+                `イベントコードの実行に失敗しました: ${response.error}`,
+                5000,
+                'error'
+              );
+              reject(new Error(response.error));
+            }
+          }
+        };
+
+        window.addEventListener('message', handler);
+      });
     } catch (error) {
-      console.error('[PluginEngine] Action execution failed:', error);
+      console.error('[PluginEngine] Event code execution failed:', error);
+      showNotification('イベントコードの実行に失敗しました', 3000, 'error');
+      throw error;
     }
   }
 
@@ -470,274 +509,6 @@ export class PluginEngine {
     return targets.length;
   }
 
-  // ==================== アクションハンドラー ====================
-
-  /**
-   * テキストをコピー
-   */
-  private async actionCopyText(action: Extract<Action, { type: 'copyText' }>, element: HTMLElement, parentContext: HTMLElement): Promise<void> {
-    let text: string;
-
-    if (action.params.value) {
-      // 固定値を使用（テンプレート変数展開）
-      text = await resolveTemplateVariables(action.params.value);
-    } else if (action.params.selector) {
-      // セレクターで対象を取得
-      const targetEl = this.resolveActionSelector(action.params.selector, element, parentContext)[0];
-      if (!targetEl) {
-        console.error(`[PluginEngine] Target not found: ${action.params.selector}`);
-        return;
-      }
-      text = targetEl.textContent || '';
-    } else {
-      // 要素自身のテキスト
-      text = element.textContent || '';
-    }
-
-    // クリップボードにコピー
-    navigator.clipboard.writeText(text).then(() => {
-      console.log('[PluginEngine] Text copied to clipboard');
-
-      // 通知表示
-      if (action.notification) {
-        showNotification(action.notification);
-      }
-    }).catch((error) => {
-      console.error('[PluginEngine] Failed to copy text:', error);
-      showNotification('コピーに失敗しました', 3000, 'error');
-    });
-  }
-
-  /**
-   * ページ遷移
-   */
-  private async actionNavigate(action: Extract<Action, { type: 'navigate' }>): Promise<void> {
-    // テンプレート変数展開
-    const url = await resolveTemplateVariables(action.params.url);
-
-    // セキュリティチェック: javascript:スキームを禁止
-    if (url.toLowerCase().startsWith('javascript:')) {
-      console.error('[PluginEngine] javascript: URLs are not allowed');
-      showNotification('セキュリティ上の理由により、このURLは開けません', 3000, 'error');
-      return;
-    }
-
-    window.location.href = url;
-  }
-
-  /**
-   * クラスを切り替え
-   */
-  private actionToggleClass(action: Extract<Action, { type: 'toggleClass' }>, element: HTMLElement, parentContext: HTMLElement): void {
-    const target = action.params.selector
-      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
-      : element;
-
-    if (target) {
-      target.classList.toggle(action.params.className);
-    }
-  }
-
-  /**
-   * クラスを追加
-   */
-  private actionAddClass(action: Extract<Action, { type: 'addClass' }>, element: HTMLElement, parentContext: HTMLElement): void {
-    const target = action.params.selector
-      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
-      : element;
-
-    if (target) {
-      target.classList.add(action.params.className);
-    }
-  }
-
-  /**
-   * クラスを削除
-   */
-  private actionRemoveClass(action: Extract<Action, { type: 'removeClass' }>, element: HTMLElement, parentContext: HTMLElement): void {
-    const target = action.params.selector
-      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
-      : element;
-
-    if (target) {
-      target.classList.remove(action.params.className);
-    }
-  }
-
-  /**
-   * スタイルを適用
-   */
-  private actionStyle(action: Extract<Action, { type: 'style' }>, element: HTMLElement, parentContext: HTMLElement): void {
-    const target = action.params.selector
-      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
-      : element;
-
-    if (target) {
-      Object.assign(target.style, action.params.style);
-    }
-  }
-
-  /**
-   * 表示/非表示を切り替え
-   */
-  private actionToggle(action: Extract<Action, { type: 'toggle' }>, element: HTMLElement, parentContext: HTMLElement): void {
-    const target = action.params.selector
-      ? this.resolveActionSelector(action.params.selector, element, parentContext)[0]
-      : element;
-
-    if (target) {
-      target.style.display = target.style.display === 'none' ? '' : 'none';
-    }
-  }
-
-  /**
-   * カスタムJS実行（サンドボックス化）
-   */
-  private async actionCustom(action: Extract<Action, { type: 'custom' }>, _element: HTMLElement, event?: UIEvent): Promise<void> {
-    // セキュリティレベルの確認
-    const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
-
-    if (settings.settings?.securityLevel !== 'advanced') {
-      console.warn('[PluginEngine] Custom JS requires security level "advanced"');
-      showNotification(
-        'カスタムJSの実行にはセキュリティレベル「Advanced」が必要です',
-        5000,
-        'error'
-      );
-      throw new Error('Security level "advanced" required for custom JS execution');
-    }
-
-    try {
-      // リクエストIDを生成
-      const requestId = `custom-js-${Date.now()}-${Math.random()}`;
-
-      // MAIN Worldにメッセージを送信
-      // 注意: postMessage()はシリアライズ可能なデータのみ送信可能
-      window.postMessage(
-        {
-          type: 'EXECUTE_CUSTOM_JS',
-          requestId,
-          code: action.params.code,
-          selector: action.params.selector,
-          context: {
-            event: event
-              ? {
-                  type: event.type,
-                  // HTMLElementはクローン不可能なので、基本情報のみ送信
-                  target: event.target ? {
-                    tagName: (event.target as HTMLElement).tagName,
-                    id: (event.target as HTMLElement).id,
-                    className: (event.target as HTMLElement).className,
-                  } : null,
-                }
-              : null,
-          },
-        },
-        '*'
-      );
-
-      // MAIN Worldからのレスポンスを待つ
-      return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          window.removeEventListener('message', handler);
-          reject(new Error('Custom JS execution timeout'));
-        }, 5000);
-
-        const handler = (messageEvent: MessageEvent) => {
-          if (messageEvent.source !== window) return;
-
-          const response = messageEvent.data;
-
-          if (response.type === 'CUSTOM_JS_RESULT' && response.requestId === requestId) {
-            clearTimeout(timeout);
-            window.removeEventListener('message', handler);
-
-            if (response.success) {
-              console.log('[PluginEngine] Custom JS executed successfully');
-              if (action.notification) {
-                showNotification(action.notification, 3000, 'success');
-              }
-              resolve();
-            } else {
-              console.error('[PluginEngine] Custom JS execution failed:', response.error);
-              showNotification(
-                `カスタムコードの実行に失敗しました: ${response.error}`,
-                5000,
-                'error'
-              );
-              reject(new Error(response.error));
-            }
-          }
-        };
-
-        window.addEventListener('message', handler);
-      });
-    } catch (error) {
-      console.error('[PluginEngine] Custom action execution failed:', error);
-      showNotification('カスタムコードの実行に失敗しました', 3000, 'error');
-      throw error;
-    }
-  }
-
-  /**
-   * 外部API呼び出し
-   */
-  private async actionApiCall(action: Extract<Action, { type: 'apiCall' }>): Promise<void> {
-    // テンプレート変数展開
-    const url = await resolveTemplateVariables(action.params.url);
-
-    // セキュリティチェック: HTTPSのみ許可
-    if (!url.toLowerCase().startsWith('https://')) {
-      console.error('[PluginEngine] Only HTTPS URLs are allowed');
-      showNotification('セキュリティ上の理由により、HTTPS以外のURLは使用できません', 3000, 'error');
-      return;
-    }
-
-    fetch(url, {
-      method: action.params.method || 'GET',
-      headers: action.params.headers,
-      body: action.params.data ? JSON.stringify(action.params.data) : undefined,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log('[PluginEngine] API response:', data);
-
-        // 通知表示
-        if (action.notification) {
-          showNotification(action.notification);
-        }
-      })
-      .catch((error) => {
-        console.error('[PluginEngine] API call failed:', error);
-        showNotification('API呼び出しに失敗しました', 3000, 'error');
-      });
-  }
-
-  /**
-   * アクション用セレクター解決
-   */
-  private resolveActionSelector(
-    selector: string,
-    _element: HTMLElement,
-    parentContext: HTMLElement
-  ): HTMLElement[] {
-    // 特殊セレクター対応
-    if (selector === 'parent') {
-      return parentContext ? [parentContext] : [];
-    }
-    if (selector.startsWith('parent')) {
-      // "parent > .class" のような形式
-      const childSelector = selector.replace(/^parent\s*>\s*/, '');
-      if (parentContext) {
-        const child = parentContext.querySelector<HTMLElement>(childSelector);
-        return child ? [child] : [];
-      }
-      return [];
-    }
-
-    // 通常のセレクター
-    return this.resolveSelector(selector);
-  }
 
   /**
    * 実行済み操作をクリア
@@ -773,16 +544,8 @@ export class PluginEngine {
   private async handleExecuteScript(operation: Extract<Operation, { type: 'execute' }>): Promise<void> {
     console.log(`[PluginEngine] Executing script: ${operation.id}`);
 
-    // actionCustomと同じロジックでスクリプト実行
-    await this.actionCustom(
-      {
-        type: 'custom',
-        params: {
-          code: operation.params.code,
-        },
-      },
-      document.body
-    );
+    // executeEventCodeと同じロジックでスクリプト実行
+    await this.executeEventCode(operation.params.code, document.body);
 
     console.log(`[PluginEngine] Script executed: ${operation.id}`);
   }

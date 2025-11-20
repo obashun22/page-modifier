@@ -42,7 +42,7 @@ export function canExecutePlugin(plugin: Plugin, securityLevel: SecurityLevel): 
 }
 
 /**
- * プラグインにカスタムJSアクションが含まれているかチェック
+ * プラグインにカスタムJSが含まれているかチェック
  */
 export function hasCustomJSAction(plugin: Plugin): boolean {
   for (const operation of plugin.operations) {
@@ -57,19 +57,11 @@ export function hasCustomJSAction(plugin: Plugin): boolean {
     }
 
     // insertタイプのoperationのelementにeventsが含まれている
+    // 新設計では、すべてのイベントがcodeフィールドを持つ
     if (operation.type === 'insert') {
       const element = operation.params.element;
-      if (element.events) {
-        for (const event of element.events) {
-          // アクションのカスタムJSをチェック
-          if (event.action.type === 'custom' && event.action.params.code) {
-            return true;
-          }
-          // イベント条件のカスタムコードをチェック
-          if (event.condition?.type === 'custom' && event.condition.code) {
-            return true;
-          }
-        }
+      if (element.events && element.events.length > 0) {
+        return true; // すべてのイベントがcodeを持つため
       }
 
       // 子要素も再帰的にチェック
@@ -88,17 +80,14 @@ export function hasCustomJSAction(plugin: Plugin): boolean {
  */
 function hasCustomJSInChildren(children: any[]): boolean {
   for (const child of children) {
-    if (child.events) {
-      for (const event of child.events) {
-        // アクションのカスタムJSをチェック
-        if (event.action.type === 'custom' && event.action.params.code) {
-          return true;
-        }
-        // イベント条件のカスタムコードをチェック
-        if (event.condition?.type === 'custom' && event.condition.code) {
-          return true;
-        }
-      }
+    // 新設計では、すべてのイベントがcodeフィールドを持つ
+    if (child.events && child.events.length > 0) {
+      return true;
+    }
+
+    // イベント条件のカスタムコードをチェック
+    if (child.events?.some((event: any) => event.condition?.type === 'custom' && event.condition.code)) {
+      return true;
     }
 
     if (child.children && hasCustomJSInChildren(child.children)) {

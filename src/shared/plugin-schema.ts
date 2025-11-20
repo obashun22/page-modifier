@@ -10,7 +10,6 @@ import type {
   Operation,
   Element,
   Event,
-  Action,
   Condition,
 } from './types';
 import { parseMatchPattern } from '../utils/plugin-utils';
@@ -24,49 +23,73 @@ export const StyleObjectSchema = z.record(z.string());
 export const AttributeObjectSchema = z.record(z.string());
 
 /**
- * Match Patternバリデーター
+ * シンプルなドメイン表記をChrome Extension Match Patternに変換
  *
- * Chrome Extension Match Pattern形式または後方互換のドメイン名形式を許可
- *
- * 有効な形式:
- * - Match Pattern: "https://example.com/*", "*://*.github.com/*", "<all_urls>"
- * - ドメイン名（後方互換）: "example.com", "*.github.com", "*"
+ * 変換ルール:
+ * - "*" → "<all_urls>"
+ * - "example.com" → "https://example.com/*"
+ * - "*.example.com" → "https://*.example.com/*"
+ * - "example.com/path/*" → "https://example.com/path/*"
+ * - "https://..." → そのまま（既存のMatch Pattern形式）
+ * - "<all_urls>" → そのまま
  */
-const MatchPatternSchema = z.string().refine(
-  (value) => {
-    // 空文字列は不可
-    if (value.length === 0) {
-      return false;
-    }
+function convertToMatchPattern(value: string): string {
+  // <all_urls> はそのまま
+  if (value === '<all_urls>') {
+    return value;
+  }
 
-    // Match Pattern形式の場合
-    if (value.includes('://')) {
-      const parsed = parseMatchPattern(value);
-      return parsed !== null;
-    }
+  // 既にMatch Pattern形式（プロトコル含む）ならそのまま
+  if (value.includes('://')) {
+    return value;
+  }
 
-    // ドメイン名のみの場合（後方互換性）
-    // ワイルドカードは先頭のみ許可
-    if (value.includes('*')) {
-      // '*'のみ、または '*.domain.com' 形式
-      if (value === '*') {
+  // 全サイト指定
+  if (value === '*') {
+    return '<all_urls>';
+  }
+
+  // シンプル表記をMatch Patternに変換
+  let pattern = value;
+
+  // プロトコルを追加
+  pattern = 'https://' + pattern;
+
+  // 末尾に/*がなければ追加
+  if (!pattern.endsWith('/*')) {
+    pattern = pattern + '/*';
+  }
+
+  return pattern;
+}
+
+/**
+ * Match Patternスキーマ（バリデーションのみ、変換なし）
+ *
+ * 入力形式:
+ * - シンプル表記: "example.com", "*.example.com", "*"
+ * - Match Pattern: "https://example.com/*", "<all_urls>"
+ *
+ * 出力: 入力値をそのまま保存（実行時に変換）
+ */
+const MatchPatternSchema = z.string()
+  .min(1, 'ドメインは空文字列にできません')
+  .refine(
+    (value) => {
+      // シンプル表記をMatch Patternに変換してバリデーション
+      // （実際の保存値は変換しない）
+      const pattern = convertToMatchPattern(value);
+      if (pattern === '<all_urls>') {
         return true;
       }
-      if (value.startsWith('*.')) {
-        // *.の後にドメイン名があるか確認
-        const domain = value.substring(2);
-        return domain.length > 0 && domain.includes('.');
-      }
-      return false;
-    }
 
-    // 通常のドメイン名（ドットを含む必要がある）
-    return value.includes('.');
-  },
-  {
-    message: '無効なMatch Patternまたはドメイン形式です。有効な例: "https://example.com/*", "*://*.github.com/*", "example.com", "*.github.com"',
-  }
-);
+      const parsed = parseMatchPattern(pattern);
+      return parsed !== null;
+    },
+    {
+      message: '無効なドメイン形式です。有効な例: "example.com", "*.github.com", "*"',
+    }
+  );
 
 // ==================== 条件スキーマ ====================
 
@@ -77,99 +100,6 @@ export const ConditionSchema = z.object({
   pattern: z.string().optional(),
   code: z.string().optional(),
 }) satisfies z.ZodType<Condition>;
-
-// ==================== アクションスキーマ ====================
-
-/** copyTextアクション用パラメータスキーマ */
-const CopyTextParamsSchema = z.object({
-  selector: z.string().optional(),
-  value: z.string().optional(),
-});
-
-/** navigateアクション用パラメータスキーマ */
-const NavigateParamsSchema = z.object({
-  url: z.string().min(1),
-});
-
-/** クラス操作アクション用パラメータスキーマ */
-const ClassParamsSchema = z.object({
-  className: z.string().min(1),
-  selector: z.string().optional(),
-});
-
-/** styleアクション用パラメータスキーマ */
-const StyleParamsSchema = z.object({
-  style: StyleObjectSchema,
-  selector: z.string().optional(),
-});
-
-/** toggleアクション用パラメータスキーマ */
-const ToggleParamsSchema = z.object({
-  selector: z.string().optional(),
-});
-
-/** customアクション用パラメータスキーマ */
-const CustomParamsSchema = z.object({
-  code: z.string().min(1),
-  selector: z.string().optional(),
-});
-
-/** apiCallアクション用パラメータスキーマ */
-const ApiCallParamsSchema = z.object({
-  url: z.string().min(1),
-  method: z.string().optional(),
-  headers: z.record(z.string()).optional(),
-  data: z.any().optional(),
-});
-
-/** アクションスキーマ（Discriminated Union） */
-export const ActionSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('copyText'),
-    params: CopyTextParamsSchema,
-    notification: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal('navigate'),
-    params: NavigateParamsSchema,
-    notification: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal('toggleClass'),
-    params: ClassParamsSchema,
-    notification: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal('addClass'),
-    params: ClassParamsSchema,
-    notification: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal('removeClass'),
-    params: ClassParamsSchema,
-    notification: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal('style'),
-    params: StyleParamsSchema,
-    notification: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal('toggle'),
-    params: ToggleParamsSchema,
-    notification: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal('custom'),
-    params: CustomParamsSchema,
-    notification: z.string().optional(),
-  }),
-  z.object({
-    type: z.literal('apiCall'),
-    params: ApiCallParamsSchema,
-    notification: z.string().optional(),
-  }),
-]) satisfies z.ZodType<Action>;
 
 // ==================== イベントスキーマ ====================
 
@@ -187,7 +117,7 @@ export const EventSchema = z.object({
     'keydown',
     'keyup',
   ]),
-  action: ActionSchema,
+  code: z.string().min(1, 'codeは必須です'),
   condition: ConditionSchema.optional(),
 }) satisfies z.ZodType<Event>;
 
@@ -298,6 +228,5 @@ export type {
   Operation,
   Element,
   Event,
-  Action,
   Condition,
 } from './types';
