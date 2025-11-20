@@ -100,13 +100,31 @@ interface Plugin {
 
 interface Operation {
   id: string;
-  type: 'insert' | 'remove' | 'hide' | 'show' | 'style' | 'modify' | 'replace' | 'execute';
-  selector?: string;  // execute以外では必須
-  element?: Element;  // 階層的な子要素をサポート
-  events?: Event[];
+  type: 'insert' | 'update' | 'delete' | 'execute';
+  params: InsertParams | UpdateParams | DeleteParams | ExecuteParams;
   condition?: Condition;
-  code?: string;  // executeタイプで使用
-  run?: 'once' | 'always';  // executeタイプの実行タイミング
+}
+
+interface InsertParams {
+  selector: string;
+  position: 'beforebegin' | 'afterbegin' | 'beforeend' | 'afterend';
+  element: Element;  // 階層的な子要素をサポート
+}
+
+interface UpdateParams {
+  selector: string;
+  style?: Record<string, string>;
+  attributes?: Record<string, string>;
+  textContent?: string;
+}
+
+interface DeleteParams {
+  selector: string;
+}
+
+interface ExecuteParams {
+  code: string;
+  run?: 'once' | 'always';
 }
 ```
 
@@ -254,7 +272,7 @@ export default defineConfig({
 - ✅ プラグインスキーマ・型定義（Zod + TypeScript）
 - ✅ chrome.storageでのプラグイン管理
 - ✅ JSON解釈・DOM操作エンジン（PluginEngine）
-- ✅ 各種操作（insert, remove, hide, show, style, modify, replace, execute）
+- ✅ 各種操作（insert, update, delete, execute）
 - ✅ 要素選択UI・セレクター生成
 - ✅ イベント・アクション処理
 - ✅ Content Script実装

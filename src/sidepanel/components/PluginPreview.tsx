@@ -48,9 +48,16 @@ export default function PluginPreview({ plugin, onApprove, onReject }: PluginPre
                 <span className="px-2 py-0.5 bg-github-blue-50 dark:bg-github-blue-900 text-github-blue-500 dark:text-github-blue-400 rounded-xl text-[11px] font-semibold">
                   {op.type}
                 </span>
-                <code className="text-xs text-gray-600 dark:text-gray-300 font-mono">
-                  {op.selector}
-                </code>
+                {op.type !== 'execute' && (
+                  <code className="text-xs text-gray-600 dark:text-gray-300 font-mono">
+                    {op.params.selector}
+                  </code>
+                )}
+                {op.type === 'execute' && (
+                  <code className="text-xs text-gray-600 dark:text-gray-300 font-mono">
+                    Custom Script
+                  </code>
+                )}
               </div>
               {op.description && (
                 <p className="m-0 text-xs text-gray-600 dark:text-gray-400">

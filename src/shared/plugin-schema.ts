@@ -213,46 +213,66 @@ export const ElementSchema: z.ZodType<Element> = z.lazy(() =>
 
 // ==================== 操作スキーマ ====================
 
-/** 操作スキーマ */
-export const OperationSchema = z.object({
+/** 操作定義の共通フィールド */
+const OperationBaseSchema = z.object({
   id: z.string().uuid('idはUUID形式である必要があります'),
   description: z.string(),
-  type: z.enum(['insert', 'remove', 'hide', 'show', 'style', 'modify', 'replace', 'execute']),
-  selector: z.string().optional(),
-  position: z.enum(['beforebegin', 'afterbegin', 'beforeend', 'afterend']).optional(),
-  element: ElementSchema.optional(),
+  condition: ConditionSchema.optional(),
+});
+
+/** insert操作パラメータスキーマ */
+const InsertParamsSchema = z.object({
+  selector: z.string().min(1, 'selectorは必須です'),
+  position: z.enum(['beforebegin', 'afterbegin', 'beforeend', 'afterend']),
+  element: ElementSchema,
+});
+
+/** update操作パラメータスキーマ */
+const UpdateParamsSchema = z.object({
+  selector: z.string().min(1, 'selectorは必須です'),
   style: StyleObjectSchema.optional(),
   attributes: AttributeObjectSchema.optional(),
-  condition: ConditionSchema.optional(),
-  code: z.string().optional(),
+  textContent: z.string().optional(),
+}).refine(
+  (data) => {
+    // style, attributes, textContentのいずれかが必須
+    return data.style !== undefined || data.attributes !== undefined || data.textContent !== undefined;
+  },
+  {
+    message: 'update操作にはstyle, attributes, textContentのいずれかが必須です',
+  }
+);
+
+/** delete操作パラメータスキーマ */
+const DeleteParamsSchema = z.object({
+  selector: z.string().min(1, 'selectorは必須です'),
+});
+
+/** execute操作パラメータスキーマ */
+const ExecuteParamsSchema = z.object({
+  code: z.string().min(1, 'codeは必須です'),
   run: z.enum(['once', 'always']).optional(),
-})
-  .refine(
-    (data) => {
-      // executeの場合はcodeが必須
-      if (data.type === 'execute') {
-        return data.code !== undefined && data.code.length > 0;
-      }
-      return true;
-    },
-    {
-      message: 'execute操作にはcodeフィールドが必須です',
-      path: ['code'],
-    }
-  )
-  .refine(
-    (data) => {
-      // execute以外の場合はselectorが必須
-      if (data.type !== 'execute') {
-        return data.selector !== undefined && data.selector.length > 0;
-      }
-      return true;
-    },
-    {
-      message: 'この操作にはselectorフィールドが必須です',
-      path: ['selector'],
-    }
-  ) satisfies z.ZodType<Operation>;
+});
+
+/** 操作スキーマ（Discriminated Union） */
+export const OperationSchema = z.discriminatedUnion('type', [
+  OperationBaseSchema.extend({
+    type: z.literal('insert'),
+    params: InsertParamsSchema,
+  }),
+  OperationBaseSchema.extend({
+    type: z.literal('update'),
+    params: UpdateParamsSchema,
+  }),
+  OperationBaseSchema.extend({
+    type: z.literal('delete'),
+    params: DeleteParamsSchema,
+  }),
+  OperationBaseSchema.extend({
+    type: z.literal('execute'),
+    params: ExecuteParamsSchema,
+  }),
+]) satisfies z.ZodType<Operation>;
 
 // ==================== プラグインスキーマ ====================
 

@@ -47,7 +47,7 @@ export function canExecutePlugin(plugin: Plugin, securityLevel: SecurityLevel): 
 export function hasCustomJSAction(plugin: Plugin): boolean {
   for (const operation of plugin.operations) {
     // executeタイプのoperationのcodeフィールドをチェック
-    if (operation.type === 'execute' && operation.code) {
+    if (operation.type === 'execute' && operation.params.code) {
       return true;
     }
 
@@ -56,24 +56,27 @@ export function hasCustomJSAction(plugin: Plugin): boolean {
       return true;
     }
 
-    // operationのelementにeventsが含まれている
-    if (operation.element?.events) {
-      for (const event of operation.element.events) {
-        // アクションのカスタムJSをチェック
-        if (event.action.type === 'custom' && event.action.params.code) {
-          return true;
-        }
-        // イベント条件のカスタムコードをチェック
-        if (event.condition?.type === 'custom' && event.condition.code) {
-          return true;
+    // insertタイプのoperationのelementにeventsが含まれている
+    if (operation.type === 'insert') {
+      const element = operation.params.element;
+      if (element.events) {
+        for (const event of element.events) {
+          // アクションのカスタムJSをチェック
+          if (event.action.type === 'custom' && event.action.params.code) {
+            return true;
+          }
+          // イベント条件のカスタムコードをチェック
+          if (event.condition?.type === 'custom' && event.condition.code) {
+            return true;
+          }
         }
       }
-    }
 
-    // 子要素も再帰的にチェック
-    if (operation.element?.children) {
-      if (hasCustomJSInChildren(operation.element.children)) {
-        return true;
+      // 子要素も再帰的にチェック
+      if (element.children) {
+        if (hasCustomJSInChildren(element.children)) {
+          return true;
+        }
       }
     }
   }
@@ -88,7 +91,7 @@ function hasCustomJSInChildren(children: any[]): boolean {
     if (child.events) {
       for (const event of child.events) {
         // アクションのカスタムJSをチェック
-        if (event.action.type === 'custom' && event.action.code) {
+        if (event.action.type === 'custom' && event.action.params.code) {
           return true;
         }
         // イベント条件のカスタムコードをチェック

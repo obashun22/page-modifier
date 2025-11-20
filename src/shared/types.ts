@@ -17,15 +17,11 @@ export type SelectorString = string;
 
 // ==================== 操作タイプ ====================
 
-/** 操作タイプ */
+/** 操作タイプ（4つの本質的な操作） */
 export type OperationType =
   | 'insert'   // 要素を挿入
-  | 'remove'   // 要素を削除
-  | 'hide'     // 要素を非表示
-  | 'show'     // 要素を表示
-  | 'style'    // スタイルを適用
-  | 'modify'   // 属性/コンテンツを変更
-  | 'replace'  // 要素を置換
+  | 'update'   // 要素を更新（スタイル/属性/コンテンツ）
+  | 'delete'   // 要素を削除
   | 'execute'; // カスタムスクリプトを実行
 
 /** 挿入位置 */
@@ -162,20 +158,45 @@ export interface Element {
 /** 実行タイミング */
 export type ScriptRun = 'once' | 'always';
 
-/** 操作定義 */
-export interface Operation {
+/** 操作定義の共通フィールド */
+export interface OperationBase {
   id: string;                  // 操作の一意識別子（UUID形式）
   description: string;         // 操作の説明（必須、空文字列可）
-  type: OperationType;         // 操作タイプ
-  selector?: SelectorString;   // CSSセレクター（execute以外では必須）
-  position?: InsertPosition;   // 挿入位置（insertの場合）
-  element?: Element;           // 要素定義
-  style?: StyleObject;         // スタイル定義
-  attributes?: AttributeObject;// 属性定義
   condition?: Condition;       // 実行条件
-  code?: string;               // 実行するコード（executeの場合）
-  run?: ScriptRun;             // 実行タイミング（executeの場合、デフォルト: 'once'）
 }
+
+/** insert操作のパラメータ */
+export interface InsertParams {
+  selector: SelectorString;    // 挿入基準となる要素のセレクター
+  position: InsertPosition;    // 挿入位置
+  element: Element;            // 挿入する要素
+}
+
+/** update操作のパラメータ */
+export interface UpdateParams {
+  selector: SelectorString;    // 更新対象要素のセレクター
+  style?: StyleObject;         // スタイル変更
+  attributes?: AttributeObject;// 属性変更
+  textContent?: string;        // テキストコンテンツ変更
+}
+
+/** delete操作のパラメータ */
+export interface DeleteParams {
+  selector: SelectorString;    // 削除対象要素のセレクター
+}
+
+/** execute操作のパラメータ */
+export interface ExecuteParams {
+  code: string;                // 実行するカスタムJavaScriptコード
+  run?: ScriptRun;             // 実行タイミング（デフォルト: 'once'）
+}
+
+/** 操作定義（Discriminated Union） */
+export type Operation =
+  | (OperationBase & { type: 'insert'; params: InsertParams })
+  | (OperationBase & { type: 'update'; params: UpdateParams })
+  | (OperationBase & { type: 'delete'; params: DeleteParams })
+  | (OperationBase & { type: 'execute'; params: ExecuteParams });
 
 // ==================== プラグイン ====================
 

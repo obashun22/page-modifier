@@ -6,6 +6,7 @@
 
 import { validatePlugin } from '../shared/validator';
 import { isPluginApplicable } from '../utils/plugin-utils';
+import { autoMigratePlugin } from '../shared/migration';
 import type { Plugin } from '../shared/types';
 import type {
   PluginData,
@@ -192,9 +193,19 @@ export class PluginStorage {
       throw new Error('Invalid JSON format');
     }
 
-    const validation = validatePlugin(data);
+    // 旧形式のプラグインを自動的にマイグレーション
+    const migrationResult = autoMigratePlugin(data);
+    if (!migrationResult.success || !migrationResult.plugin) {
+      const errorMsg = migrationResult.errors.length > 0
+        ? migrationResult.errors.join(', ')
+        : 'マイグレーションに失敗しました';
+      throw new Error(`Invalid plugin: ${errorMsg}`);
+    }
+
+    // バリデーション
+    const validation = validatePlugin(migrationResult.plugin);
     if (!validation.success) {
-      throw new Error(`Invalid plugin: ${JSON.stringify(validation.errors)}`);
+      throw new Error(`Plugin validation failed: ${JSON.stringify(validation.errors)}`);
     }
 
     await this.savePlugin(validation.data!);
@@ -295,29 +306,62 @@ export class PluginStorage {
       return [];
     }
 
+    let pluginsArray: PluginData[];
+
     // 既に配列形式の場合
     if (Array.isArray(data)) {
-      return data;
+      pluginsArray = data;
+    } else {
+      // 旧形式（Record<string, PluginData>）の場合はマイグレーション
+      console.log('[PluginStorage] Migrating old storage format to array...');
+      pluginsArray = Object.values(data as Record<string, PluginData>);
+
+      // priority順にソート（降順）して配列化
+      pluginsArray.sort((a, b) => {
+        const priorityA = (a.plugin as any).priority || 500;
+        const priorityB = (b.plugin as any).priority || 500;
+        return priorityB - priorityA;
+      });
     }
 
-    // 旧形式（Record<string, PluginData>）の場合はマイグレーション
-    console.log('[PluginStorage] Migrating old storage format to array...');
-    const pluginsArray = Object.values(data as Record<string, PluginData>);
+    // 各プラグインの操作タイプをマイグレーション（旧形式→新形式）
+    let needsSave = false;
+    const migratedArray = pluginsArray.map((pluginData) => {
+      const migrationResult = autoMigratePlugin(pluginData.plugin);
 
-    // priority順にソート（降順）して配列化
-    pluginsArray.sort((a, b) => {
-      const priorityA = (a.plugin as any).priority || 500;
-      const priorityB = (b.plugin as any).priority || 500;
-      return priorityB - priorityA;
+      if (migrationResult.warnings.length > 0 || migrationResult.errors.length > 0) {
+        console.log(`[PluginStorage] Migration for plugin ${pluginData.plugin.id}:`, {
+          warnings: migrationResult.warnings,
+          errors: migrationResult.errors
+        });
+      }
+
+      if (migrationResult.success && migrationResult.plugin) {
+        // マイグレーションが成功した場合、プラグインを更新
+        if (migrationResult.warnings.length > 0) {
+          // 変更があった場合のみ更新フラグを立てる
+          needsSave = true;
+        }
+        return {
+          ...pluginData,
+          plugin: migrationResult.plugin,
+        };
+      } else {
+        // マイグレーションに失敗した場合は元のまま
+        console.error(`[PluginStorage] Failed to migrate plugin ${pluginData.plugin.id}:`, migrationResult.errors);
+        return pluginData;
+      }
     });
 
-    // 新形式で保存
-    await chrome.storage.local.set({
-      [STORAGE_KEYS.PLUGINS]: pluginsArray,
-    });
+    // マイグレーションで変更があった場合は保存
+    if (needsSave) {
+      await chrome.storage.local.set({
+        [STORAGE_KEYS.PLUGINS]: migratedArray,
+      });
+      console.log(`[PluginStorage] Migration complete: ${migratedArray.length} plugins migrated`);
+    }
 
-    console.log(`[PluginStorage] Migration complete: ${pluginsArray.length} plugins migrated`);
-    return pluginsArray;
+    return migratedArray;
   }
 
   /**

@@ -27,7 +27,7 @@ export default function OperationItem({ operation }: OperationItemProps) {
   const [detailSection, setDetailSection] = useState<DetailSection | null>(null);
   // Selectorを表示すべきかチェック
   const shouldShowSelector = () => {
-    return operation.type !== 'insert' && operation.type !== 'replace' && operation.type !== 'execute';
+    return operation.type !== 'execute';
   };
 
   // ElementをHTML文字列に変換
@@ -114,13 +114,13 @@ export default function OperationItem({ operation }: OperationItemProps) {
   // 詳細情報を取得・整形
   useEffect(() => {
     const loadDetailSection = async () => {
-      const op = operation as any;
       let section: DetailSection | null = null;
 
       switch (operation.type) {
-        case 'insert':
-          if (op.element) {
-            const html = elementToHTML(op.element);
+        case 'insert': {
+          const element = operation.params.element;
+          if (element) {
+            const html = elementToHTML(element);
             const formatted = await formatHTML(html);
             section = {
               label: 'Element',
@@ -129,59 +129,52 @@ export default function OperationItem({ operation }: OperationItemProps) {
             };
           }
           break;
+        }
 
-        case 'replace':
-          if (op.element) {
-            const html = elementToHTML(op.element);
-            const formatted = await formatHTML(html);
-            section = {
-              label: 'Element',
-              content: formatted,
-              language: 'html'
-            };
-          }
-          break;
-
-        case 'style':
-          if (op.style) {
-            const json = JSON.stringify(op.style, null, 2);
+        case 'update': {
+          const params = operation.params;
+          if (params.style) {
+            const json = JSON.stringify(params.style, null, 2);
             const formatted = await formatJSON(json);
             section = {
               label: 'Style',
               content: formatted,
               language: 'json'
             };
-          }
-          break;
-
-        case 'modify':
-          if (op.textContent) {
+          } else if (params.textContent !== undefined) {
             section = {
               label: 'Content',
-              content: `Text: ${op.textContent}`,
+              content: `Text: ${params.textContent}`,
               language: 'text'
             };
-          } else if (op.attributes) {
-            const json = JSON.stringify(op.attributes, null, 2);
+          } else if (params.attributes) {
+            const json = JSON.stringify(params.attributes, null, 2);
             const formatted = await formatJSON(json);
             section = {
-              label: 'Content',
+              label: 'Attributes',
               content: formatted,
               language: 'json'
             };
           }
           break;
+        }
 
-        case 'execute':
-          if (op.code) {
-            const formatted = await formatCode(op.code);
+        case 'execute': {
+          const code = operation.params.code;
+          if (code) {
+            const formatted = await formatCode(code);
             section = {
               label: 'Code',
               content: formatted,
               language: 'javascript',
-              run: op.run || 'once'
+              run: operation.params.run || 'once'
             };
           }
+          break;
+        }
+
+        case 'delete':
+          // deleteは詳細セクションなし（selectorのみ表示）
           break;
       }
 
@@ -212,13 +205,13 @@ export default function OperationItem({ operation }: OperationItemProps) {
       {isExpanded && (
         <div className="mt-2">
           {/* Selector */}
-          {shouldShowSelector() && operation.selector && (
+          {shouldShowSelector() && operation.type !== 'execute' && (
             <div className="mb-2">
               <div className="text-[11px] text-github-gray-400 dark:text-gray-400 font-semibold mb-1">
                 Selector:
               </div>
               <code className="block text-xs text-gray-700 dark:text-gray-200 font-mono bg-github-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                {operation.selector}
+                {operation.params.selector}
               </code>
             </div>
           )}
