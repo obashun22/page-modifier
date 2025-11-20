@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { FiMessageSquare, FiEdit3, FiUpload, FiTrash2, FiChevronDown, FiChevronUp, FiDownload } from 'react-icons/fi';
+import { FiMessageSquare, FiEdit3, FiUpload, FiTrash2, FiChevronDown, FiChevronUp, FiDownload, FiRefreshCw } from 'react-icons/fi';
 import { MdToggleOn, MdToggleOff } from 'react-icons/md';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
@@ -153,6 +153,19 @@ export default function PluginList({
   pluginsEnabled,
   onTogglePluginsEnabled,
 }: PluginListProps) {
+  const handleReloadPage = async () => {
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      for (const tab of tabs) {
+        if (tab.id) {
+          await chrome.tabs.reload(tab.id);
+        }
+      }
+    } catch (error) {
+      console.error('ページのリロードに失敗しました', error);
+    }
+  };
+
   if (plugins.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto">
@@ -173,6 +186,14 @@ export default function PluginList({
             <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
               すべて
             </span>
+            {/* リロードボタン */}
+            <button
+              onClick={handleReloadPage}
+              className="p-0 w-8 h-8 bg-transparent border-none cursor-pointer flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+              title="ページを再読み込み"
+            >
+              <FiRefreshCw size={18} />
+            </button>
           </div>
 
           {/* インポートボタン */}
@@ -216,6 +237,14 @@ export default function PluginList({
           <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
             すべて
           </span>
+          {/* リロードボタン */}
+          <button
+            onClick={handleReloadPage}
+            className="p-0 w-8 h-8 bg-transparent border-none cursor-pointer flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            title="ページを再読み込み"
+          >
+            <FiRefreshCw size={18} />
+          </button>
         </div>
 
         {/* インポートボタン */}

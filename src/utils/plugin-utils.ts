@@ -208,14 +208,22 @@ export function matchesDomain(url: string, domainPattern: string): boolean {
 }
 
 /**
- * プラグインが指定ドメインに適用可能か判定
+ * プラグインが指定URL/ドメインに適用可能か判定
  *
  * @param plugin - プラグイン
- * @param domain - 判定対象のドメイン
+ * @param urlOrDomain - 判定対象のURL（完全なURL形式）またはドメイン
  * @returns 適用可能な場合true
  */
-export function isPluginApplicable(plugin: Plugin, domain: string): boolean {
-  return plugin.targetDomains.some((pattern) => matchesDomain(domain, pattern));
+export function isPluginApplicable(plugin: Plugin, urlOrDomain: string): boolean {
+  // URLかドメイン名かを判定し、URLでなければhttps://を付与してURL形式にする
+  let url = urlOrDomain;
+
+  // URLでない場合（スキームがない場合）はhttps://を付与
+  if (!urlOrDomain.includes('://')) {
+    url = `https://${urlOrDomain}`;
+  }
+
+  return plugin.targetDomains.some((pattern) => matchesDomain(url, pattern));
 }
 
 /**

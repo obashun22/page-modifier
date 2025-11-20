@@ -8,7 +8,6 @@
 import { PluginEngine } from './plugin-engine';
 import { ElementSelector } from './element-selector';
 import type { Plugin } from '../shared/types';
-import { extractDomain } from '../utils/plugin-utils';
 import { SecurityAnalyzer } from '../shared/security-analyzer';
 import { canExecutePlugin } from '../shared/plugin-security-checker';
 import type { SecurityLevel } from '../shared/storage-types';
@@ -46,13 +45,13 @@ class ContentScript {
       });
     }
 
-    // 現在のドメインを取得
-    const domain = extractDomain(location.href);
-    console.log(`[PageModifier] Current domain: ${domain}`);
+    // 現在のURLを取得
+    const currentUrl = location.href;
+    console.log(`[PageModifier] Current URL: ${currentUrl}`);
 
-    // 該当ドメインのプラグインを取得
-    const plugins = await this.fetchPluginsForDomain(domain);
-    console.log(`[PageModifier] Found ${plugins.length} plugins for domain`);
+    // 該当URLのプラグインを取得
+    const plugins = await this.fetchPluginsForUrl(currentUrl);
+    console.log(`[PageModifier] Found ${plugins.length} plugins for URL`);
 
     // プラグインを実行
     if (plugins.length > 0) {
@@ -70,13 +69,13 @@ class ContentScript {
   }
 
   /**
-   * ドメインに対応するプラグインを取得
+   * URLに対応するプラグインを取得
    */
-  private async fetchPluginsForDomain(domain: string): Promise<Plugin[]> {
+  private async fetchPluginsForUrl(url: string): Promise<Plugin[]> {
     try {
       const response = await chrome.runtime.sendMessage({
-        type: 'GET_PLUGINS_FOR_DOMAIN',
-        domain,
+        type: 'GET_PLUGINS_FOR_URL',
+        url,
       });
 
       return response?.plugins || [];

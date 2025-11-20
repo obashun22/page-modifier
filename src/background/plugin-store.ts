@@ -101,6 +101,17 @@ export class PluginStorage {
   }
 
   /**
+   * URLに適用されるプラグインを取得
+   *
+   * @param url - 対象URL
+   * @returns 適用可能な有効プラグイン（配列は新しい順、実行は逆順で古い順）
+   */
+  async getPluginsForUrl(url: string): Promise<PluginData[]> {
+    const enabled = await this.getEnabledPlugins();
+    return enabled.filter((data) => isPluginApplicable(data.plugin, url));
+  }
+
+  /**
    * プラグインを更新
    */
   async updatePlugin(id: string, updates: Partial<Plugin>): Promise<void> {

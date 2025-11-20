@@ -75,6 +75,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .catch((error) => sendResponse({ success: false, error: error.message }));
       return true; // 非同期応答
 
+    case 'GET_PLUGINS_FOR_URL':
+      handleGetPluginsForUrl(message.url)
+        .then((plugins) => sendResponse({ success: true, plugins }))
+        .catch((error) => sendResponse({ success: false, error: error.message }));
+      return true; // 非同期応答
+
     case 'RECORD_PLUGIN_USAGE':
       handleRecordPluginUsage(message.pluginId)
         .then(() => sendResponse({ success: true }))
@@ -151,6 +157,14 @@ function handleContentScriptReady(sender: chrome.runtime.MessageSender): void {
  */
 async function handleGetPluginsForDomain(domain: string): Promise<any[]> {
   const pluginDataList = await pluginStorage.getPluginsForDomain(domain);
+  return pluginDataList.map((data) => data.plugin);
+}
+
+/**
+ * URLに対応するプラグインを取得
+ */
+async function handleGetPluginsForUrl(url: string): Promise<any[]> {
+  const pluginDataList = await pluginStorage.getPluginsForUrl(url);
   return pluginDataList.map((data) => data.plugin);
 }
 
