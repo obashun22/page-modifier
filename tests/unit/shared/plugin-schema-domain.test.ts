@@ -1,13 +1,13 @@
 /**
- * Plugin Schema - Domain Conversion Tests
+ * Plugin Schema - Domain Pattern Tests
  *
- * シンプルなドメイン表記からMatch Patternへの変換テスト
+ * ドメインパターンのバリデーションテスト
  */
 
 import { describe, it, expect } from 'vitest';
 import { PluginSchema } from '../../../src/shared/plugin-schema';
 
-describe('PluginSchema - Domain Conversion', () => {
+describe('PluginSchema - Domain Pattern', () => {
   const createTestPlugin = (targetDomains: string[]) => ({
     id: '550e8400-e29b-41d4-a716-446655440000',
     name: 'Test Plugin',
@@ -30,7 +30,7 @@ describe('PluginSchema - Domain Conversion', () => {
     ],
   });
 
-  describe('シンプル表記の保存', () => {
+  describe('ドメインパターンのバリデーション', () => {
     it('通常のドメイン名はそのまま保存される: example.com', () => {
       const plugin = createTestPlugin(['example.com']);
       const result = PluginSchema.parse(plugin);
@@ -60,31 +60,28 @@ describe('PluginSchema - Domain Conversion', () => {
     });
   });
 
-  describe('既存のMatch Pattern形式', () => {
-    it('既存のMatch Pattern形式はそのまま保持する: https://example.com/*', () => {
+  describe('不正な形式のエラー', () => {
+    it('Match Pattern形式（https://...）はエラーになる', () => {
       const plugin = createTestPlugin(['https://example.com/*']);
-      const result = PluginSchema.parse(plugin);
 
-      expect(result.targetDomains).toEqual(['https://example.com/*']);
+      expect(() => PluginSchema.parse(plugin)).toThrow();
     });
 
-    it('既存のMatch Pattern形式（サブドメイン）はそのまま保持する', () => {
-      const plugin = createTestPlugin(['https://*.example.com/*']);
-      const result = PluginSchema.parse(plugin);
-
-      expect(result.targetDomains).toEqual(['https://*.example.com/*']);
-    });
-
-    it('<all_urls>はそのまま保持する', () => {
+    it('<all_urls>形式はエラーになる', () => {
       const plugin = createTestPlugin(['<all_urls>']);
-      const result = PluginSchema.parse(plugin);
 
-      expect(result.targetDomains).toEqual(['<all_urls>']);
+      expect(() => PluginSchema.parse(plugin)).toThrow();
+    });
+
+    it('プロトコル付きドメインはエラーになる', () => {
+      const plugin = createTestPlugin(['http://example.com']);
+
+      expect(() => PluginSchema.parse(plugin)).toThrow();
     });
   });
 
   describe('複数ドメイン', () => {
-    it('複数のシンプル表記をそのまま保存する', () => {
+    it('複数のドメインパターンをそのまま保存する', () => {
       const plugin = createTestPlugin(['github.com', 'gitlab.com', '*.google.com']);
       const result = PluginSchema.parse(plugin);
 
@@ -92,16 +89,6 @@ describe('PluginSchema - Domain Conversion', () => {
         'github.com',
         'gitlab.com',
         '*.google.com',
-      ]);
-    });
-
-    it('シンプル表記とMatch Pattern形式の混在をそのまま保存する', () => {
-      const plugin = createTestPlugin(['example.com', 'https://test.com/*']);
-      const result = PluginSchema.parse(plugin);
-
-      expect(result.targetDomains).toEqual([
-        'example.com',
-        'https://test.com/*',
       ]);
     });
   });
@@ -138,7 +125,7 @@ describe('PluginSchema - Domain Conversion', () => {
     it('targetDomainsが空配列の場合はエラーになる', () => {
       const plugin = createTestPlugin([]);
 
-      expect(() => PluginSchema.parse(plugin)).toThrow('少なくとも1つのMatch Patternを指定してください');
+      expect(() => PluginSchema.parse(plugin)).toThrow('少なくとも1つのドメインパターンを指定してください');
     });
   });
 });

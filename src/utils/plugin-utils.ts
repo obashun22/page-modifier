@@ -101,51 +101,66 @@ export function parseMatchPattern(pattern: string): ParsedMatchPattern | null {
 }
 
 /**
- * ドメインがMatch Patternにマッチするか判定
+ * ドメインパターンをChrome Extension Match Patternに変換
  *
- * Chrome Extension Match Pattern仕様に準拠:
- * - <scheme>://<host>/<path> 形式をサポート
- * - 後方互換性のため、ドメイン名のみの指定も許可（https://で補完）
+ * @param domainPattern - ドメインパターン
+ * @returns Match Pattern形式の文字列
  *
- * @param url - 判定対象のURL（完全なURLまたはドメイン名）
- * @param pattern - Match Pattern（Chrome Extension形式 or ドメイン名のみ）
+ * @example
+ * convertToMatchPattern('*') // => '<all_urls>'
+ * convertToMatchPattern('example.com') // => 'https://example.com/*'
+ * convertToMatchPattern('*.example.com') // => 'https://*.example.com/*'
+ * convertToMatchPattern('example.com/api/*') // => 'https://example.com/api/*'
+ */
+export function convertToMatchPattern(domainPattern: string): string {
+  // 全サイト指定
+  if (domainPattern === '*') {
+    return '<all_urls>';
+  }
+
+  // ドメインパターンをMatch Patternに変換
+  let pattern = 'https://' + domainPattern;
+
+  // 末尾に/*がなければ追加
+  if (!pattern.endsWith('/*')) {
+    pattern = pattern + '/*';
+  }
+
+  return pattern;
+}
+
+/**
+ * URLがドメインパターンにマッチするか判定
+ *
+ * ドメインパターンをChrome Extension Match Pattern形式に変換してマッチング
+ *
+ * @param url - 判定対象のURL
+ * @param domainPattern - ドメインパターン（"example.com", "*.github.com", "*"）
  * @returns マッチする場合true
  *
  * @example
- * // Match Pattern形式
- * matchesDomain('https://github.com/user/repo', 'https://github.com/*') // => true
- * matchesDomain('https://api.github.com/', '*://*.github.com/*') // => true
- * matchesDomain('http://example.com', 'https://example.com/*') // => false (scheme不一致)
- *
- * // 後方互換（ドメイン名のみ）
- * matchesDomain('https://github.com', 'github.com') // => true
- * matchesDomain('https://api.github.com', '*.github.com') // => true
+ * matchesDomain('https://github.com/user/repo', 'github.com') // => true
+ * matchesDomain('https://api.github.com/', '*.github.com') // => true
+ * matchesDomain('https://example.com', '*') // => true
  */
-export function matchesDomain(url: string, pattern: string): boolean {
-  // 後方互換: ドメイン名のみの場合（スキームが含まれていない）
-  if (!pattern.includes('://')) {
-    return matchesDomainLegacy(url, pattern);
-  }
+export function matchesDomain(url: string, domainPattern: string): boolean {
+  // ドメインパターンをMatch Patternに変換
+  const matchPattern = convertToMatchPattern(domainPattern);
 
-  // Match Pattern形式
-  const parsed = parseMatchPattern(pattern);
+  // Match Pattern形式でマッチング
+  const parsed = parseMatchPattern(matchPattern);
   if (!parsed) {
-    console.warn(`[matchesDomain] Invalid match pattern: ${pattern}`);
+    console.warn(`[matchesDomain] Invalid domain pattern: ${domainPattern}`);
     return false;
   }
 
   // URLをパース
   let urlObj: URL;
   try {
-    // 完全なURLの場合
     urlObj = new URL(url);
   } catch {
-    // ドメイン名のみの場合（後方互換）
-    try {
-      urlObj = new URL(`https://${url}`);
-    } catch {
-      return false;
-    }
+    console.warn(`[matchesDomain] Invalid URL: ${url}`);
+    return false;
   }
 
   // スキームマッチング
@@ -190,50 +205,6 @@ export function matchesDomain(url: string, pattern: string): boolean {
   }
 
   return true;
-}
-
-/**
- * 旧形式（ドメイン名のみ）のパターンマッチング（後方互換性用）
- *
- * @param url - 判定対象のURL（完全なURLまたはドメイン名）
- * @param pattern - ドメインパターン（ワイルドカード対応）
- * @returns マッチする場合true
- *
- * @example
- * matchesDomainLegacy('https://github.com', 'github.com') // => true
- * matchesDomainLegacy('https://api.github.com', '*.github.com') // => true
- * matchesDomainLegacy('github.com', '*.com') // => true
- */
-function matchesDomainLegacy(url: string, pattern: string): boolean {
-  // URLからホスト名を抽出
-  let hostname: string;
-  try {
-    const urlObj = new URL(url);
-    hostname = urlObj.hostname;
-  } catch {
-    // URLでない場合はドメイン名として扱う
-    hostname = url;
-  }
-
-  // 完全一致
-  if (hostname === pattern) {
-    return true;
-  }
-
-  // *.example.com形式の場合、特別処理
-  if (pattern.startsWith('*.')) {
-    const baseDomain = pattern.substring(2); // '*.example.com' -> 'example.com'
-    // サブドメインのみにマッチ（ベースドメイン自体は含まない）
-    return hostname.endsWith(`.${baseDomain}`) && hostname !== baseDomain;
-  }
-
-  // その他のワイルドカードパターンを正規表現に変換
-  const regexPattern = pattern
-    .replace(/\./g, '\\.')  // ドットをエスケープ
-    .replace(/\*/g, '.*');  // *を.*に変換
-
-  const regex = new RegExp(`^${regexPattern}$`);
-  return regex.test(hostname);
 }
 
 /**

@@ -7,31 +7,7 @@ import { PluginSchema } from '../../../src/shared/plugin-schema';
 
 describe('PluginSchema', () => {
   describe('Valid plugins', () => {
-    it('should validate a plugin with Match Pattern (full format)', () => {
-      const validPlugin = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        name: 'Test Plugin',
-        version: '1.0.0',
-        targetDomains: ['https://example.com/*'],
-        enabled: true,
-        operations: [
-          {
-            id: '123e4567-e89b-12d3-a456-426614174001',
-            description: '',
-            type: 'update',
-            params: {
-              selector: '.element',
-              style: { display: 'none' },
-            },
-          },
-        ],
-      };
-
-      const result = PluginSchema.safeParse(validPlugin);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate a plugin with domain name (legacy format)', () => {
+    it('should validate a plugin with domain pattern', () => {
       const validPlugin = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Test Plugin',
@@ -55,40 +31,16 @@ describe('PluginSchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate multiple Match Patterns', () => {
+    it('should validate multiple domain patterns', () => {
       const validPlugin = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Test Plugin',
         version: '1.0.0',
         targetDomains: [
-          'https://github.com/*',
-          '*://*.github.com/*',
-          'example.com', // 後方互換
+          'github.com',
+          '*.github.com',
+          'example.com',
         ],
-        enabled: true,
-        operations: [
-          {
-            id: '123e4567-e89b-12d3-a456-426614174001',
-            description: '',
-            type: 'update',
-            params: {
-              selector: '.element',
-              style: { display: 'none' },
-            },
-          },
-        ],
-      };
-
-      const result = PluginSchema.safeParse(validPlugin);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate wildcard patterns', () => {
-      const validPlugin = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        name: 'Test Plugin',
-        version: '1.0.0',
-        targetDomains: ['*://*/*'], // すべてのHTTP/HTTPSサイト
         enabled: true,
         operations: [
           {

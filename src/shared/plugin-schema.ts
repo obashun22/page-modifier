@@ -12,7 +12,6 @@ import type {
   Event,
   Condition,
 } from './types';
-import { parseMatchPattern } from '../utils/plugin-utils';
 
 // ==================== 基本スキーマ ====================
 
@@ -23,71 +22,46 @@ export const StyleObjectSchema = z.record(z.string());
 export const AttributeObjectSchema = z.record(z.string());
 
 /**
- * シンプルなドメイン表記をChrome Extension Match Patternに変換
+ * ドメインパターンスキーマ
  *
- * 変換ルール:
- * - "*" → "<all_urls>"
- * - "example.com" → "https://example.com/*"
- * - "*.example.com" → "https://*.example.com/*"
- * - "example.com/path/*" → "https://example.com/path/*"
- * - "https://..." → そのまま（既存のMatch Pattern形式）
- * - "<all_urls>" → そのまま
+ * サポートされる形式:
+ * - "*" - 全サイト
+ * - "example.com" - 特定ドメイン
+ * - "*.example.com" - サブドメインを含む
+ * - "example.com/path/*" - パス指定付き
+ *
+ * 実行時にChrome Extension Match Pattern形式に変換されます。
  */
-function convertToMatchPattern(value: string): string {
-  // <all_urls> はそのまま
-  if (value === '<all_urls>') {
-    return value;
-  }
-
-  // 既にMatch Pattern形式（プロトコル含む）ならそのまま
-  if (value.includes('://')) {
-    return value;
-  }
-
-  // 全サイト指定
-  if (value === '*') {
-    return '<all_urls>';
-  }
-
-  // シンプル表記をMatch Patternに変換
-  let pattern = value;
-
-  // プロトコルを追加
-  pattern = 'https://' + pattern;
-
-  // 末尾に/*がなければ追加
-  if (!pattern.endsWith('/*')) {
-    pattern = pattern + '/*';
-  }
-
-  return pattern;
-}
-
-/**
- * Match Patternスキーマ（バリデーションのみ、変換なし）
- *
- * 入力形式:
- * - シンプル表記: "example.com", "*.example.com", "*"
- * - Match Pattern: "https://example.com/*", "<all_urls>"
- *
- * 出力: 入力値をそのまま保存（実行時に変換）
- */
-const MatchPatternSchema = z.string()
-  .min(1, 'ドメインは空文字列にできません')
+const DomainPatternSchema = z.string()
+  .min(1, 'ドメインパターンは空文字列にできません')
   .refine(
     (value) => {
-      // シンプル表記をMatch Patternに変換してバリデーション
-      // （実際の保存値は変換しない）
-      const pattern = convertToMatchPattern(value);
-      if (pattern === '<all_urls>') {
+      // 全サイト指定
+      if (value === '*') {
         return true;
       }
 
-      const parsed = parseMatchPattern(pattern);
-      return parsed !== null;
+      // プロトコルが含まれている場合は不可
+      if (value.includes('://')) {
+        return false;
+      }
+
+      // <all_urls>などの特殊形式は不可
+      if (value.startsWith('<') || value.endsWith('>')) {
+        return false;
+      }
+
+      // ドメインパターンの形式チェック
+      // 許可: example.com, *.example.com, example.com/path/*
+      // - ワイルドカードは先頭のみ（*.の形式）
+      // - ドメイン部分は英数字とハイフン、ドットのみ
+      // - パスは任意（スラッシュで始まる）
+      const domainPattern = /^(\*\.)?[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(\/.*)?$/;
+
+      return domainPattern.test(value);
     },
     {
-      message: '無効なドメイン形式です。有効な例: "example.com", "*.github.com", "*"',
+      message: '無効なドメインパターンです。有効な例: "example.com", "*.github.com", "*"',
     }
   );
 
@@ -216,7 +190,7 @@ export const PluginSchema = z.object({
   name: z.string().min(1),
   version: z.string().regex(/^\d+\.\d+\.\d+$/, 'バージョンはsemver形式（例: 1.0.0）である必要があります'),
   description: z.string().optional(),
-  targetDomains: z.array(MatchPatternSchema).min(1, '少なくとも1つのMatch Patternを指定してください'),
+  targetDomains: z.array(DomainPatternSchema).min(1, '少なくとも1つのドメインパターンを指定してください'),
   enabled: z.boolean(),
   operations: z.array(OperationSchema).min(1, '少なくとも1つの操作を指定してください'),
 }) satisfies z.ZodType<Plugin>;
