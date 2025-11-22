@@ -5,7 +5,6 @@
  */
 
 import { useState, useEffect } from 'react';
-import { FiAlertTriangle, FiX } from 'react-icons/fi';
 import PluginList from './PluginList';
 import PluginEditor from './PluginEditor';
 import type { PluginData, Settings } from '../../shared/storage-types';
@@ -231,37 +230,6 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
 
   return (
     <div className="h-full flex flex-col">
-      {/* CSP警告バナー */}
-      {cspBlockedPlugins.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <FiAlertTriangle className="text-red-600 dark:text-red-400" size={16} />
-              <span className="text-sm font-semibold text-red-800 dark:text-red-300">
-                CSP制約により適用できないプラグイン
-              </span>
-            </div>
-            <button
-              onClick={() => setCSPBlockedPlugins([])}
-              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
-              title="閉じる"
-            >
-              <FiX size={18} />
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {cspBlockedPlugins.map((plugin) => (
-              <span
-                key={plugin.id}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 text-xs font-medium rounded-full border border-red-200 dark:border-red-800"
-              >
-                {plugin.name}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
       {selectedPluginData ? (
         <PluginEditor
           pluginData={selectedPluginData}

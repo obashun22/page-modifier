@@ -52,15 +52,21 @@ function PluginItem({
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
   return (
-    <div className={`p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700 ${!pluginsEnabled ? 'opacity-40' : ''} ${isActiveOnCurrentPage && pluginData.enabled ? 'border-l-4 border-l-green-500 dark:border-l-green-400' : ''}`}>
+    <div className={`p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700 ${!pluginsEnabled ? 'opacity-40' : ''} ${isActiveOnCurrentPage && pluginData.enabled && !isCSPBlocked ? 'border-l-4 border-l-green-500 dark:border-l-green-400' : ''} ${isActiveOnCurrentPage && pluginData.enabled && isCSPBlocked ? 'border-l-4 border-l-red-500 dark:border-l-red-400' : ''}`}>
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="m-0 text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               {pluginData.plugin.name}
-              {isActiveOnCurrentPage && pluginData.enabled && (
+              {isActiveOnCurrentPage && pluginData.enabled && !isCSPBlocked && (
                 <span className="flex items-center gap-1 px-2 py-1 bg-green-500 dark:bg-green-600 text-white text-xs font-semibold rounded-full">
                   <FiCheck size={12} />
                   <span>適用中</span>
+                </span>
+              )}
+              {isActiveOnCurrentPage && pluginData.enabled && isCSPBlocked && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-red-500 dark:bg-red-600 text-white text-xs font-semibold rounded-full">
+                  <FiAlertTriangle size={12} />
+                  <span>適用不可</span>
                 </span>
               )}
             </h3>
@@ -82,17 +88,6 @@ function PluginItem({
                 {pluginData.plugin.targetDomains.join(', ')}
               </span>
             </div>
-            {/* CSP警告 */}
-            {isCSPBlocked && (
-              <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                <div className="flex items-start gap-2">
-                  <FiAlertTriangle className="text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" size={14} />
-                  <p className="text-xs text-yellow-800 dark:text-yellow-300">
-                    このサイトではCSP制約により実行できません
-                  </p>
-                </div>
-              </div>
-            )}
             {/* 操作内容（ドロップダウン） */}
             <div
               onClick={() => setIsOperationsOpen(!isOperationsOpen)}
