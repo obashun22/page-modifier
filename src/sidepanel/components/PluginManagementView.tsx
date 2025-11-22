@@ -13,29 +13,19 @@ import { matchesDomain } from '../../utils/plugin-utils';
 
 interface PluginManagementViewProps {
   onEditPlugin: (plugin: Plugin) => void;
+  cspBlockedPlugins: Array<{id: string, name: string}>;
+  currentTabUrl: string;
 }
 
-export default function PluginManagementView({ onEditPlugin }: PluginManagementViewProps) {
+export default function PluginManagementView({ onEditPlugin, cspBlockedPlugins, currentTabUrl }: PluginManagementViewProps) {
   const [plugins, setPlugins] = useState<PluginData[]>([]);
   const [selectedPluginData, setSelectedPluginData] = useState<PluginData | null>(null);
   const [importing, setImporting] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [currentTabUrl, setCurrentTabUrl] = useState<string>('');
-  const [cspBlockedPlugins, setCSPBlockedPlugins] = useState<Array<{id: string, name: string}>>([]);
 
   useEffect(() => {
     loadPlugins();
     loadSettings();
-    loadCurrentTabUrl();
-
-    // 初回ロード時にCSPチェックを要求
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'CHECK_CSP_STATUS' }).catch(() => {
-          // エラーは無視（Content Scriptが読み込まれていない可能性）
-        });
-      }
-    });
 
     // chrome.storageの変更を監視してプラグイン一覧を自動更新
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
@@ -46,56 +36,10 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
       }
     };
 
-    // タブの切り替えを監視
-    const handleTabActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
-      console.log('[PluginManagementView] Tab activated:', activeInfo);
-      loadCurrentTabUrl();
-      // タブ切り替え時にCSP情報をクリア
-      setCSPBlockedPlugins([]);
-      // 新しいタブでCSP状態をチェック
-      chrome.tabs.sendMessage(activeInfo.tabId, { type: 'CHECK_CSP_STATUS' }).catch(() => {
-        // エラーは無視（Content Scriptが読み込まれていない可能性）
-      });
-    };
-
-    // タブのURL変更を監視
-    const handleTabUpdated = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, _tab: chrome.tabs.Tab) => {
-      // URLが変更された場合のみ
-      if (changeInfo.url) {
-        console.log('[PluginManagementView] Tab URL updated:', changeInfo.url);
-        // アクティブなタブの場合のみ更新
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]?.id === tabId) {
-            loadCurrentTabUrl();
-            // URL変更時にCSP情報をクリア
-            setCSPBlockedPlugins([]);
-            // 新しいページでCSP状態をチェック
-            chrome.tabs.sendMessage(tabId, { type: 'CHECK_CSP_STATUS' }).catch(() => {
-              // エラーは無視（Content Scriptが読み込まれていない可能性）
-            });
-          }
-        });
-      }
-    };
-
-    // CSP警告メッセージを受信
-    const handleMessage = (message: any) => {
-      if (message.type === 'CSP_WARNING') {
-        console.log('[PluginManagementView] CSP warning received:', message.plugins);
-        setCSPBlockedPlugins(message.plugins);
-      }
-    };
-
     chrome.storage.onChanged.addListener(handleStorageChange);
-    chrome.tabs.onActivated.addListener(handleTabActivated);
-    chrome.tabs.onUpdated.addListener(handleTabUpdated);
-    chrome.runtime.onMessage.addListener(handleMessage);
 
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange);
-      chrome.tabs.onActivated.removeListener(handleTabActivated);
-      chrome.tabs.onUpdated.removeListener(handleTabUpdated);
-      chrome.runtime.onMessage.removeListener(handleMessage);
     };
   }, []);
 
@@ -116,18 +60,6 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
 
     if (response.success) {
       setSettings(response.settings);
-    }
-  };
-
-  const loadCurrentTabUrl = async () => {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      // URLを必ず更新（存在しない場合は初期値にリセット）
-      setCurrentTabUrl(tab?.url || '');
-      console.log('[PluginManagementView] Tab URL updated:', tab?.url);
-    } catch (error) {
-      console.error('Failed to get current tab URL:', error);
-      setCurrentTabUrl('');
     }
   };
 
