@@ -87,7 +87,7 @@ export function replacePlaceholders(text: string): string {
 }
 
 /**
- * CSP警告を展開可能な通知として表示
+ * CSP警告を通知として表示
  *
  * @param blockedPlugins - ブロックされたプラグインの配列
  */
@@ -101,9 +101,6 @@ export function showCSPWarningBanner(blockedPlugins: Array<{id: string, name: st
   // 通知要素を作成
   const notification = document.createElement('div');
   notification.dataset.cspNotification = 'true';
-
-  // 展開状態を管理
-  let isExpanded = false;
 
   // スタイル設定
   Object.assign(notification.style, {
@@ -125,92 +122,15 @@ export function showCSPWarningBanner(blockedPlugins: Array<{id: string, name: st
     transition: 'opacity 0.2s ease-out, transform 0.2s ease-out',
   });
 
-  // ヘッダー部分（常に表示）
-  const header = document.createElement('div');
-  Object.assign(header.style, {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '8px',
-  });
-
   // メインメッセージ
-  const messageContainer = document.createElement('div');
-  Object.assign(messageContainer.style, {
-    flex: '1',
-    cursor: 'pointer',
-    userSelect: 'none',
-  });
-
   const mainMessage = document.createElement('div');
-  mainMessage.textContent = `CSP制約により${blockedPlugins.length}個のプラグインは適用できません`;
+  mainMessage.textContent = `CSP制約により以下のプラグインは適用できません:`;
   Object.assign(mainMessage.style, {
     fontWeight: '600',
-    marginBottom: '4px',
-  });
-
-  const expandHint = document.createElement('div');
-  expandHint.textContent = '▼ クリックして詳細を表示';
-  Object.assign(expandHint.style, {
-    fontSize: '12px',
-    opacity: '0.8',
-  });
-
-  messageContainer.appendChild(mainMessage);
-  messageContainer.appendChild(expandHint);
-
-  // 閉じるボタン
-  const closeButton = document.createElement('button');
-  closeButton.textContent = '×';
-  Object.assign(closeButton.style, {
-    background: 'transparent',
-    border: 'none',
-    color: 'white',
-    fontSize: '24px',
-    cursor: 'pointer',
-    padding: '0',
-    width: '24px',
-    height: '24px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    lineHeight: '1',
-    opacity: '0.8',
-  });
-
-  closeButton.onmouseover = () => {
-    closeButton.style.opacity = '1';
-  };
-  closeButton.onmouseout = () => {
-    closeButton.style.opacity = '0.8';
-  };
-
-  closeButton.onclick = () => {
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateY(10px)';
-    setTimeout(() => notification.remove(), 200);
-  };
-
-  header.appendChild(messageContainer);
-  header.appendChild(closeButton);
-
-  // 詳細部分（展開時のみ表示）
-  const details = document.createElement('div');
-  Object.assign(details.style, {
-    marginTop: '12px',
-    paddingTop: '12px',
-    borderTop: '1px solid rgba(255,255,255,0.3)',
-    display: 'none',
-  });
-
-  const detailsTitle = document.createElement('div');
-  detailsTitle.textContent = 'ブロックされたプラグイン:';
-  Object.assign(detailsTitle.style, {
-    fontSize: '12px',
     marginBottom: '8px',
-    opacity: '0.9',
   });
-  details.appendChild(detailsTitle);
+
+  notification.appendChild(mainMessage);
 
   // プラグインリスト
   const pluginList = document.createElement('ul');
@@ -229,22 +149,7 @@ export function showCSPWarningBanner(blockedPlugins: Array<{id: string, name: st
     pluginList.appendChild(listItem);
   });
 
-  details.appendChild(pluginList);
-
-  // 展開/折りたたみの処理
-  messageContainer.onclick = () => {
-    isExpanded = !isExpanded;
-    if (isExpanded) {
-      details.style.display = 'block';
-      expandHint.textContent = '▲ クリックして閉じる';
-    } else {
-      details.style.display = 'none';
-      expandHint.textContent = '▼ クリックして詳細を表示';
-    }
-  };
-
-  notification.appendChild(header);
-  notification.appendChild(details);
+  notification.appendChild(pluginList);
   document.body.appendChild(notification);
 
   // アニメーション表示
@@ -252,4 +157,14 @@ export function showCSPWarningBanner(blockedPlugins: Array<{id: string, name: st
     notification.style.opacity = '1';
     notification.style.transform = 'translateY(0)';
   });
+
+  // 5秒後に削除
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(10px)';
+
+    setTimeout(() => {
+      notification.remove();
+    }, 200);
+  }, 5000);
 }
