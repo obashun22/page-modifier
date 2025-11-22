@@ -98,8 +98,8 @@ class ContentScript {
       return;
     }
 
-    // CSP判定を実行
-    const cspAllowsEval = this.checkCSPAllowsEval();
+    // CSP判定を実行（Main Worldで判定）
+    const cspAllowsEval = await this.checkCSPAllowsEval();
     const blockedPlugins: Plugin[] = [];
 
     // プラグインをフィルタリング
@@ -154,27 +154,41 @@ class ContentScript {
   /**
    * CSPがカスタムコード実行（eval）を許可しているか判定
    *
-   * 試験的にFunctionコンストラクタを実行し、成功すればCSP制約なしと判定
+   * Main Worldで試験的にFunctionコンストラクタを実行し、成功すればCSP制約なしと判定
    * HTTPレスポンスヘッダーで設定されたCSPもmetaタグで設定されたCSPも検出可能
    *
    * @returns CSPがevalを許可している場合true
    */
-  private checkCSPAllowsEval(): boolean {
-    try {
-      // 試験的にFunctionコンストラクタを実行
-      new Function('return 1')();
-      return true; // 実行成功 = CSP制約なし
-    } catch (error) {
-      // EvalErrorまたはunsafe-eval関連のエラーが発生 = CSP制約あり
-      if (error instanceof EvalError ||
-          (error instanceof Error && error.message.includes('unsafe-eval'))) {
-        console.log('[PageModifier] CSP detected: eval is blocked');
-        return false;
-      }
-      // その他のエラーは想定外なので、安全のためfalseを返す
-      console.warn('[PageModifier] Unexpected error during CSP check:', error);
-      return false;
-    }
+  private async checkCSPAllowsEval(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const requestId = `csp_check_${Date.now()}_${Math.random()}`;
+
+      // Main Worldからのレスポンスハンドラー
+      const handleResponse = (event: MessageEvent) => {
+        if (event.source !== window) return;
+        const response = event.data;
+        if (response.type === 'CSP_CHECK_RESULT' && response.requestId === requestId) {
+          window.removeEventListener('message', handleResponse);
+          console.log('[PageModifier] CSP check result:', response.allowsEval);
+          resolve(response.allowsEval);
+        }
+      };
+
+      window.addEventListener('message', handleResponse);
+
+      // タイムアウト設定（2秒）
+      setTimeout(() => {
+        window.removeEventListener('message', handleResponse);
+        console.warn('[PageModifier] CSP check timeout, assuming CSP blocks eval');
+        resolve(false); // タイムアウト時は安全のためfalseを返す
+      }, 2000);
+
+      // Main WorldにCSP判定をリクエスト
+      window.postMessage({
+        type: 'CHECK_CSP',
+        requestId: requestId,
+      }, '*');
+    });
   }
 
   /**

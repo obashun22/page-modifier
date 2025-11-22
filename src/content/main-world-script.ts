@@ -59,6 +59,17 @@ interface StorageResponse {
   error?: string;
 }
 
+interface CSPCheckRequest {
+  type: 'CHECK_CSP';
+  requestId: string;
+}
+
+interface CSPCheckResponse {
+  type: 'CSP_CHECK_RESULT';
+  requestId: string;
+  allowsEval: boolean;
+}
+
 console.log('[PageModifier MAIN World] Script loaded');
 
 // Content Scriptからのメッセージを受信
@@ -154,6 +165,28 @@ window.addEventListener('message', (event) => {
     }
   } else if (message.type === 'STORAGE_RESPONSE') {
     // ストレージレスポンスは下記のPluginStorage APIが処理する
+  } else if (message.type === 'CHECK_CSP') {
+    const request = message as CSPCheckRequest;
+    console.log('[PageModifier MAIN World] Checking CSP...');
+
+    let allowsEval = false;
+    try {
+      // MAIN Worldで試験的にFunctionコンストラクタを実行
+      new Function('return 1')();
+      allowsEval = true;
+      console.log('[PageModifier MAIN World] CSP allows eval');
+    } catch (error) {
+      console.log('[PageModifier MAIN World] CSP blocks eval:', error);
+      allowsEval = false;
+    }
+
+    const response: CSPCheckResponse = {
+      type: 'CSP_CHECK_RESULT',
+      requestId: request.requestId,
+      allowsEval: allowsEval,
+    };
+
+    window.postMessage(response, '*');
   }
 });
 
