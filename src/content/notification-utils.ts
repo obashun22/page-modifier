@@ -5,16 +5,18 @@
  */
 
 /**
- * トースト通知を表示
+ * HTML要素を含むトースト通知を表示（基礎関数）
  *
- * @param message - 表示するメッセージ
+ * @param content - 表示するHTML要素
  * @param duration - 表示時間（ミリ秒、デフォルト3000）
  * @param type - 通知タイプ（success, error, info）
+ * @param customStyles - カスタムスタイル（オプション）
  */
-export function showNotification(
-  message: string,
+function showNotificationHTML(
+  content: HTMLElement,
   duration: number = 3000,
-  type: 'success' | 'error' | 'info' = 'success'
+  type: 'success' | 'error' | 'info' = 'success',
+  customStyles?: Partial<CSSStyleDeclaration>
 ): void {
   // 既存の通知があれば削除
   const existingToast = document.querySelector('[data-plugin-toast]');
@@ -25,7 +27,7 @@ export function showNotification(
   // トースト要素を作成
   const toast = document.createElement('div');
   toast.dataset.pluginToast = 'true';
-  toast.textContent = message;
+  toast.appendChild(content);
 
   // タイプ別の背景色
   const backgroundColor = {
@@ -34,7 +36,7 @@ export function showNotification(
     info: '#0969da',
   }[type];
 
-  // スタイル設定
+  // デフォルトスタイル設定
   Object.assign(toast.style, {
     position: 'fixed',
     bottom: '20px',
@@ -53,6 +55,11 @@ export function showNotification(
     transition: 'opacity 0.2s ease-out, transform 0.2s ease-out',
   });
 
+  // カスタムスタイルを適用
+  if (customStyles) {
+    Object.assign(toast.style, customStyles);
+  }
+
   document.body.appendChild(toast);
 
   // アニメーション表示
@@ -70,6 +77,24 @@ export function showNotification(
       toast.remove();
     }, 200);
   }, duration);
+}
+
+/**
+ * トースト通知を表示（文字列版）
+ *
+ * @param message - 表示するメッセージ
+ * @param duration - 表示時間（ミリ秒、デフォルト3000）
+ * @param type - 通知タイプ（success, error, info）
+ */
+export function showNotification(
+  message: string,
+  duration: number = 3000,
+  type: 'success' | 'error' | 'info' = 'success'
+): void {
+  const textNode = document.createTextNode(message);
+  const wrapper = document.createElement('span');
+  wrapper.appendChild(textNode);
+  showNotificationHTML(wrapper, duration, type);
 }
 
 /**
@@ -92,35 +117,8 @@ export function replacePlaceholders(text: string): string {
  * @param blockedPlugins - ブロックされたプラグインの配列
  */
 export function showCSPWarningBanner(blockedPlugins: Array<{id: string, name: string}>): void {
-  // 既存の通知があれば削除
-  const existingNotification = document.querySelector('[data-csp-notification]');
-  if (existingNotification) {
-    existingNotification.remove();
-  }
-
-  // 通知要素を作成
-  const notification = document.createElement('div');
-  notification.dataset.cspNotification = 'true';
-
-  // スタイル設定
-  Object.assign(notification.style, {
-    position: 'fixed',
-    bottom: '20px',
-    right: '20px',
-    backgroundColor: '#d1242f',
-    color: 'white',
-    padding: '16px',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-    zIndex: '1000000',
-    fontSize: '14px',
-    fontFamily: 'system-ui, sans-serif',
-    minWidth: '300px',
-    maxWidth: '400px',
-    opacity: '0',
-    transform: 'translateY(10px)',
-    transition: 'opacity 0.2s ease-out, transform 0.2s ease-out',
-  });
+  // HTMLコンテンツを構築
+  const container = document.createElement('div');
 
   // メインメッセージ
   const mainMessage = document.createElement('div');
@@ -130,7 +128,7 @@ export function showCSPWarningBanner(blockedPlugins: Array<{id: string, name: st
     marginBottom: '8px',
   });
 
-  notification.appendChild(mainMessage);
+  container.appendChild(mainMessage);
 
   // プラグインリスト
   const pluginList = document.createElement('ul');
@@ -149,22 +147,12 @@ export function showCSPWarningBanner(blockedPlugins: Array<{id: string, name: st
     pluginList.appendChild(listItem);
   });
 
-  notification.appendChild(pluginList);
-  document.body.appendChild(notification);
+  container.appendChild(pluginList);
 
-  // アニメーション表示
-  requestAnimationFrame(() => {
-    notification.style.opacity = '1';
-    notification.style.transform = 'translateY(0)';
+  // HTML版トースト通知を使用
+  showNotificationHTML(container, 5000, 'error', {
+    padding: '16px',
+    minWidth: '300px',
+    maxWidth: '400px',
   });
-
-  // 5秒後に削除
-  setTimeout(() => {
-    notification.style.opacity = '0';
-    notification.style.transform = 'translateY(10px)';
-
-    setTimeout(() => {
-      notification.remove();
-    }, 200);
-  }, 5000);
 }
