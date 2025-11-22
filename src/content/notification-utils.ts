@@ -87,12 +87,169 @@ export function replacePlaceholders(text: string): string {
 }
 
 /**
- * CSP警告をトースト形式で表示
+ * CSP警告を展開可能な通知として表示
  *
  * @param blockedPlugins - ブロックされたプラグインの配列
  */
 export function showCSPWarningBanner(blockedPlugins: Array<{id: string, name: string}>): void {
-  const pluginNames = blockedPlugins.map(p => p.name).join('、');
-  const message = `CSP制約により以下のプラグインは適用できません: ${pluginNames}`;
-  showNotification(message, 5000, 'error');
+  // 既存の通知があれば削除
+  const existingNotification = document.querySelector('[data-csp-notification]');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+
+  // 通知要素を作成
+  const notification = document.createElement('div');
+  notification.dataset.cspNotification = 'true';
+
+  // 展開状態を管理
+  let isExpanded = false;
+
+  // スタイル設定
+  Object.assign(notification.style, {
+    position: 'fixed',
+    bottom: '20px',
+    right: '20px',
+    backgroundColor: '#d1242f',
+    color: 'white',
+    padding: '16px',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    zIndex: '1000000',
+    fontSize: '14px',
+    fontFamily: 'system-ui, sans-serif',
+    minWidth: '300px',
+    maxWidth: '400px',
+    opacity: '0',
+    transform: 'translateY(10px)',
+    transition: 'opacity 0.2s ease-out, transform 0.2s ease-out',
+  });
+
+  // ヘッダー部分（常に表示）
+  const header = document.createElement('div');
+  Object.assign(header.style, {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '8px',
+  });
+
+  // メインメッセージ
+  const messageContainer = document.createElement('div');
+  Object.assign(messageContainer.style, {
+    flex: '1',
+    cursor: 'pointer',
+    userSelect: 'none',
+  });
+
+  const mainMessage = document.createElement('div');
+  mainMessage.textContent = `CSP制約により${blockedPlugins.length}個のプラグインは適用できません`;
+  Object.assign(mainMessage.style, {
+    fontWeight: '600',
+    marginBottom: '4px',
+  });
+
+  const expandHint = document.createElement('div');
+  expandHint.textContent = '▼ クリックして詳細を表示';
+  Object.assign(expandHint.style, {
+    fontSize: '12px',
+    opacity: '0.8',
+  });
+
+  messageContainer.appendChild(mainMessage);
+  messageContainer.appendChild(expandHint);
+
+  // 閉じるボタン
+  const closeButton = document.createElement('button');
+  closeButton.textContent = '×';
+  Object.assign(closeButton.style, {
+    background: 'transparent',
+    border: 'none',
+    color: 'white',
+    fontSize: '24px',
+    cursor: 'pointer',
+    padding: '0',
+    width: '24px',
+    height: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: '1',
+    opacity: '0.8',
+  });
+
+  closeButton.onmouseover = () => {
+    closeButton.style.opacity = '1';
+  };
+  closeButton.onmouseout = () => {
+    closeButton.style.opacity = '0.8';
+  };
+
+  closeButton.onclick = () => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(10px)';
+    setTimeout(() => notification.remove(), 200);
+  };
+
+  header.appendChild(messageContainer);
+  header.appendChild(closeButton);
+
+  // 詳細部分（展開時のみ表示）
+  const details = document.createElement('div');
+  Object.assign(details.style, {
+    marginTop: '12px',
+    paddingTop: '12px',
+    borderTop: '1px solid rgba(255,255,255,0.3)',
+    display: 'none',
+  });
+
+  const detailsTitle = document.createElement('div');
+  detailsTitle.textContent = 'ブロックされたプラグイン:';
+  Object.assign(detailsTitle.style, {
+    fontSize: '12px',
+    marginBottom: '8px',
+    opacity: '0.9',
+  });
+  details.appendChild(detailsTitle);
+
+  // プラグインリスト
+  const pluginList = document.createElement('ul');
+  Object.assign(pluginList.style, {
+    margin: '0',
+    paddingLeft: '20px',
+    fontSize: '13px',
+  });
+
+  blockedPlugins.forEach(plugin => {
+    const listItem = document.createElement('li');
+    listItem.textContent = plugin.name;
+    Object.assign(listItem.style, {
+      marginBottom: '4px',
+    });
+    pluginList.appendChild(listItem);
+  });
+
+  details.appendChild(pluginList);
+
+  // 展開/折りたたみの処理
+  messageContainer.onclick = () => {
+    isExpanded = !isExpanded;
+    if (isExpanded) {
+      details.style.display = 'block';
+      expandHint.textContent = '▲ クリックして閉じる';
+    } else {
+      details.style.display = 'none';
+      expandHint.textContent = '▼ クリックして詳細を表示';
+    }
+  };
+
+  notification.appendChild(header);
+  notification.appendChild(details);
+  document.body.appendChild(notification);
+
+  // アニメーション表示
+  requestAnimationFrame(() => {
+    notification.style.opacity = '1';
+    notification.style.transform = 'translateY(0)';
+  });
 }
