@@ -155,14 +155,3 @@ export interface ValidationError {
   message: string;
 }
 
-// ==================== セキュリティレベル ====================
-
-/** セキュリティレベル */
-export type SecurityLevel = 'safe' | 'moderate' | 'advanced';
-
-/** セキュリティ評価結果 */
-export interface SecurityAssessment {
-  level: SecurityLevel;
-  reasons: string[];
-  requiresApproval: boolean;
-}

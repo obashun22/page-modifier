@@ -347,19 +347,6 @@ export class PluginEngine {
     _element: HTMLElement,
     event?: UIEvent
   ): Promise<void> {
-    // セキュリティレベルの確認
-    const settings = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
-
-    if (settings.settings?.securityLevel !== 'advanced') {
-      console.warn('[PluginEngine] Event code execution requires security level "advanced"');
-      showNotification(
-        'イベントコードの実行にはセキュリティレベル「Advanced」が必要です',
-        5000,
-        'error'
-      );
-      throw new Error('Security level "advanced" required for event code execution');
-    }
-
     try {
       // リクエストIDを生成
       const requestId = `event-code-${Date.now()}-${Math.random()}`;

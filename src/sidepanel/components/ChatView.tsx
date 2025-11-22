@@ -13,7 +13,6 @@ import PluginCard from './PluginCard';
 import { chatWithAI } from '../services/ai-service';
 import type { Plugin } from '../../shared/types';
 import type { ChatItem, ChatMessage, ChatPlugin, ChatPluginMode, ElementInfo } from '../../shared/chat-types';
-import { canExecutePlugin } from '../../shared/plugin-security-checker';
 
 interface ChatViewProps {
   selectedPluginForEdit: Plugin | null;
@@ -320,20 +319,11 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         });
       }
 
-      // セキュリティチェック：現在の設定を取得
-      const settingsResponse = await chrome.runtime.sendMessage({
-        type: 'GET_SETTINGS',
-      });
-      const settings = settingsResponse.settings;
-
-      // プラグインが実行可能かチェック
-      const canExecute = canExecutePlugin(plugin, settings.securityLevel);
-
-      // 新しいプラグインを保存（権限不足の場合はenabledをfalseに）
+      // 新しいプラグインを保存
       await chrome.runtime.sendMessage({
         type: 'SAVE_PLUGIN',
         plugin,
-        enabled: canExecute, // 権限が足りない場合は無効化して保存
+        enabled: true,
       });
 
       // 承認されたプラグインのモードを 'added' または 'updated' に変更
@@ -353,15 +343,10 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       // プラグインIDリストを再読み込み
       await loadExistingPluginIds();
 
-      // 権限がある場合のみタブをリロード
-      if (canExecute) {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab.id) {
-          await chrome.tabs.reload(tab.id);
-        }
-      } else {
-        // 権限不足の場合はアラートを表示
-        alert(`プラグイン「${plugin.name}」はセキュリティレベルが不足しているため、無効化状態で追加しました。\n\n設定タブからセキュリティレベルを変更すると有効化できます。`);
+      // タブをリロード
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab.id) {
+        await chrome.tabs.reload(tab.id);
       }
     } catch (error) {
       addMessage('assistant', `プラグインの保存に失敗しました: ${error instanceof Error ? error.message : String(error)}`);

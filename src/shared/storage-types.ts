@@ -6,9 +6,6 @@
 
 import type { Plugin } from './types';
 
-/** セキュリティレベル */
-export type SecurityLevel = 'safe' | 'moderate' | 'advanced';
-
 /** ストレージキー定義 */
 export const STORAGE_KEYS = {
   PLUGINS: 'plugins',
@@ -31,7 +28,6 @@ export interface Settings {
   pluginsEnabled: boolean;            // プラグイン機能全体の有効/無効（マスタースイッチ）
   theme: 'light' | 'dark' | 'auto';   // テーマ
   apiKey?: string;                    // Claude APIキー（暗号化推奨）
-  securityLevel: SecurityLevel;       // セキュリティレベル
 }
 
 /** ドメインマッピング */
@@ -50,5 +46,4 @@ export interface StorageData {
 export const DEFAULT_SETTINGS: Settings = {
   pluginsEnabled: true,
   theme: 'auto',
-  securityLevel: 'advanced',
 };

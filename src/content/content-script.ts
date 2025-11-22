@@ -8,9 +8,6 @@
 import { PluginEngine } from './plugin-engine';
 import { ElementSelector } from './element-selector';
 import type { Plugin } from '../shared/types';
-import { SecurityAnalyzer } from '../shared/security-analyzer';
-import { canExecutePlugin } from '../shared/plugin-security-checker';
-import type { SecurityLevel } from '../shared/storage-types';
 
 /**
  * Content Scriptメインクラス
@@ -91,7 +88,6 @@ class ContentScript {
   private async executePlugins(plugins: Plugin[]): Promise<void> {
     // 現在の設定を取得
     const settingsResponse = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
-    const securityLevel: SecurityLevel = settingsResponse.settings?.securityLevel || 'safe';
     const pluginsEnabled: boolean = settingsResponse.settings?.pluginsEnabled ?? true;
 
     // プラグイン機能全体が無効の場合、すべてのプラグインをスキップ
@@ -105,27 +101,6 @@ class ContentScript {
       // 個別プラグインの有効化フラグチェック
       if (!plugin.enabled) {
         console.log(`[PageModifier] Skipping plugin ${plugin.id}: plugin is disabled`);
-        continue;
-      }
-
-      // セキュリティレベルチェック
-      if (!canExecutePlugin(plugin, securityLevel)) {
-        const analyzer = new SecurityAnalyzer();
-        const analysis = analyzer.analyze(plugin);
-        console.warn(
-          `[PageModifier] Plugin ${plugin.id} requires ${analysis.level} security level, ` +
-          `but current level is ${securityLevel}. Disabling plugin.`
-        );
-
-        // プラグインを自動的に無効化
-        chrome.runtime.sendMessage({
-          type: 'TOGGLE_PLUGIN',
-          pluginId: plugin.id,
-          enabled: false,
-        }).catch((error) => {
-          console.error(`[PageModifier] Failed to disable plugin ${plugin.id}:`, error);
-        });
-
         continue;
       }
 
@@ -150,18 +125,6 @@ class ContentScript {
         }
       } catch (error) {
         console.error(`[PageModifier] Failed to execute plugin ${plugin.id}:`, error);
-
-        // セキュリティ関連のエラーの場合、プラグインを無効化
-        if (error instanceof Error && error.message.includes('advanced')) {
-          console.warn(`[PageModifier] Security error for plugin ${plugin.id}. Disabling plugin.`);
-          chrome.runtime.sendMessage({
-            type: 'TOGGLE_PLUGIN',
-            pluginId: plugin.id,
-            enabled: false,
-          }).catch((err) => {
-            console.error(`[PageModifier] Failed to disable plugin ${plugin.id}:`, err);
-          });
-        }
       }
     }
   }

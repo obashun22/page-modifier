@@ -9,7 +9,6 @@ import PluginList from './PluginList';
 import PluginEditor from './PluginEditor';
 import type { PluginData, Settings } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
-import { canExecutePlugin, getSecurityLevelErrorMessage } from '../../shared/plugin-security-checker';
 
 interface PluginManagementViewProps {
   onEditPlugin: (plugin: Plugin) => void;
@@ -31,11 +30,6 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
       if (changes['page_modifier_plugins']) {
         console.log('[PluginManagementView] Plugins updated in storage, reloading...');
         loadPlugins();
-      }
-      // 設定が変更された場合
-      if (changes['page_modifier_settings']) {
-        console.log('[PluginManagementView] Settings updated in storage, reloading...');
-        loadSettings();
       }
     };
 
@@ -94,31 +88,6 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   };
 
   const handlePluginToggle = async (pluginId: string, enabled: boolean) => {
-    // 有効化しようとしている場合、セキュリティレベルをチェック
-    if (enabled) {
-      // 現在の設定を取得
-      const settingsResponse = await chrome.runtime.sendMessage({
-        type: 'GET_SETTINGS',
-      });
-
-      const settings: Settings = settingsResponse.settings;
-
-      // プラグインを取得
-      const pluginData = plugins.find((p) => p.plugin.id === pluginId);
-      if (!pluginData) return;
-
-      // セキュリティレベルをチェック
-      if (!canExecutePlugin(pluginData.plugin, settings.securityLevel)) {
-        const errorMessage = getSecurityLevelErrorMessage(
-          pluginData.plugin,
-          settings.securityLevel
-        );
-
-        alert(`⚠️ プラグインを有効化できません\n\n${errorMessage}\n\n設定タブからセキュリティレベルを変更してください。`);
-        return;
-      }
-    }
-
     await chrome.runtime.sendMessage({
       type: 'TOGGLE_PLUGIN',
       pluginId,

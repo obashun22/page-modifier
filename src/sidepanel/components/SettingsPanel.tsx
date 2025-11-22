@@ -18,21 +18,6 @@ export default function SettingsPanel({ isDarkMode, onToggleDarkMode }: Settings
   const [previousSettings, setPreviousSettings] = useState<Settings | null>(null);
   const isInitialLoadRef = useRef(true);
 
-  const reloadActiveTabs = useCallback(async () => {
-    try {
-      const tabs = await chrome.tabs.query({ active: true });
-      for (const tab of tabs) {
-        if (tab.id) {
-          await chrome.tabs.sendMessage(tab.id, { type: 'RELOAD_PLUGINS' }).catch(() => {
-            // タブにContent Scriptが注入されていない場合はエラーを無視
-          });
-        }
-      }
-    } catch (error) {
-      console.error('タブのリロードに失敗しました', error);
-    }
-  }, []);
-
   const autoSave = useCallback(async () => {
     if (!settings) return;
 
@@ -42,21 +27,12 @@ export default function SettingsPanel({ isDarkMode, onToggleDarkMode }: Settings
         settings,
       });
 
-      // セキュリティレベルが変更された場合、アクティブなタブをリロード
-      if (previousSettings) {
-        const needsReload = settings.securityLevel !== previousSettings.securityLevel;
-
-        if (needsReload) {
-          await reloadActiveTabs();
-        }
-      }
-
       // 現在の設定を保存
       setPreviousSettings(settings);
     } catch (error) {
       console.error('設定の保存に失敗しました', error);
     }
-  }, [settings, previousSettings, reloadActiveTabs]);
+  }, [settings, previousSettings]);
 
   const loadSettings = async () => {
     const response = await chrome.runtime.sendMessage({
@@ -104,29 +80,6 @@ export default function SettingsPanel({ isDarkMode, onToggleDarkMode }: Settings
         </button>
         <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
           ダークモードとライトモードを切り替えます
-        </p>
-      </div>
-
-      <div className="mb-5">
-        <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-          セキュリティレベル
-        </label>
-        <select
-          value={settings.securityLevel}
-          onChange={(e) =>
-            setSettings({
-              ...settings,
-              securityLevel: e.target.value as 'safe' | 'moderate' | 'advanced',
-            })
-          }
-          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 cursor-pointer"
-        >
-          <option value="safe">Safe（基本DOM操作のみ）</option>
-          <option value="moderate">Moderate（事前定義イベント、外部API）</option>
-          <option value="advanced">Advanced（カスタムJS実行）</option>
-        </select>
-        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-          Advancedレベルでは、カスタムJavaScriptコードの実行が許可されます（承認が必要）
         </p>
       </div>
 
