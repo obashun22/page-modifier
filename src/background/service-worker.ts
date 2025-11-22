@@ -135,11 +135,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true; // 非同期応答
 
     case 'CSP_BLOCKED_PLUGINS':
-      // サイドパネルにブロードキャスト
+      // サイドパネルにブロードキャスト（タブIDを含める）
       chrome.runtime.sendMessage({
         type: 'CSP_WARNING',
         plugins: message.plugins,
         url: message.url,
+        tabId: sender.tab?.id,
       }).catch(() => {
         // エラーは無視（サイドパネルが開いていない可能性）
       });
