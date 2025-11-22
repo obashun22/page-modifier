@@ -21,8 +21,6 @@ function App() {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
-  const [cspBlockedPlugins, setCSPBlockedPlugins] = useState<Array<{id: string, name: string}>>([]);
-  const [currentTabUrl, setCurrentTabUrl] = useState<string>('');
 
   // ダークモード状態をdocument.documentElementに反映
   useEffect(() => {
@@ -33,81 +31,6 @@ function App() {
     }
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
-
-  // ブラウザのタブ切り替えを監視（グローバル）
-  useEffect(() => {
-    const loadCurrentTabUrl = async () => {
-      try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        setCurrentTabUrl(tab?.url || '');
-        console.log('[App] Tab URL updated:', tab?.url);
-      } catch (error) {
-        console.error('Failed to get current tab URL:', error);
-        setCurrentTabUrl('');
-      }
-    };
-
-    loadCurrentTabUrl();
-
-    // 初回ロード時にCSPチェックを要求
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'CHECK_CSP_STATUS' }).catch(() => {
-          // エラーは無視（Content Scriptが読み込まれていない可能性）
-        });
-      }
-    });
-
-    // タブの切り替えを監視
-    const handleTabActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
-      console.log('[App] Tab activated:', activeInfo);
-      loadCurrentTabUrl();
-      // タブ切り替え時にCSP情報をクリア
-      setCSPBlockedPlugins([]);
-      // 新しいタブでCSP状態をチェック
-      chrome.tabs.sendMessage(activeInfo.tabId, { type: 'CHECK_CSP_STATUS' }).catch(() => {
-        // エラーは無視（Content Scriptが読み込まれていない可能性）
-      });
-    };
-
-    // タブのURL変更を監視
-    const handleTabUpdated = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, _tab: chrome.tabs.Tab) => {
-      // URLが変更された場合のみ
-      if (changeInfo.url) {
-        console.log('[App] Tab URL updated:', changeInfo.url);
-        // アクティブなタブの場合のみ更新
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]?.id === tabId) {
-            loadCurrentTabUrl();
-            // URL変更時にCSP情報をクリア
-            setCSPBlockedPlugins([]);
-            // 新しいページでCSP状態をチェック
-            chrome.tabs.sendMessage(tabId, { type: 'CHECK_CSP_STATUS' }).catch(() => {
-              // エラーは無視（Content Scriptが読み込まれていない可能性）
-            });
-          }
-        });
-      }
-    };
-
-    // CSP警告メッセージを受信
-    const handleMessage = (message: any) => {
-      if (message.type === 'CSP_WARNING') {
-        console.log('[App] CSP warning received:', message.plugins);
-        setCSPBlockedPlugins(message.plugins);
-      }
-    };
-
-    chrome.tabs.onActivated.addListener(handleTabActivated);
-    chrome.tabs.onUpdated.addListener(handleTabUpdated);
-    chrome.runtime.onMessage.addListener(handleMessage);
-
-    return () => {
-      chrome.tabs.onActivated.removeListener(handleTabActivated);
-      chrome.tabs.onUpdated.removeListener(handleTabUpdated);
-      chrome.runtime.onMessage.removeListener(handleMessage);
-    };
-  }, []);
 
   // プラグインを編集モードでチャットに持っていく
   const handleEditPlugin = (plugin: Plugin) => {
@@ -137,11 +60,7 @@ function App() {
           />
         )}
         {currentView === 'plugins' && (
-          <PluginManagementView
-            onEditPlugin={handleEditPlugin}
-            cspBlockedPlugins={cspBlockedPlugins}
-            currentTabUrl={currentTabUrl}
-          />
+          <PluginManagementView onEditPlugin={handleEditPlugin} />
         )}
         {currentView === 'settings' && (
           <SettingsPanel isDarkMode={isDarkMode} onToggleDarkMode={() => setIsDarkMode(!isDarkMode)} />

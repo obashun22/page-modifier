@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { FiMessageSquare, FiEdit3, FiUpload, FiTrash2, FiChevronDown, FiChevronUp, FiDownload, FiRefreshCw, FiCheck, FiAlertTriangle } from 'react-icons/fi';
+import { FiMessageSquare, FiEdit3, FiUpload, FiTrash2, FiChevronDown, FiChevronUp, FiDownload, FiRefreshCw, FiCheck } from 'react-icons/fi';
 import { MdToggleOn, MdToggleOff } from 'react-icons/md';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
@@ -23,7 +23,6 @@ interface PluginListProps {
   pluginsEnabled: boolean;
   onTogglePluginsEnabled: (enabled: boolean) => void;
   isPluginActiveOnCurrentPage: (plugin: Plugin) => boolean;
-  cspBlockedPlugins: Array<{id: string, name: string}>;
 }
 
 interface PluginItemProps {
@@ -35,7 +34,6 @@ interface PluginItemProps {
   onPluginEdit: (plugin: Plugin) => void;
   pluginsEnabled: boolean;
   isActiveOnCurrentPage: boolean;
-  isCSPBlocked: boolean;
 }
 
 function PluginItem({
@@ -47,26 +45,19 @@ function PluginItem({
   onPluginEdit,
   pluginsEnabled,
   isActiveOnCurrentPage,
-  isCSPBlocked,
 }: PluginItemProps) {
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
   return (
-    <div className={`p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700 ${!pluginsEnabled ? 'opacity-40' : ''} ${isActiveOnCurrentPage && pluginData.enabled && !isCSPBlocked ? 'border-l-4 border-l-green-500 dark:border-l-green-400' : ''} ${isActiveOnCurrentPage && pluginData.enabled && isCSPBlocked ? 'border-l-4 border-l-red-500 dark:border-l-red-400' : ''}`}>
+    <div className={`p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700 ${!pluginsEnabled ? 'opacity-40' : ''} ${isActiveOnCurrentPage && pluginData.enabled ? 'border-l-4 border-l-green-500 dark:border-l-green-400' : ''}`}>
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="m-0 text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               {pluginData.plugin.name}
-              {isActiveOnCurrentPage && pluginData.enabled && !isCSPBlocked && (
+              {isActiveOnCurrentPage && pluginData.enabled && (
                 <span className="flex items-center gap-1 px-2 py-1 bg-green-500 dark:bg-green-600 text-white text-xs font-semibold rounded-full">
                   <FiCheck size={12} />
                   <span>適用中</span>
-                </span>
-              )}
-              {isActiveOnCurrentPage && pluginData.enabled && isCSPBlocked && (
-                <span className="flex items-center gap-1 px-2 py-1 bg-red-500 dark:bg-red-600 text-white text-xs font-semibold rounded-full">
-                  <FiAlertTriangle size={12} />
-                  <span>適用不可</span>
                 </span>
               )}
             </h3>
@@ -171,7 +162,6 @@ export default function PluginList({
   pluginsEnabled,
   onTogglePluginsEnabled,
   isPluginActiveOnCurrentPage,
-  cspBlockedPlugins,
 }: PluginListProps) {
   const handleReloadPage = async () => {
     try {
@@ -291,7 +281,6 @@ export default function PluginList({
             onPluginEdit={onPluginEdit}
             pluginsEnabled={pluginsEnabled}
             isActiveOnCurrentPage={isPluginActiveOnCurrentPage(pluginData.plugin)}
-            isCSPBlocked={cspBlockedPlugins.some((blocked: {id: string, name: string}) => blocked.id === pluginData.plugin.id)}
           />
         ))}
       </div>

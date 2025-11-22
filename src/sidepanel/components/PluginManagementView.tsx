@@ -13,19 +13,19 @@ import { matchesDomain } from '../../utils/plugin-utils';
 
 interface PluginManagementViewProps {
   onEditPlugin: (plugin: Plugin) => void;
-  cspBlockedPlugins: Array<{id: string, name: string}>;
-  currentTabUrl: string;
 }
 
-export default function PluginManagementView({ onEditPlugin, cspBlockedPlugins, currentTabUrl }: PluginManagementViewProps) {
+export default function PluginManagementView({ onEditPlugin }: PluginManagementViewProps) {
   const [plugins, setPlugins] = useState<PluginData[]>([]);
   const [selectedPluginData, setSelectedPluginData] = useState<PluginData | null>(null);
   const [importing, setImporting] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [currentTabUrl, setCurrentTabUrl] = useState<string>('');
 
   useEffect(() => {
     loadPlugins();
     loadSettings();
+    loadCurrentTabUrl();
 
     // chrome.storageの変更を監視してプラグイン一覧を自動更新
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
@@ -36,10 +36,34 @@ export default function PluginManagementView({ onEditPlugin, cspBlockedPlugins, 
       }
     };
 
+    // タブの切り替えを監視
+    const handleTabActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
+      console.log('[PluginManagementView] Tab activated:', activeInfo);
+      loadCurrentTabUrl();
+    };
+
+    // タブのURL変更を監視
+    const handleTabUpdated = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, _tab: chrome.tabs.Tab) => {
+      // URLが変更された場合のみ
+      if (changeInfo.url) {
+        console.log('[PluginManagementView] Tab URL updated:', changeInfo.url);
+        // アクティブなタブの場合のみ更新
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]?.id === tabId) {
+            loadCurrentTabUrl();
+          }
+        });
+      }
+    };
+
     chrome.storage.onChanged.addListener(handleStorageChange);
+    chrome.tabs.onActivated.addListener(handleTabActivated);
+    chrome.tabs.onUpdated.addListener(handleTabUpdated);
 
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange);
+      chrome.tabs.onActivated.removeListener(handleTabActivated);
+      chrome.tabs.onUpdated.removeListener(handleTabUpdated);
     };
   }, []);
 
@@ -60,6 +84,17 @@ export default function PluginManagementView({ onEditPlugin, cspBlockedPlugins, 
 
     if (response.success) {
       setSettings(response.settings);
+    }
+  };
+
+  const loadCurrentTabUrl = async () => {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      setCurrentTabUrl(tab?.url || '');
+      console.log('[PluginManagementView] Tab URL updated:', tab?.url);
+    } catch (error) {
+      console.error('Failed to get current tab URL:', error);
+      setCurrentTabUrl('');
     }
   };
 
@@ -203,7 +238,6 @@ export default function PluginManagementView({ onEditPlugin, cspBlockedPlugins, 
           pluginsEnabled={settings?.pluginsEnabled ?? true}
           onTogglePluginsEnabled={handleTogglePluginsEnabled}
           isPluginActiveOnCurrentPage={isPluginActiveOnCurrentPage}
-          cspBlockedPlugins={cspBlockedPlugins}
         />
       )}
     </div>
