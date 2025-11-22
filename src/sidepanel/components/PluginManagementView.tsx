@@ -21,8 +21,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   const [importing, setImporting] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [currentTabUrl, setCurrentTabUrl] = useState<string>('');
-  const [currentTabId, setCurrentTabId] = useState<number | null>(null);
-  const [cspBlockedPluginsByTab, setCSPBlockedPluginsByTab] = useState<{ [tabId: number]: Array<{id: string, name: string}> }>({});
+  const [cspBlockedPlugins, setCSPBlockedPlugins] = useState<Array<{id: string, name: string}>>([]);
 
   useEffect(() => {
     loadPlugins();
@@ -42,6 +41,8 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     const handleTabActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
       console.log('[PluginManagementView] Tab activated:', activeInfo);
       loadCurrentTabUrl();
+      // タブ切り替え時にCSP情報をクリア（新しいタブで再判定される）
+      setCSPBlockedPlugins([]);
     };
 
     // タブのURL変更を監視
@@ -53,12 +54,8 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0]?.id === tabId) {
             loadCurrentTabUrl();
-            // URL変更時にそのタブのCSP情報をクリア
-            setCSPBlockedPluginsByTab(prev => {
-              const newState = { ...prev };
-              delete newState[tabId];
-              return newState;
-            });
+            // URL変更時にCSP情報をクリア（新しいページで再判定される）
+            setCSPBlockedPlugins([]);
           }
         });
       }
@@ -67,13 +64,8 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     // CSP警告メッセージを受信
     const handleMessage = (message: any) => {
       if (message.type === 'CSP_WARNING') {
-        console.log('[PluginManagementView] CSP warning received:', message.plugins, 'tabId:', message.tabId);
-        if (message.tabId !== undefined) {
-          setCSPBlockedPluginsByTab(prev => ({
-            ...prev,
-            [message.tabId]: message.plugins
-          }));
-        }
+        console.log('[PluginManagementView] CSP warning received:', message.plugins);
+        setCSPBlockedPlugins(message.plugins);
       }
     };
 
@@ -113,14 +105,12 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   const loadCurrentTabUrl = async () => {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      // URLとタブIDを必ず更新（存在しない場合は初期値にリセット）
+      // URLを必ず更新（存在しない場合は初期値にリセット）
       setCurrentTabUrl(tab?.url || '');
-      setCurrentTabId(tab?.id ?? null);
-      console.log('[PluginManagementView] Tab URL updated:', tab?.url, 'Tab ID:', tab?.id);
+      console.log('[PluginManagementView] Tab URL updated:', tab?.url);
     } catch (error) {
       console.error('Failed to get current tab URL:', error);
       setCurrentTabUrl('');
-      setCurrentTabId(null);
     }
   };
 
@@ -264,7 +254,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
           pluginsEnabled={settings?.pluginsEnabled ?? true}
           onTogglePluginsEnabled={handleTogglePluginsEnabled}
           isPluginActiveOnCurrentPage={isPluginActiveOnCurrentPage}
-          cspBlockedPlugins={currentTabId !== null ? (cspBlockedPluginsByTab[currentTabId] || []) : []}
+          cspBlockedPlugins={cspBlockedPlugins}
         />
       )}
     </div>
