@@ -328,6 +328,12 @@ class ContentScript {
           sendResponse({ success: true });
           break;
 
+        case 'CHECK_CSP_STATUS':
+          this.handleCheckCSPStatus()
+            .then(() => sendResponse({ success: true }))
+            .catch((error) => sendResponse({ success: false, error: error.message }));
+          return true; // 非同期応答
+
         default:
           console.warn('[PageModifier] Unknown message type:', message.type);
           sendResponse({ success: false, error: 'Unknown message type' });
@@ -394,6 +400,44 @@ class ContentScript {
   private handleStopElementSelection(): void {
     console.log('[PageModifier] Stopping element selection mode...');
     this.elementSelector.deactivate();
+  }
+
+  /**
+   * CSP状態をチェックして通知
+   */
+  private async handleCheckCSPStatus(): Promise<void> {
+    console.log('[PageModifier] Checking CSP status...');
+
+    // 現在のURLを取得
+    const currentUrl = location.href;
+
+    // 該当URLのプラグインを取得
+    const plugins = await this.fetchPluginsForUrl(currentUrl);
+
+    // 設定を取得
+    const settingsResponse = await chrome.runtime.sendMessage({ type: 'GET_SETTINGS' });
+    const pluginsEnabled: boolean = settingsResponse.settings?.pluginsEnabled ?? true;
+
+    if (!pluginsEnabled || plugins.length === 0) {
+      // プラグインが無効または該当プラグインがない場合、空配列を通知
+      this.notifyCSPBlocked([]);
+      return;
+    }
+
+    // CSP判定を実行
+    const cspAllowsEval = await this.checkCSPAllowsEval();
+    const blockedPlugins: Plugin[] = [];
+
+    // プラグインをフィルタリング
+    plugins.forEach(plugin => {
+      if (plugin.enabled && !cspAllowsEval && hasCustomCodeExecution(plugin)) {
+        console.log(`[PageModifier] Plugin ${plugin.id} blocked by CSP`);
+        blockedPlugins.push(plugin);
+      }
+    });
+
+    // ブロックされたプラグインを通知
+    this.notifyCSPBlocked(blockedPlugins);
   }
 
   /**

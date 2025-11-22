@@ -28,6 +28,15 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     loadSettings();
     loadCurrentTabUrl();
 
+    // 初回ロード時にCSPチェックを要求
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: 'CHECK_CSP_STATUS' }).catch(() => {
+          // エラーは無視（Content Scriptが読み込まれていない可能性）
+        });
+      }
+    });
+
     // chrome.storageの変更を監視してプラグイン一覧を自動更新
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
       // プラグインデータが変更された場合
@@ -41,8 +50,12 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     const handleTabActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
       console.log('[PluginManagementView] Tab activated:', activeInfo);
       loadCurrentTabUrl();
-      // タブ切り替え時にCSP情報をクリア（新しいタブで再判定される）
+      // タブ切り替え時にCSP情報をクリア
       setCSPBlockedPlugins([]);
+      // 新しいタブでCSP状態をチェック
+      chrome.tabs.sendMessage(activeInfo.tabId, { type: 'CHECK_CSP_STATUS' }).catch(() => {
+        // エラーは無視（Content Scriptが読み込まれていない可能性）
+      });
     };
 
     // タブのURL変更を監視
@@ -54,8 +67,12 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0]?.id === tabId) {
             loadCurrentTabUrl();
-            // URL変更時にCSP情報をクリア（新しいページで再判定される）
+            // URL変更時にCSP情報をクリア
             setCSPBlockedPlugins([]);
+            // 新しいページでCSP状態をチェック
+            chrome.tabs.sendMessage(tabId, { type: 'CHECK_CSP_STATUS' }).catch(() => {
+              // エラーは無視（Content Scriptが読み込まれていない可能性）
+            });
           }
         });
       }
