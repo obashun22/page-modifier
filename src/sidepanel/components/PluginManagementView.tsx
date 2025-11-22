@@ -41,6 +41,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     const handleTabActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
       console.log('[PluginManagementView] Tab activated:', activeInfo);
       loadCurrentTabUrl();
+      setCSPBlockedPlugins([]);
     };
 
     // タブのURL変更を監視
@@ -52,6 +53,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0]?.id === tabId) {
             loadCurrentTabUrl();
+            setCSPBlockedPlugins([]);
           }
         });
       }
