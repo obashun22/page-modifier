@@ -113,14 +113,14 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   const loadCurrentTabUrl = async () => {
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab?.url) {
-        setCurrentTabUrl(tab.url);
-      }
-      if (tab?.id !== undefined) {
-        setCurrentTabId(tab.id);
-      }
+      // URLとタブIDを必ず更新（存在しない場合は初期値にリセット）
+      setCurrentTabUrl(tab?.url || '');
+      setCurrentTabId(tab?.id ?? null);
+      console.log('[PluginManagementView] Tab URL updated:', tab?.url, 'Tab ID:', tab?.id);
     } catch (error) {
       console.error('Failed to get current tab URL:', error);
+      setCurrentTabUrl('');
+      setCurrentTabId(null);
     }
   };
 

@@ -176,12 +176,12 @@ class ContentScript {
 
       window.addEventListener('message', handleResponse);
 
-      // タイムアウト設定（2秒）
+      // タイムアウト設定（1秒）
       setTimeout(() => {
         window.removeEventListener('message', handleResponse);
         console.warn('[PageModifier] CSP check timeout, assuming CSP blocks eval');
         resolve(false); // タイムアウト時は安全のためfalseを返す
-      }, 2000);
+      }, 1000);
 
       // Main WorldにCSP判定をリクエスト
       window.postMessage({
