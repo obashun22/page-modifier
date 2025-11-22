@@ -49,19 +49,17 @@ function PluginItem({
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
   return (
-    <div className={`p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700 ${!pluginsEnabled ? 'opacity-40' : ''} ${isActiveOnCurrentPage && pluginData.enabled ? 'border-l-4 border-l-green-500 dark:border-l-green-400' : ''} relative`}>
-        {isActiveOnCurrentPage && pluginData.enabled && (
-          <div className="absolute top-2 right-2">
-            <div className="flex items-center gap-1 px-2 py-1 bg-green-500 dark:bg-green-600 text-white text-xs font-semibold rounded-full">
-              <FiCheck size={12} />
-              <span>適用中</span>
-            </div>
-          </div>
-        )}
+    <div className={`p-4 mb-3 bg-github-gray-50 dark:bg-gray-800 rounded-lg border border-github-gray-300 dark:border-gray-700 ${!pluginsEnabled ? 'opacity-40' : ''} ${isActiveOnCurrentPage && pluginData.enabled ? 'border-l-4 border-l-green-500 dark:border-l-green-400' : ''}`}>
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h3 className="m-0 text-base font-semibold text-gray-900 dark:text-gray-100">
+            <h3 className="m-0 text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
               {pluginData.plugin.name}
+              {isActiveOnCurrentPage && pluginData.enabled && (
+                <span className="flex items-center gap-1 px-2 py-1 bg-green-500 dark:bg-green-600 text-white text-xs font-semibold rounded-full">
+                  <FiCheck size={12} />
+                  <span>適用中</span>
+                </span>
+              )}
             </h3>
             <p className="mt-1 text-[13px] text-gray-500 dark:text-gray-400">
               {pluginData.plugin.description || 'No description'}
