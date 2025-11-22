@@ -36,10 +36,34 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
       }
     };
 
+    // タブの切り替えを監視
+    const handleTabActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
+      console.log('[PluginManagementView] Tab activated:', activeInfo);
+      loadCurrentTabUrl();
+    };
+
+    // タブのURL変更を監視
+    const handleTabUpdated = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, _tab: chrome.tabs.Tab) => {
+      // URLが変更された場合のみ
+      if (changeInfo.url) {
+        console.log('[PluginManagementView] Tab URL updated:', changeInfo.url);
+        // アクティブなタブの場合のみ更新
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]?.id === tabId) {
+            loadCurrentTabUrl();
+          }
+        });
+      }
+    };
+
     chrome.storage.onChanged.addListener(handleStorageChange);
+    chrome.tabs.onActivated.addListener(handleTabActivated);
+    chrome.tabs.onUpdated.addListener(handleTabUpdated);
 
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange);
+      chrome.tabs.onActivated.removeListener(handleTabActivated);
+      chrome.tabs.onUpdated.removeListener(handleTabUpdated);
     };
   }, []);
 
