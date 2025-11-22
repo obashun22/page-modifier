@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { FiMessageSquare, FiEdit3, FiUpload, FiTrash2, FiChevronDown, FiChevronUp, FiDownload, FiRefreshCw, FiCheck } from 'react-icons/fi';
+import { FiMessageSquare, FiEdit3, FiUpload, FiTrash2, FiChevronDown, FiChevronUp, FiDownload, FiRefreshCw, FiCheck, FiAlertTriangle } from 'react-icons/fi';
 import { MdToggleOn, MdToggleOff } from 'react-icons/md';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
@@ -23,6 +23,7 @@ interface PluginListProps {
   pluginsEnabled: boolean;
   onTogglePluginsEnabled: (enabled: boolean) => void;
   isPluginActiveOnCurrentPage: (plugin: Plugin) => boolean;
+  cspBlockedPlugins: Array<{id: string, name: string}>;
 }
 
 interface PluginItemProps {
@@ -34,6 +35,7 @@ interface PluginItemProps {
   onPluginEdit: (plugin: Plugin) => void;
   pluginsEnabled: boolean;
   isActiveOnCurrentPage: boolean;
+  isCSPBlocked: boolean;
 }
 
 function PluginItem({
@@ -45,6 +47,7 @@ function PluginItem({
   onPluginEdit,
   pluginsEnabled,
   isActiveOnCurrentPage,
+  isCSPBlocked,
 }: PluginItemProps) {
   const [isOperationsOpen, setIsOperationsOpen] = useState(false);
 
@@ -79,6 +82,17 @@ function PluginItem({
                 {pluginData.plugin.targetDomains.join(', ')}
               </span>
             </div>
+            {/* CSP警告 */}
+            {isCSPBlocked && (
+              <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                <div className="flex items-start gap-2">
+                  <FiAlertTriangle className="text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" size={14} />
+                  <p className="text-xs text-yellow-800 dark:text-yellow-300">
+                    このサイトではCSP制約により実行できません
+                  </p>
+                </div>
+              </div>
+            )}
             {/* 操作内容（ドロップダウン） */}
             <div
               onClick={() => setIsOperationsOpen(!isOperationsOpen)}
@@ -162,6 +176,7 @@ export default function PluginList({
   pluginsEnabled,
   onTogglePluginsEnabled,
   isPluginActiveOnCurrentPage,
+  cspBlockedPlugins,
 }: PluginListProps) {
   const handleReloadPage = async () => {
     try {
@@ -281,6 +296,7 @@ export default function PluginList({
             onPluginEdit={onPluginEdit}
             pluginsEnabled={pluginsEnabled}
             isActiveOnCurrentPage={isPluginActiveOnCurrentPage(pluginData.plugin)}
+            isCSPBlocked={cspBlockedPlugins.some((blocked: {id: string, name: string}) => blocked.id === pluginData.plugin.id)}
           />
         ))}
       </div>

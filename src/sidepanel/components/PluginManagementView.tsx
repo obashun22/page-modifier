@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { FiAlertTriangle, FiX } from 'react-icons/fi';
 import PluginList from './PluginList';
 import PluginEditor from './PluginEditor';
 import type { PluginData, Settings } from '../../shared/storage-types';
@@ -21,6 +22,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   const [importing, setImporting] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [currentTabUrl, setCurrentTabUrl] = useState<string>('');
+  const [cspBlockedPlugins, setCSPBlockedPlugins] = useState<Array<{id: string, name: string}>>([]);
 
   useEffect(() => {
     loadPlugins();
@@ -56,14 +58,24 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
       }
     };
 
+    // CSP警告メッセージを受信
+    const handleMessage = (message: any) => {
+      if (message.type === 'CSP_WARNING') {
+        console.log('[PluginManagementView] CSP warning received:', message.plugins);
+        setCSPBlockedPlugins(message.plugins);
+      }
+    };
+
     chrome.storage.onChanged.addListener(handleStorageChange);
     chrome.tabs.onActivated.addListener(handleTabActivated);
     chrome.tabs.onUpdated.addListener(handleTabUpdated);
+    chrome.runtime.onMessage.addListener(handleMessage);
 
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange);
       chrome.tabs.onActivated.removeListener(handleTabActivated);
       chrome.tabs.onUpdated.removeListener(handleTabUpdated);
+      chrome.runtime.onMessage.removeListener(handleMessage);
     };
   }, []);
 
@@ -219,6 +231,30 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
 
   return (
     <div className="h-full flex flex-col">
+      {/* CSP警告バナー */}
+      {cspBlockedPlugins.length > 0 && (
+        <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FiAlertTriangle className="text-red-600 dark:text-red-400" size={16} />
+              <span className="text-sm font-semibold text-red-800 dark:text-red-300">
+                {cspBlockedPlugins.length}個のプラグインがCSP制約により適用できません
+              </span>
+            </div>
+            <button
+              onClick={() => setCSPBlockedPlugins([])}
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+              title="閉じる"
+            >
+              <FiX size={18} />
+            </button>
+          </div>
+          <p className="text-xs text-red-700 dark:text-red-400 mt-1">
+            このサイトのContent Security Policyにより、カスタムコード実行を含むプラグインは動作しません。
+          </p>
+        </div>
+      )}
+
       {selectedPluginData ? (
         <PluginEditor
           pluginData={selectedPluginData}
@@ -238,6 +274,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
           pluginsEnabled={settings?.pluginsEnabled ?? true}
           onTogglePluginsEnabled={handleTogglePluginsEnabled}
           isPluginActiveOnCurrentPage={isPluginActiveOnCurrentPage}
+          cspBlockedPlugins={cspBlockedPlugins}
         />
       )}
     </div>

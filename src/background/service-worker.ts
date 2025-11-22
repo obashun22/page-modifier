@@ -134,6 +134,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         .catch((error) => sendResponse({ success: false, error: error.message }));
       return true; // 非同期応答
 
+    case 'CSP_BLOCKED_PLUGINS':
+      // サイドパネルにブロードキャスト
+      chrome.runtime.sendMessage({
+        type: 'CSP_WARNING',
+        plugins: message.plugins,
+        url: message.url,
+      }).catch(() => {
+        // エラーは無視（サイドパネルが開いていない可能性）
+      });
+      sendResponse({ success: true });
+      break;
+
     default:
       console.warn('[PageModifier] Unknown message type:', message.type);
       sendResponse({ success: false, error: 'Unknown message type' });

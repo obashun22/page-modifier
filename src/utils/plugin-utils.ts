@@ -290,3 +290,73 @@ export function generateUniqueId(prefix?: string): string {
 
   return prefix ? `${prefix}-${id}` : id;
 }
+
+/**
+ * プラグインがカスタムコード実行を含むか判定
+ *
+ * 以下のいずれかが含まれる場合にtrueを返す：
+ * - execute操作
+ * - イベントハンドラー（events配列）
+ * - カスタム条件（condition.type === 'custom'）
+ *
+ * @param plugin - プラグイン
+ * @returns カスタムコード実行を含む場合true
+ *
+ * @example
+ * hasCustomCodeExecution(plugin) // => true (execute操作がある場合)
+ */
+export function hasCustomCodeExecution(plugin: Plugin): boolean {
+  for (const operation of plugin.operations) {
+    // execute操作をチェック
+    if (operation.type === 'execute') {
+      return true;
+    }
+
+    // カスタム条件をチェック
+    if (operation.condition?.type === 'custom') {
+      return true;
+    }
+
+    // insert操作の要素にイベントがあるかチェック
+    if (operation.type === 'insert') {
+      if (hasEventsInElement(operation.params.element)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * 要素（およびその子要素）にイベントハンドラーが含まれるか再帰的にチェック
+ *
+ * @param element - チェック対象の要素
+ * @returns イベントハンドラーが含まれる場合true
+ */
+function hasEventsInElement(element: any): boolean {
+  // eventsプロパティが存在し、配列で、要素がある場合
+  if (element.events && Array.isArray(element.events) && element.events.length > 0) {
+    return true;
+  }
+
+  // イベント内のカスタム条件もチェック
+  if (element.events && Array.isArray(element.events)) {
+    for (const event of element.events) {
+      if (event.condition?.type === 'custom') {
+        return true;
+      }
+    }
+  }
+
+  // 子要素を再帰的にチェック
+  if (element.children && Array.isArray(element.children)) {
+    for (const child of element.children) {
+      if (hasEventsInElement(child)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}

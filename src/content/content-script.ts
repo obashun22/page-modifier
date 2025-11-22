@@ -8,6 +8,8 @@
 import { PluginEngine } from './plugin-engine';
 import { ElementSelector } from './element-selector';
 import type { Plugin } from '../shared/types';
+import { hasCustomCodeExecution } from '../utils/plugin-utils';
+import { showCSPWarningBanner } from './notification-utils';
 
 /**
  * Content Scriptメインクラス
@@ -96,14 +98,34 @@ class ContentScript {
       return;
     }
 
-    // プラグインは古い順に実行（配列の逆順 = 最も古いプラグインから）
-    for (const plugin of plugins.slice().reverse()) {
-      // 個別プラグインの有効化フラグチェック
+    // CSP判定を実行
+    const cspAllowsEval = this.checkCSPAllowsEval();
+    const blockedPlugins: Plugin[] = [];
+
+    // プラグインをフィルタリング
+    const applicablePlugins = plugins.filter(plugin => {
       if (!plugin.enabled) {
-        console.log(`[PageModifier] Skipping plugin ${plugin.id}: plugin is disabled`);
-        continue;
+        return false;
       }
 
+      // CSP制約がある場合、カスタムコード実行を含むプラグインをスキップ
+      if (!cspAllowsEval && hasCustomCodeExecution(plugin)) {
+        console.log(`[PageModifier] Skipping plugin ${plugin.id}: CSP blocks custom code`);
+        blockedPlugins.push(plugin);
+        return false;
+      }
+
+      return true;
+    });
+
+    // ブロックされたプラグインがある場合、エラー表示
+    if (blockedPlugins.length > 0) {
+      this.showCSPWarning(blockedPlugins);
+      this.notifyCSPBlocked(blockedPlugins);
+    }
+
+    // プラグインは古い順に実行（配列の逆順 = 最も古いプラグインから）
+    for (const plugin of applicablePlugins.slice().reverse()) {
       // プラグイン実行
       try {
         console.log(`[PageModifier] Executing plugin: ${plugin.name} (${plugin.id})`);
@@ -127,6 +149,52 @@ class ContentScript {
         console.error(`[PageModifier] Failed to execute plugin ${plugin.id}:`, error);
       }
     }
+  }
+
+  /**
+   * CSPがカスタムコード実行（eval）を許可しているか判定
+   *
+   * 試験的にFunctionコンストラクタを実行し、成功すればCSP制約なしと判定
+   * HTTPレスポンスヘッダーで設定されたCSPもmetaタグで設定されたCSPも検出可能
+   *
+   * @returns CSPがevalを許可している場合true
+   */
+  private checkCSPAllowsEval(): boolean {
+    try {
+      // 試験的にFunctionコンストラクタを実行
+      new Function('return 1')();
+      return true; // 実行成功 = CSP制約なし
+    } catch (error) {
+      // EvalErrorまたはunsafe-eval関連のエラーが発生 = CSP制約あり
+      if (error instanceof EvalError ||
+          (error instanceof Error && error.message.includes('unsafe-eval'))) {
+        console.log('[PageModifier] CSP detected: eval is blocked');
+        return false;
+      }
+      // その他のエラーは想定外なので、安全のためfalseを返す
+      console.warn('[PageModifier] Unexpected error during CSP check:', error);
+      return false;
+    }
+  }
+
+  /**
+   * CSP警告バナーを表示
+   */
+  private showCSPWarning(blockedPlugins: Plugin[]): void {
+    showCSPWarningBanner(blockedPlugins.map(p => ({ id: p.id, name: p.name })));
+  }
+
+  /**
+   * CSPブロック情報をbackgroundに送信
+   */
+  private notifyCSPBlocked(blockedPlugins: Plugin[]): void {
+    chrome.runtime.sendMessage({
+      type: 'CSP_BLOCKED_PLUGINS',
+      plugins: blockedPlugins.map(p => ({ id: p.id, name: p.name })),
+      url: location.href,
+    }).catch((error) => {
+      console.error('[PageModifier] Failed to notify CSP blocked plugins:', error);
+    });
   }
 
   /**
