@@ -234,11 +234,11 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
       {/* CSP警告バナー */}
       {cspBlockedPlugins.length > 0 && (
         <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 p-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <FiAlertTriangle className="text-red-600 dark:text-red-400" size={16} />
               <span className="text-sm font-semibold text-red-800 dark:text-red-300">
-                {cspBlockedPlugins.length}個のプラグインがCSP制約により適用できません
+                CSP制約により適用できないプラグイン
               </span>
             </div>
             <button
@@ -249,9 +249,16 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
               <FiX size={18} />
             </button>
           </div>
-          <p className="text-xs text-red-700 dark:text-red-400 mt-1">
-            このサイトのContent Security Policyにより、カスタムコード実行を含むプラグインは動作しません。
-          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {cspBlockedPlugins.map((plugin) => (
+              <span
+                key={plugin.id}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 text-xs font-medium rounded-full border border-red-200 dark:border-red-800"
+              >
+                {plugin.name}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
