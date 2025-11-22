@@ -9,6 +9,7 @@ import PluginList from './PluginList';
 import PluginEditor from './PluginEditor';
 import type { PluginData, Settings } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
+import { matchesDomain } from '../../utils/plugin-utils';
 
 interface PluginManagementViewProps {
   onEditPlugin: (plugin: Plugin) => void;
@@ -19,10 +20,12 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
   const [selectedPluginData, setSelectedPluginData] = useState<PluginData | null>(null);
   const [importing, setImporting] = useState(false);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [currentTabUrl, setCurrentTabUrl] = useState<string>('');
 
   useEffect(() => {
     loadPlugins();
     loadSettings();
+    loadCurrentTabUrl();
 
     // chrome.storageの変更を監視してプラグイン一覧を自動更新
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
@@ -58,6 +61,22 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     if (response.success) {
       setSettings(response.settings);
     }
+  };
+
+  const loadCurrentTabUrl = async () => {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.url) {
+        setCurrentTabUrl(tab.url);
+      }
+    } catch (error) {
+      console.error('Failed to get current tab URL:', error);
+    }
+  };
+
+  const isPluginActiveOnCurrentPage = (plugin: Plugin): boolean => {
+    if (!currentTabUrl) return false;
+    return plugin.targetDomains.some(domain => matchesDomain(currentTabUrl, domain));
   };
 
   const handlePluginSelect = (pluginData: PluginData) => {
@@ -194,6 +213,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
           importing={importing}
           pluginsEnabled={settings?.pluginsEnabled ?? true}
           onTogglePluginsEnabled={handleTogglePluginsEnabled}
+          isPluginActiveOnCurrentPage={isPluginActiveOnCurrentPage}
         />
       )}
     </div>
