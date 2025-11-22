@@ -124,7 +124,7 @@ export function showCSPWarningBanner(blockedPlugins: Array<{id: string, name: st
 
   // メインメッセージ
   const mainMessage = document.createElement('div');
-  mainMessage.textContent = `以下のプラグインはサイトによりブロックされました`;
+  mainMessage.textContent = `以下のプラグインがサイトによりブロックされました`;
   Object.assign(mainMessage.style, {
     fontWeight: '600',
     marginBottom: '8px',
