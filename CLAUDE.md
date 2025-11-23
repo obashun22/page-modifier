@@ -72,13 +72,15 @@ src/
 │   ├── chat-types.ts
 │   ├── storage-types.ts
 │   └── url-validator.ts
-└── utils/             # plugin-utils.ts, uuid.ts
+└── utils/             # plugin-utils.ts, uuid.ts, errors.ts, logger.ts
 tests/
 ├── unit/              # ユニットテスト
-│   ├── content/
-│   ├── shared/
-│   └── utils/
-├── fixtures/          # テストデータ
+│   ├── background/    # plugin-store.test.ts
+│   ├── content/       # plugin-engine.test.ts, element-selector.test.ts, event-manager.test.ts
+│   ├── shared/        # plugin-schema.test.ts, plugin-schema-domain.test.ts
+│   ├── sidepanel/     # claude-api-client.test.ts
+│   └── utils/         # plugin-utils.test.ts
+├── fixtures/          # テストデータ (test-plugin.ts)
 └── setup.ts           # テストセットアップ
 ```
 
@@ -222,8 +224,18 @@ npm run test:coverage
 
 **テスト環境:**
 - Vitest + jsdom環境でユニットテストを実行
-- 現在実装済み: plugin-schema、plugin-utilsのユニットテスト
+- テストフレームワーク: Vitest + @testing-library/react
 - テストファイル: `tests/unit/` ディレクトリ配下
+
+**実装済みテスト:**
+- ✅ プラグインスキーマのバリデーション (`plugin-schema.test.ts`)
+- ✅ ドメインパターンマッチング (`plugin-schema-domain.test.ts`)
+- ✅ プラグインユーティリティ (`plugin-utils.test.ts`)
+- ✅ プラグインストア (`plugin-store.test.ts`)
+- ✅ プラグインエンジン (`plugin-engine.test.ts`)
+- ✅ 要素セレクター (`element-selector.test.ts`)
+- ✅ イベントマネージャー (`event-manager.test.ts`)
+- ✅ Claude APIクライアント (`claude-api-client.test.ts`)
 
 ### Vite設定の重要ポイント
 
@@ -267,20 +279,39 @@ export default defineConfig({
 
 プロジェクトの主要機能は実装済みです：
 
+**コア機能:**
 - ✅ プラグインスキーマ・型定義（Zod + TypeScript）
 - ✅ chrome.storageでのプラグイン管理
 - ✅ JSON解釈・DOM操作エンジン（PluginEngine）
 - ✅ 各種操作（insert, update, delete, execute）
-- ✅ 要素選択UI・セレクター生成
-- ✅ イベント処理（JavaScriptコード実行）
-- ✅ Content Script実装
-- ✅ Background Service Worker実装
-- ✅ チャットインターフェース
-- ✅ Claude API統合
-- ✅ プラグイン管理UI
+- ✅ 要素選択UI・セレクター生成（ElementSelector）
+- ✅ イベント処理（EventManager + カスタムJavaScript実行）
+- ✅ MutationObserver による動的DOM監視
+
+**Chrome Extension実装:**
+- ✅ Content Script実装（plugin-engine.ts, element-selector.ts, event-manager.ts）
+- ✅ Background Service Worker実装（service-worker.ts, plugin-store.ts）
+- ✅ Side Panel UI（React + Tailwind CSS）
 - ✅ Main World Script（CSP制約回避）
-- ✅ Storage API（window.pluginStorage）
-- 🟡 テスト（ユニットテストのみ実装済み）
+
+**UI機能:**
+- ✅ チャットインターフェース（ChatView.tsx）
+- ✅ Claude API統合（claude-api-client.ts, ai-service.ts）
+- ✅ プラグイン管理UI（PluginManagementView.tsx）
+- ✅ プラグインエディタ・プレビュー
+- ✅ プラグインインポート・エクスポート
+
+**高度な機能:**
+- ✅ Storage API（window.pluginStorage: page/globalスコープ）
+- ✅ セキュリティバリデーション（Zod, XSS対策, URL検証）
+- ✅ ログ・エラーハンドリング（logger.ts, errors.ts）
+
+**テスト:**
+- ✅ ユニットテスト（8つのテストスイート実装済み）
+  - プラグインスキーマ、ドメインパターンマッチング
+  - プラグインユーティリティ、プラグインストア
+  - プラグインエンジン、要素セレクター、イベントマネージャー
+  - Claude APIクライアント
 
 ## セキュリティ
 
