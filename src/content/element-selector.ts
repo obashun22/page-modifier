@@ -4,6 +4,10 @@
  * 要素選択機能
  */
 
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('[ElementSelector]');
+
 export class ElementSelector {
   private isActive: boolean = false;
   private overlay: HTMLElement | null = null;
@@ -30,7 +34,7 @@ export class ElementSelector {
     // ページにメッセージ表示
     this.showInstructionMessage();
 
-    console.log('[Element Selector] Activated');
+    logger.info('Activated');
   }
 
   /**
@@ -52,7 +56,7 @@ export class ElementSelector {
     // メッセージ削除
     this.removeInstructionMessage();
 
-    console.log('[Element Selector] Deactivated');
+    logger.info('Deactivated');
   }
 
   /**

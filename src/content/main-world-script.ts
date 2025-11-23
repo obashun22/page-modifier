@@ -10,6 +10,10 @@
  * - セキュリティレベル「advanced」でのみ使用されます
  */
 
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('[MAIN World]');
+
 interface CustomJSRequest {
   type: 'EXECUTE_CUSTOM_JS';
   requestId: string;
@@ -70,7 +74,7 @@ interface CSPCheckResponse {
   allowsEval: boolean;
 }
 
-console.log('[PageModifier MAIN World] Script loaded');
+logger.info('Script loaded');
 
 // Content Scriptからのメッセージを受信
 window.addEventListener('message', (event) => {
@@ -81,7 +85,7 @@ window.addEventListener('message', (event) => {
 
   if (message.type === 'EVAL_TEMPLATE') {
     const request = message as EvalTemplateRequest;
-    console.log('[PageModifier MAIN World] Evaluating template:', request.expression);
+    logger.info('Evaluating template:', request.expression);
 
     try {
       // テンプレート式を評価
@@ -97,7 +101,7 @@ window.addEventListener('message', (event) => {
 
       window.postMessage(response, '*');
     } catch (error) {
-      console.warn('[PageModifier MAIN World] Template evaluation failed:', error);
+      logger.warn('Template evaluation failed:', error);
 
       // エラーを返す
       const response: EvalTemplateResponse = {
@@ -111,7 +115,7 @@ window.addEventListener('message', (event) => {
     }
   } else if (message.type === 'EXECUTE_CUSTOM_JS') {
     const request = message as CustomJSRequest;
-    console.log('[PageModifier MAIN World] Executing custom JS:', request.requestId);
+    logger.info('Executing custom JS:', request.requestId);
 
     try {
       // セキュリティサンドボックスの作成
@@ -151,7 +155,7 @@ window.addEventListener('message', (event) => {
 
       window.postMessage(response, '*');
     } catch (error) {
-      console.error('[PageModifier MAIN World] Custom JS execution failed:', error);
+      logger.error('Custom JS execution failed:', error);
 
       // エラーを返す
       const response: CustomJSResponse = {
@@ -167,16 +171,16 @@ window.addEventListener('message', (event) => {
     // ストレージレスポンスは下記のPluginStorage APIが処理する
   } else if (message.type === 'CHECK_CSP') {
     const request = message as CSPCheckRequest;
-    console.log('[PageModifier MAIN World] Checking CSP...');
+    logger.info('Checking CSP...');
 
     let allowsEval = false;
     try {
       // MAIN Worldで試験的にFunctionコンストラクタを実行
       new Function('return 1')();
       allowsEval = true;
-      console.log('[PageModifier MAIN World] CSP allows eval');
+      logger.info('CSP allows eval');
     } catch (error) {
-      console.log('[PageModifier MAIN World] CSP blocks eval:', error);
+      logger.info('CSP blocks eval:', error);
       allowsEval = false;
     }
 
@@ -257,4 +261,4 @@ const createStorageAPI = (scope: 'page' | 'global') => {
   global: createStorageAPI('global'),
 };
 
-console.log('[PageModifier MAIN World] pluginStorage API initialized');
+logger.info('pluginStorage API initialized');
