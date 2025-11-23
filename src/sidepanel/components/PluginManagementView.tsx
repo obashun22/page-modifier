@@ -174,13 +174,44 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
 
       try {
         const text = await file.text();
+
+        // JSONをパースしてプラグイン情報を取得
+        let pluginData: Plugin;
+        try {
+          pluginData = JSON.parse(text) as Plugin;
+        } catch (parseError) {
+          alert('無効なJSONファイルです');
+          setImporting(false);
+          return;
+        }
+
+        // 既存プラグインをチェック
+        const existingPlugin = plugins.find(p => p.plugin.id === pluginData.id);
+
+        if (existingPlugin) {
+          // 既存プラグインがある場合は確認
+          const confirmed = confirm(
+            `プラグイン「${existingPlugin.plugin.name}」(ID: ${pluginData.id})は既に存在します。\n上書きしてもよろしいですか？`
+          );
+
+          if (!confirmed) {
+            setImporting(false);
+            return;
+          }
+        }
+
+        // インポート実行
         const response = await chrome.runtime.sendMessage({
           type: 'IMPORT_PLUGIN',
           json: text,
         });
 
         if (response.success) {
-          alert('プラグインをインポートしました');
+          if (existingPlugin) {
+            alert('プラグインを上書きしました');
+          } else {
+            alert('プラグインをインポートしました');
+          }
           await loadPlugins();
         } else {
           alert(`インポートに失敗しました: ${response.error}`);
