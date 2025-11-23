@@ -13,6 +13,9 @@ import type {
   DomainMappings,
 } from '../shared/storage-types';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '../shared/storage-types';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('[PluginStorage]');
 
 /**
  * プラグインストレージマネージャー
@@ -314,7 +317,7 @@ export class PluginStorage {
       pluginsArray = data;
     } else {
       // 旧形式（Record<string, PluginData>）の場合はマイグレーション
-      console.log('[PluginStorage] Migrating old storage format to array...');
+      logger.info('Migrating old storage format to array...');
       pluginsArray = Object.values(data as Record<string, PluginData>);
 
       // priority順にソート（降順）して配列化

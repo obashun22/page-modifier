@@ -7,31 +7,34 @@
 import { pluginStorage } from './plugin-store';
 import { DEFAULT_SETTINGS } from '../shared/storage-types';
 import type { Settings } from '../shared/storage-types';
+import { createLogger } from '../utils/logger';
 
-console.log('[PageModifier] Service Worker loaded');
+const logger = createLogger('[ServiceWorker]');
+
+logger.info('Service Worker loaded');
 
 // Action (toolbar icon) click event - Open side panel
 chrome.action.onClicked.addListener(async (tab) => {
-  console.log('[PageModifier] Action clicked, opening side panel');
+  logger.info('Action clicked, opening side panel');
 
   if (tab.id) {
     try {
       // Chrome 114以降でサポート
       await chrome.sidePanel.open({ tabId: tab.id });
-      console.log('[PageModifier] Side panel opened');
+      logger.info('Side panel opened');
     } catch (error) {
-      console.error('[PageModifier] Failed to open side panel:', error);
+      logger.error('Failed to open side panel:', error);
     }
   }
 });
 
 // Install event
 chrome.runtime.onInstalled.addListener(async (details) => {
-  console.log('[PageModifier] Extension installed', details);
+  logger.info('Extension installed', details);
 
   // Initialize default settings
   pluginStorage.updateSettings(DEFAULT_SETTINGS).catch((error) => {
-    console.error('[PageModifier] Failed to initialize settings:', error);
+    logger.error('Failed to initialize settings:', error);
   });
 
   // MAIN World Scriptを登録（カスタムJS実行用）
@@ -45,21 +48,21 @@ chrome.runtime.onInstalled.addListener(async (details) => {
         runAt: 'document_start',
       },
     ]);
-    console.log('[PageModifier] MAIN World Script registered');
+    logger.info('MAIN World Script registered');
   } catch (error) {
-    console.error('[PageModifier] Failed to register MAIN World Script:', error);
+    logger.error('Failed to register MAIN World Script:', error);
   }
 
   // サンプルプラグインの読み込み（開発用）
   if (details.reason === 'install') {
-    console.log('[PageModifier] First install - loading sample plugins');
+    logger.info('First install - loading sample plugins');
     // TODO: サンプルプラグインの自動読み込み（オプション）
   }
 });
 
 // Message handler
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[PageModifier] Message received:', message.type);
+  logger.debug('Message received:', message.type);
 
   // メッセージタイプに応じた処理
   switch (message.type) {
@@ -135,7 +138,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true; // 非同期応答
 
     default:
-      console.warn('[PageModifier] Unknown message type:', message.type);
+      logger.warn('Unknown message type:', message.type);
       sendResponse({ success: false, error: 'Unknown message type' });
   }
 
@@ -148,7 +151,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * Content Script準備完了通知
  */
 function handleContentScriptReady(sender: chrome.runtime.MessageSender): void {
-  console.log('[PageModifier] Content script ready:', sender.tab?.url);
+  logger.debug('Content script ready:', sender.tab?.url);
 }
 
 /**
@@ -223,15 +226,15 @@ async function handleGetSettings(): Promise<any> {
  * 設定を更新
  */
 async function handleUpdateSettings(newSettings: Settings): Promise<void> {
-  console.log('[PageModifier] handleUpdateSettings called with:', newSettings);
+  logger.debug('handleUpdateSettings called with:', newSettings);
 
   // 現在の設定を取得
   const currentSettings = await pluginStorage.getSettings();
-  console.log('[PageModifier] Current settings:', currentSettings);
+  logger.debug('Current settings:', currentSettings);
 
   // 設定を更新
   await pluginStorage.updateSettings(newSettings);
-  console.log('[PageModifier] Settings updated');
+  logger.info('Settings updated');
 }
 
 /**
