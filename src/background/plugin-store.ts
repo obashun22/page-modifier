@@ -14,6 +14,7 @@ import type {
 } from '../shared/storage-types';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '../shared/storage-types';
 import { createLogger } from '../utils/logger';
+import { StorageError, ValidationError as PluginValidationError } from '../utils/errors';
 
 const logger = createLogger('[PluginStorage]');
 
@@ -33,7 +34,11 @@ export class PluginStorage {
     // バリデーション
     const validation = validatePlugin(plugin);
     if (!validation.success) {
-      throw new Error(`Plugin validation failed: ${JSON.stringify(validation.errors)}`);
+      throw new PluginValidationError(
+        'Plugin validation failed',
+        validation.errors || [],
+        { plugin }
+      );
     }
 
     const now = Date.now();
@@ -120,7 +125,7 @@ export class PluginStorage {
   async updatePlugin(id: string, updates: Partial<Plugin>): Promise<void> {
     const pluginData = await this.getPlugin(id);
     if (!pluginData) {
-      throw new Error(`Plugin not found: ${id}`);
+      throw new StorageError(`Plugin not found: ${id}`, 'PLUGIN_NOT_FOUND', { pluginId: id });
     }
 
     const updatedPlugin = {
@@ -164,7 +169,7 @@ export class PluginStorage {
     const index = plugins.findIndex((p) => p.plugin.id === id);
 
     if (index < 0) {
-      throw new Error(`Plugin not found: ${id}`);
+      throw new StorageError(`Plugin not found: ${id}`, 'PLUGIN_NOT_FOUND', { pluginId: id });
     }
 
     plugins[index].enabled = enabled;
@@ -203,13 +208,17 @@ export class PluginStorage {
     try {
       data = JSON.parse(json);
     } catch (error) {
-      throw new Error('Invalid JSON format');
+      throw new StorageError('Invalid JSON format', 'INVALID_JSON');
     }
 
     // バリデーション
     const validation = validatePlugin(data);
     if (!validation.success) {
-      throw new Error(`Plugin validation failed: ${JSON.stringify(validation.errors)}`);
+      throw new PluginValidationError(
+        'Plugin validation failed',
+        validation.errors || [],
+        { data }
+      );
     }
 
     await this.savePlugin(validation.data!);
@@ -225,7 +234,7 @@ export class PluginStorage {
   async exportPlugin(id: string): Promise<string> {
     const pluginData = await this.getPlugin(id);
     if (!pluginData) {
-      throw new Error(`Plugin not found: ${id}`);
+      throw new StorageError(`Plugin not found: ${id}`, 'PLUGIN_NOT_FOUND', { pluginId: id });
     }
 
     return JSON.stringify(pluginData.plugin, null, 2);
@@ -326,6 +335,12 @@ export class PluginStorage {
         const priorityB = (b.plugin as any).priority || 500;
         return priorityB - priorityA;
       });
+
+      // マイグレーション後の配列形式をストレージに保存
+      await chrome.storage.local.set({
+        [STORAGE_KEYS.PLUGINS]: pluginsArray,
+      });
+      logger.info('Migration completed and saved to storage.');
     }
 
     return pluginsArray;

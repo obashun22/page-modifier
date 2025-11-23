@@ -11,8 +11,9 @@ export const createTestPlugin = (overrides?: Partial<Plugin>): Plugin => ({
   enabled: true,
   operations: [
     {
-      id: 'op-1',
+      id: '00000000-0000-0000-0000-000000000001',
       type: 'insert',
+      description: 'Test insert operation',
       params: {
         selector: 'body',
         position: 'beforeend',
