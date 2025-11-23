@@ -10,6 +10,9 @@ import PluginEditor from './PluginEditor';
 import type { PluginData, Settings } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
 import { matchesDomain } from '../../utils/plugin-utils';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('[PluginManagement]');
 
 interface PluginManagementViewProps {
   onEditPlugin: (plugin: Plugin) => void;
@@ -31,14 +34,14 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
       // プラグインデータが変更された場合
       if (changes['page_modifier_plugins']) {
-        console.log('[PluginManagementView] Plugins updated in storage, reloading...');
+        logger.info('Plugins updated in storage, reloading...');
         loadPlugins();
       }
     };
 
     // タブの切り替えを監視
     const handleTabActivated = (activeInfo: chrome.tabs.TabActiveInfo) => {
-      console.log('[PluginManagementView] Tab activated:', activeInfo);
+      logger.info('Tab activated:', activeInfo);
       loadCurrentTabUrl();
     };
 
@@ -46,7 +49,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     const handleTabUpdated = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, _tab: chrome.tabs.Tab) => {
       // URLが変更された場合のみ
       if (changeInfo.url) {
-        console.log('[PluginManagementView] Tab URL updated:', changeInfo.url);
+        logger.info('Tab URL updated:', changeInfo.url);
         // アクティブなタブの場合のみ更新
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           if (tabs[0]?.id === tabId) {
@@ -91,9 +94,9 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       setCurrentTabUrl(tab?.url || '');
-      console.log('[PluginManagementView] Tab URL updated:', tab?.url);
+      logger.info('Tab URL updated:', tab?.url);
     } catch (error) {
-      console.error('Failed to get current tab URL:', error);
+      logger.error('Failed to get current tab URL:', error);
       setCurrentTabUrl('');
     }
   };
@@ -213,7 +216,7 @@ export default function PluginManagementView({ onEditPlugin }: PluginManagementV
         }
       }
     } catch (error) {
-      console.error('タブのリロードに失敗しました', error);
+      logger.error('タブのリロードに失敗しました', error);
     }
   };
 

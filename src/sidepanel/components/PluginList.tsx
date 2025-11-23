@@ -10,6 +10,9 @@ import { MdToggleOn, MdToggleOff } from 'react-icons/md';
 import type { PluginData } from '../../shared/storage-types';
 import type { Plugin } from '../../shared/types';
 import OperationItem from './OperationItem';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('[PluginList]');
 
 interface PluginListProps {
   plugins: PluginData[];
@@ -172,7 +175,7 @@ export default function PluginList({
         }
       }
     } catch (error) {
-      console.error('ページのリロードに失敗しました', error);
+      logger.error('ページのリロードに失敗しました', error);
     }
   };
 

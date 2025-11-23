@@ -13,6 +13,9 @@ import PluginCard from './PluginCard';
 import { chatWithAI } from '../services/ai-service';
 import type { Plugin } from '../../shared/types';
 import type { ChatItem, ChatMessage, ChatPlugin, ChatPluginMode, ElementInfo } from '../../shared/chat-types';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('[ChatView]');
 
 interface ChatViewProps {
   selectedPluginForEdit: Plugin | null;
@@ -57,7 +60,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
         }
       }
     } catch (error) {
-      console.error('Failed to load chat history:', error);
+      logger.error('Failed to load chat history:', error);
       // エラー時は安全のためクリア
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_VERSION_KEY);
@@ -81,7 +84,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
           messagesContainerRef.current.scrollTop = parseInt(savedPosition, 10);
         }
       } catch (error) {
-        console.error('Failed to restore scroll position:', error);
+        logger.error('Failed to restore scroll position:', error);
       }
     }
   }, []);
@@ -96,7 +99,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(chatItems));
     } catch (error) {
-      console.error('Failed to save chat history:', error);
+      logger.error('Failed to save chat history:', error);
     }
   }, [chatItems]);
 
@@ -109,7 +112,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       try {
         localStorage.setItem(SCROLL_POSITION_KEY, container.scrollTop.toString());
       } catch (error) {
-        console.error('Failed to save scroll position:', error);
+        logger.error('Failed to save scroll position:', error);
       }
     };
 

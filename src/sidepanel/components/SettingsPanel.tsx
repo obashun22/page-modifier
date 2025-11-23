@@ -7,6 +7,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Settings } from '../../shared/storage-types';
 import { FiMoon, FiSun } from 'react-icons/fi';
+import { createLogger } from '../../utils/logger';
+
+const logger = createLogger('[SettingsPanel]');
 
 interface SettingsPanelProps {
   isDarkMode: boolean;
@@ -30,7 +33,7 @@ export default function SettingsPanel({ isDarkMode, onToggleDarkMode }: Settings
       // 現在の設定を保存
       setPreviousSettings(settings);
     } catch (error) {
-      console.error('設定の保存に失敗しました', error);
+      logger.error('設定の保存に失敗しました', error);
     }
   }, [settings, previousSettings]);
 

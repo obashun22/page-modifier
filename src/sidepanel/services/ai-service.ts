@@ -7,6 +7,7 @@
 import { claudeAPIClient, type AIResponse } from './claude-api-client';
 import type { Plugin } from '../../shared/types';
 import type { ChatItem, ElementInfo } from '../../shared/chat-types';
+import { APIError } from '../../utils/errors';
 
 /**
  * AIとチャット（通常の会話またはプラグイン生成/編集）
@@ -37,7 +38,7 @@ export async function updatePluginWithFeedback(
   _feedback: string
 ): Promise<Plugin> {
   // TODO: Phase 6で実装
-  throw new Error('Not implemented yet (Phase 6)');
+  throw new APIError('Not implemented yet (Phase 6)', 501);
 }
 
 /**
@@ -46,5 +47,5 @@ export async function updatePluginWithFeedback(
  */
 export async function validateApiKey(_apiKey: string): Promise<boolean> {
   // TODO: Phase 6で実装
-  throw new Error('Not implemented yet (Phase 6)');
+  throw new APIError('Not implemented yet (Phase 6)', 501);
 }
