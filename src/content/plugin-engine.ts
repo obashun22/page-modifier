@@ -305,13 +305,13 @@ export class PluginEngine {
 
     // 子要素を再帰的に生成
     if (elementDef.children) {
-      for (const childDef of elementDef.children) {
+      for (const childDef of elementDef.children as Element[]) {
         const childEl = await this.createElement(childDef, el);
         el.appendChild(childEl);
 
         // 子要素のイベントも登録
         if (childDef.events) {
-          this.attachEvents(childEl, childDef.events, el);
+          this.attachEvents(childEl, childDef.events as Event[], el);
         }
       }
     }

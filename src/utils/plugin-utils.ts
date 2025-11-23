@@ -5,6 +5,15 @@
  */
 
 import type { Plugin } from '../shared/types';
+import {
+  parseMatchPattern,
+  convertToMatchPattern,
+  matchesDomain as matchesDomainImpl,
+  extractDomain as extractDomainImpl,
+} from '../shared/url-validator';
+
+// url-validatorから関数を再エクスポート
+export { parseMatchPattern, convertToMatchPattern };
 
 /**
  * プラグインIDを生成
@@ -50,161 +59,11 @@ export function compareVersions(v1: string, v2: string): number {
 }
 
 /**
- * Match Patternの構成要素
- */
-interface ParsedMatchPattern {
-  scheme: string;  // 'http', 'https', '*', 'file'
-  host: string;    // 'example.com', '*.example.com', '*'
-  path: string;    // '/*', '/path/*'
-}
-
-/**
- * Match Pattern文字列をパース
- *
- * Chrome Extension Match Pattern形式をサポート
- * 形式: <scheme>://<host>/<path>
- *
- * @param pattern - Match Pattern文字列
- * @returns パース結果（失敗時はnull）
- *
- * @example
- * parseMatchPattern('https://example.com/*') // => { scheme: 'https', host: 'example.com', path: '/*' }
- * parseMatchPattern('*://*.github.com/*') // => { scheme: '*', host: '*.github.com', path: '/*' }
- */
-export function parseMatchPattern(pattern: string): ParsedMatchPattern | null {
-  // 特殊パターン: <all_urls>
-  if (pattern === '<all_urls>') {
-    return { scheme: '*', host: '*', path: '/*' };
-  }
-
-  // 基本形式: <scheme>://<host>/<path>
-  const match = pattern.match(/^(\*|https?|file):\/\/([^/]+)(\/.*)?$/);
-  if (!match) {
-    return null;
-  }
-
-  const scheme = match[1];
-  const host = match[2];
-  const path = match[3] || '/*';
-
-  // ホスト部分のバリデーション
-  if (host !== '*') {
-    // ワイルドカードは先頭のみ許可
-    if (host.includes('*')) {
-      if (!host.startsWith('*.')) {
-        return null; // ワイルドカードが先頭以外にある、または直後にピリオドがない
-      }
-    }
-  }
-
-  return { scheme, host, path };
-}
-
-/**
- * ドメインパターンをChrome Extension Match Patternに変換
- *
- * @param domainPattern - ドメインパターン
- * @returns Match Pattern形式の文字列
- *
- * @example
- * convertToMatchPattern('*') // => '<all_urls>'
- * convertToMatchPattern('example.com') // => 'https://example.com/*'
- * convertToMatchPattern('*.example.com') // => 'https://*.example.com/*'
- * convertToMatchPattern('example.com/api/*') // => 'https://example.com/api/*'
- */
-export function convertToMatchPattern(domainPattern: string): string {
-  // 全サイト指定
-  if (domainPattern === '*') {
-    return '<all_urls>';
-  }
-
-  // ドメインパターンをMatch Patternに変換
-  let pattern = 'https://' + domainPattern;
-
-  // 末尾に/*がなければ追加
-  if (!pattern.endsWith('/*')) {
-    pattern = pattern + '/*';
-  }
-
-  return pattern;
-}
-
-/**
  * URLがドメインパターンにマッチするか判定
- *
- * ドメインパターンをChrome Extension Match Pattern形式に変換してマッチング
- *
- * @param url - 判定対象のURL
- * @param domainPattern - ドメインパターン（"example.com", "*.github.com", "*"）
- * @returns マッチする場合true
- *
- * @example
- * matchesDomain('https://github.com/user/repo', 'github.com') // => true
- * matchesDomain('https://api.github.com/', '*.github.com') // => true
- * matchesDomain('https://example.com', '*') // => true
+ * （url-validatorの関数のラッパー）
  */
 export function matchesDomain(url: string, domainPattern: string): boolean {
-  // ドメインパターンをMatch Patternに変換
-  const matchPattern = convertToMatchPattern(domainPattern);
-
-  // Match Pattern形式でマッチング
-  const parsed = parseMatchPattern(matchPattern);
-  if (!parsed) {
-    console.warn(`[matchesDomain] Invalid domain pattern: ${domainPattern}`);
-    return false;
-  }
-
-  // URLをパース
-  let urlObj: URL;
-  try {
-    urlObj = new URL(url);
-  } catch {
-    console.warn(`[matchesDomain] Invalid URL: ${url}`);
-    return false;
-  }
-
-  // スキームマッチング
-  if (parsed.scheme !== '*') {
-    if (urlObj.protocol !== `${parsed.scheme}:`) {
-      return false;
-    }
-  } else {
-    // '*'はhttp/httpsのみにマッチ
-    if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
-      return false;
-    }
-  }
-
-  // ホストマッチング
-  if (parsed.host !== '*') {
-    if (parsed.host.startsWith('*.')) {
-      // ワイルドカードサブドメイン: *.example.com
-      // サブドメインのみにマッチ（ベースドメイン自体は含まない）
-      const baseDomain = parsed.host.substring(2); // '*.example.com' -> 'example.com'
-      if (!urlObj.hostname.endsWith(`.${baseDomain}`)) {
-        return false;
-      }
-    } else {
-      // 完全一致
-      if (urlObj.hostname !== parsed.host) {
-        return false;
-      }
-    }
-  }
-
-  // パスマッチング
-  if (parsed.path !== '/*') {
-    const pathPattern = parsed.path
-      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')  // 正規表現特殊文字をエスケープ
-      .replace(/\*/g, '.*');  // *を.*に変換
-
-    const regex = new RegExp(`^${pathPattern}$`);
-    if (!regex.test(urlObj.pathname)) {
-      return false;
-    }
-  }
-
-  return true;
+  return matchesDomainImpl(url, domainPattern);
 }
 
 /**
@@ -257,20 +116,10 @@ export function getPluginSummary(plugin: Plugin): string {
 
 /**
  * URLからドメインを抽出
- *
- * @param url - URL文字列
- * @returns ドメイン部分（抽出失敗時は空文字列）
- *
- * @example
- * extractDomain('https://github.com/user/repo') // => 'github.com'
+ * （url-validatorの関数のラッパー）
  */
 export function extractDomain(url: string): string {
-  try {
-    const urlObj = new URL(url);
-    return urlObj.hostname;
-  } catch {
-    return '';
-  }
+  return extractDomainImpl(url);
 }
 
 /**
@@ -334,7 +183,7 @@ export function hasCustomCodeExecution(plugin: Plugin): boolean {
  * @param element - チェック対象の要素
  * @returns イベントハンドラーが含まれる場合true
  */
-function hasEventsInElement(element: any): boolean {
+function hasEventsInElement(element: { events?: unknown[]; condition?: { type?: string }; children?: unknown[] }): boolean {
   // eventsプロパティが存在し、配列で、要素がある場合
   if (element.events && Array.isArray(element.events) && element.events.length > 0) {
     return true;
@@ -343,7 +192,8 @@ function hasEventsInElement(element: any): boolean {
   // イベント内のカスタム条件もチェック
   if (element.events && Array.isArray(element.events)) {
     for (const event of element.events) {
-      if (event.condition?.type === 'custom') {
+      const typedEvent = event as { condition?: { type?: string } };
+      if (typedEvent.condition?.type === 'custom') {
         return true;
       }
     }
@@ -352,7 +202,8 @@ function hasEventsInElement(element: any): boolean {
   // 子要素を再帰的にチェック
   if (element.children && Array.isArray(element.children)) {
     for (const child of element.children) {
-      if (hasEventsInElement(child)) {
+      const typedChild = child as { events?: unknown[]; condition?: { type?: string }; children?: unknown[] };
+      if (hasEventsInElement(typedChild)) {
         return true;
       }
     }
