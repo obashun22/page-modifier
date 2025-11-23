@@ -4,7 +4,7 @@
  * チャットビュー（メインチャット画面）
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { IoSend } from 'react-icons/io5';
 import { FiMousePointer, FiPlus } from 'react-icons/fi';
 import { v4 as uuidv4 } from 'uuid';
@@ -121,11 +121,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   }, []);
 
   // 既存のプラグインIDを読み込む
-  useEffect(() => {
-    loadExistingPluginIds();
-  }, []);
-
-  const loadExistingPluginIds = async () => {
+  const loadExistingPluginIds = useCallback(async () => {
     const response = await chrome.runtime.sendMessage({
       type: 'GET_ALL_PLUGINS',
     });
@@ -134,17 +130,21 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       const ids = new Set<string>(response.plugins.map((p: any) => p.plugin.id));
       setExistingPluginIds(ids);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadExistingPluginIds();
+  }, [loadExistingPluginIds]);
 
   /**
    * プラグインにIDを確保（IDがない場合はUUIDを生成）
    */
-  const ensurePluginId = (plugin: Plugin): Plugin => {
+  const ensurePluginId = useCallback((plugin: Plugin): Plugin => {
     if (!plugin.id) {
       return { ...plugin, id: uuidv4() };
     }
     return plugin;
-  };
+  }, []);
 
   // プラグイン一覧から編集対象プラグインが持ち込まれた時
   useEffect(() => {
@@ -195,7 +195,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
   }, []);
 
   // 要素選択モードのトグル
-  const toggleElementSelection = async () => {
+  const toggleElementSelection = useCallback(async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
     if (!tab.id) return;
@@ -209,18 +209,18 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
       await chrome.tabs.sendMessage(tab.id, { type: 'START_ELEMENT_SELECTION' });
       setIsSelectingElement(true);
     }
-  };
+  }, [isSelectingElement]);
 
   // 新しいチャットを開始
-  const startNewChat = () => {
+  const startNewChat = useCallback(() => {
     setChatItems(getInitialChatItems());
     setSelectedElements([]);
     setIsSelectingElement(false);
     onClearSelectedPlugin();
-  };
+  }, [onClearSelectedPlugin]);
 
   // メッセージ追加
-  const addMessage = (role: 'user' | 'assistant', content: string) => {
+  const addMessage = useCallback((role: 'user' | 'assistant', content: string) => {
     const message: ChatMessage = {
       type: 'message',
       id: Date.now().toString(),
@@ -230,10 +230,10 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     };
 
     setChatItems((prev) => [...prev, message]);
-  };
+  }, []);
 
   // メッセージ送信
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!input.trim()) return;
 
     // メッセージ送信時に、referencing モードのプラグインを referenced に変更
@@ -300,7 +300,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, chatItems, selectedElements, selectedPluginForEdit, ensurePluginId]);
 
   // プラグイン承認
   const handleApprove = async (plugin: Plugin, messageId: string) => {
