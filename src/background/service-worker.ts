@@ -7,6 +7,7 @@
 import { pluginStorage } from './plugin-store';
 import { DEFAULT_SETTINGS } from '../shared/storage-types';
 import type { Settings } from '../shared/storage-types';
+import type { Plugin } from '../shared/types';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('[ServiceWorker]');
@@ -180,7 +181,7 @@ async function handleRecordPluginUsage(pluginId: string): Promise<void> {
 /**
  * プラグインを保存
  */
-async function handleSavePlugin(plugin: any): Promise<void> {
+async function handleSavePlugin(plugin: Plugin): Promise<void> {
   await pluginStorage.savePlugin(plugin);
 
   // 全てのタブにリロード通知

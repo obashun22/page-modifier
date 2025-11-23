@@ -522,14 +522,14 @@ Main Worldで実行されるカスタムJavaScriptコード（execute operation�
 \`\`\`typescript
 window.pluginStorage = {
   page: {
-    async get(key: string): Promise<any>
-    async set(key: string, value: any): Promise<void>
+    async get(key: string): Promise<unknown>
+    async set(key: string, value: unknown): Promise<void>
     async remove(key: string): Promise<void>
     async clear(): Promise<void>
   },
   global: {
-    async get(key: string): Promise<any>
-    async set(key: string, value: any): Promise<void>
+    async get(key: string): Promise<unknown>
+    async set(key: string, value: unknown): Promise<void>
     async remove(key: string): Promise<void>
     async clear(): Promise<void>
   }
@@ -797,11 +797,11 @@ JSONのみを出力してください（説明文は不要）。
    * - plugin.id: 存在しない、または無効なUUID形式の場合はUUIDを生成
    * - operation.id: 存在しない、または無効なUUID形式の場合はUUIDを生成
    */
-  private extractPluginJSON(text: string): any {
+  private extractPluginJSON(text: string): Plugin {
     // ```json ... ``` 形式を抽出
     const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
 
-    let pluginData: any;
+    let pluginData: Record<string, unknown>;
 
     if (jsonMatch) {
       try {
@@ -819,22 +819,27 @@ JSONのみを出力してください（説明文は不要）。
     }
 
     // plugin.idがない、または無効なUUID形式の場合はUUIDを生成
-    if (!pluginData.id || !this.isValidUUID(pluginData.id)) {
+    if (!pluginData.id || typeof pluginData.id !== 'string' || !this.isValidUUID(pluginData.id)) {
       pluginData.id = uuidv4();
     }
 
     // operationsのidを処理
     if (pluginData.operations && Array.isArray(pluginData.operations)) {
-      pluginData.operations = pluginData.operations.map((op: any) => {
-        // idがない、または無効なUUID形式の場合はUUIDを生成
-        if (!op.id || !this.isValidUUID(op.id)) {
-          return { ...op, id: uuidv4() };
+      pluginData.operations = pluginData.operations.map((op: unknown) => {
+        // 型ガード: opがオブジェクトであることを確認
+        if (typeof op === 'object' && op !== null) {
+          const operation = op as Record<string, unknown>;
+          // idがない、または無効なUUID形式の場合はUUIDを生成
+          if (!operation.id || typeof operation.id !== 'string' || !this.isValidUUID(operation.id)) {
+            return { ...operation, id: uuidv4() };
+          }
         }
         return op;
       });
     }
 
-    return pluginData;
+    // Plugin型にキャスト（バリデーションは呼び出し元で行われる）
+    return pluginData as unknown as Plugin;
   }
 
   /**

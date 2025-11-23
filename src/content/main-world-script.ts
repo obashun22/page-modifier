@@ -20,7 +20,7 @@ interface CustomJSRequest {
   code: string;
   selector?: string;
   context: {
-    event?: any;
+    event?: unknown;
   };
 }
 
@@ -28,7 +28,7 @@ interface CustomJSResponse {
   type: 'CUSTOM_JS_RESULT';
   requestId: string;
   success: boolean;
-  result?: any;
+  result?: unknown;
   error?: string;
 }
 
@@ -52,14 +52,14 @@ interface StorageRequest {
   operation: 'get' | 'set' | 'remove' | 'clear';
   scope: 'page' | 'global';
   key?: string;
-  value?: any;
+  value?: unknown;
 }
 
 interface StorageResponse {
   type: 'STORAGE_RESPONSE';
   requestId: string;
   success: boolean;
-  result?: any;
+  result?: unknown;
   error?: string;
 }
 
@@ -199,7 +199,7 @@ window.addEventListener('message', (event) => {
  * Main WorldからContent Script経由でchrome.storage.localにアクセスするためのAPI
  */
 const createStorageAPI = (scope: 'page' | 'global') => {
-  const sendStorageRequest = (operation: string, key?: string, value?: any): Promise<any> => {
+  const sendStorageRequest = (operation: string, key?: string, value?: unknown): Promise<any> => {
     return new Promise((resolve, reject) => {
       const requestId = `storage_${Date.now()}_${Math.random()}`;
 
@@ -243,7 +243,7 @@ const createStorageAPI = (scope: 'page' | 'global') => {
     async get(key: string): Promise<any> {
       return sendStorageRequest('get', key);
     },
-    async set(key: string, value: any): Promise<void> {
+    async set(key: string, value: unknown): Promise<void> {
       await sendStorageRequest('set', key, value);
     },
     async remove(key: string): Promise<void> {

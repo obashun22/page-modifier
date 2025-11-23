@@ -369,7 +369,6 @@ class ContentScript {
       // Side Panelに選択結果を送信
       chrome.runtime.sendMessage({
         type: 'ELEMENT_SELECTED',
-        selector,
         ...elementInfo,
       }).catch((error) => {
         console.error('[PageModifier] Failed to send element selection:', error);

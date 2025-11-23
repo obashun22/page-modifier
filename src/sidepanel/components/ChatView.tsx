@@ -12,6 +12,7 @@ import MessageItem from './MessageItem';
 import PluginCard from './PluginCard';
 import { chatWithAI } from '../services/ai-service';
 import type { Plugin } from '../../shared/types';
+import type { PluginData } from '../../shared/storage-types';
 import type { ChatItem, ChatMessage, ChatPlugin, ChatPluginMode, ElementInfo } from '../../shared/chat-types';
 import { createLogger } from '../../utils/logger';
 
@@ -127,7 +128,7 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
     });
 
     if (response.success) {
-      const ids = new Set<string>(response.plugins.map((p: any) => p.plugin.id));
+      const ids = new Set<string>(response.plugins.map((p: PluginData) => p.plugin.id));
       setExistingPluginIds(ids);
     }
   }, []);
@@ -165,13 +166,13 @@ export default function ChatView({ selectedPluginForEdit, onClearSelectedPlugin 
 
   // 要素選択の結果を受信
   useEffect(() => {
-    const listener = async (message: any) => {
-      if (message.type === 'ELEMENT_SELECTED') {
+    const listener = async (message: unknown) => {
+      if (typeof message === 'object' && message !== null && 'type' in message && message.type === 'ELEMENT_SELECTED') {
         const elementInfo: ElementInfo = {
-          selector: message.selector,
-          tagName: message.tagName,
-          className: message.className,
-          id: message.id,
+          selector: (message as any).selector,
+          tagName: (message as any).tagName,
+          className: (message as any).className,
+          id: (message as any).id,
         };
 
         setSelectedElements((prev) => [...prev, elementInfo]);

@@ -8,17 +8,26 @@ import { createLogger } from '../utils/logger';
 
 const logger = createLogger('[ElementSelector]');
 
+export interface ElementInfo {
+  selector: string;
+  tagName: string;
+  id?: string;
+  className?: string;
+  textContent?: string;
+  attributes: Record<string, string>;
+}
+
 export class ElementSelector {
   private isActive: boolean = false;
   private overlay: HTMLElement | null = null;
   private tooltip: HTMLElement | null = null;
   private message: HTMLElement | null = null;
-  private callback: ((selector: string, elementInfo: any) => void) | null = null;
+  private callback: ((selector: string, elementInfo: ElementInfo) => void) | null = null;
 
   /**
    * セレクターモードを開始
    */
-  activate(callback: (selector: string, elementInfo: any) => void): void {
+  activate(callback: (selector: string, elementInfo: ElementInfo) => void): void {
     if (this.isActive) return;
 
     this.isActive = true;
@@ -380,7 +389,7 @@ export class ElementSelector {
   /**
    * 要素情報を取得
    */
-  private getElementInfo(element: HTMLElement, selector: string): any {
+  private getElementInfo(element: HTMLElement, selector: string): ElementInfo {
     return {
       selector,
       tagName: element.tagName.toLowerCase(),

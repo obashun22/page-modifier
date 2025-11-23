@@ -552,14 +552,14 @@ interface StorageRequest {
   operation: 'get' | 'set' | 'remove' | 'clear';
   scope: 'page' | 'global';
   key?: string;
-  value?: any;
+  value?: unknown;
 }
 
 interface StorageResponse {
   type: 'STORAGE_RESPONSE';
   requestId: string;
   success: boolean;
-  result?: any;
+  result?: unknown;
   error?: string;
 }
 

@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import type { Operation } from '../../shared/types';
+import type { Operation, Element } from '../../shared/types';
 import prettier from 'prettier/standalone';
 import parserBabel from 'prettier/plugins/babel';
 import parserEstree from 'prettier/plugins/estree';
@@ -31,7 +31,7 @@ export default function OperationItem({ operation }: OperationItemProps) {
   };
 
   // ElementをHTML文字列に変換
-  const elementToHTML = (element: any, indent = 0): string => {
+  const elementToHTML = (element: Element, indent = 0): string => {
     const indentStr = '  '.repeat(indent);
     const { tag, attributes, textContent, innerHTML, children } = element;
 
@@ -48,7 +48,7 @@ export default function OperationItem({ operation }: OperationItemProps) {
     // 子要素がある場合
     if (children && children.length > 0) {
       const childrenHTML = children
-        .map((child: any) => elementToHTML(child, indent + 1))
+        .map((child: Element) => elementToHTML(child, indent + 1))
         .join('\n');
       return `${indentStr}${openTag}\n${childrenHTML}\n${indentStr}${closeTag}`;
     }
