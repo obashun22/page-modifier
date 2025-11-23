@@ -46,3 +46,14 @@ import { vi } from 'vitest';
     pathname: '/',
   },
 });
+
+// CSS.escape ポリフィル（jsdomには実装されていないため）
+if (typeof CSS === 'undefined') {
+  (global as any).CSS = {};
+}
+if (!CSS.escape) {
+  CSS.escape = (value: string): string => {
+    // CSS.escape の簡易実装
+    return value.replace(/[!"#$%&'()*+,.\/:;<=>?@\[\\\]^`{|}~]/g, '\\$&');
+  };
+}
