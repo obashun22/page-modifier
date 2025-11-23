@@ -14,7 +14,7 @@ import type {
 import { EventManager } from './event-manager';
 import { showNotification } from './notification-utils';
 import { createLogger } from '../utils/logger';
-import { PluginExecutionError, DOMError, SelectorError } from '../utils/errors';
+import { PluginExecutionError, SelectorError, StorageError } from '../utils/errors';
 
 /** 操作結果 */
 interface OperationResult {
@@ -214,7 +214,7 @@ export class PluginEngine {
       default:
         // TypeScript exhaustiveness check
         const _exhaustive: never = operation;
-        throw new PluginExecutionError(`Unknown operation type: ${(_exhaustive as any).type}`, this.currentPluginId, operation.id);
+        throw new PluginExecutionError(`Unknown operation type: ${(_exhaustive as any).type}`, this.currentPluginId, (operation as any).id);
     }
 
     return {
