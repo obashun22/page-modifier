@@ -10,6 +10,9 @@ import { ElementSelector } from './element-selector';
 import type { Plugin } from '../shared/types';
 import { hasCustomCodeExecution } from '../utils/plugin-utils';
 import { showCSPWarningBanner } from './notification-utils';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('[PageModifier]');
 
 /**
  * Content Scriptメインクラス
@@ -31,11 +34,11 @@ class ContentScript {
    */
   async init(): Promise<void> {
     if (this.initialized) {
-      console.warn('[PageModifier] Content script already initialized');
+      logger.warn('Content script already initialized');
       return;
     }
 
-    console.log('[PageModifier] Content script initializing...');
+    logger.info('Content script initializing...');
 
     // DOM読み込み完了を待つ
     if (document.readyState === 'loading') {
@@ -46,11 +49,11 @@ class ContentScript {
 
     // 現在のURLを取得
     const currentUrl = location.href;
-    console.log(`[PageModifier] Current URL: ${currentUrl}`);
+    logger.info(`Current URL: ${currentUrl}`);
 
     // 該当URLのプラグインを取得
     const plugins = await this.fetchPluginsForUrl(currentUrl);
-    console.log(`[PageModifier] Found ${plugins.length} plugins for URL`);
+    logger.info(`Found ${plugins.length} plugins for URL`);
 
     // プラグインを実行
     if (plugins.length > 0) {
@@ -64,7 +67,7 @@ class ContentScript {
     this.setupMessageListeners();
 
     this.initialized = true;
-    console.log('[PageModifier] Content script initialized');
+    logger.info('Content script initialized');
   }
 
   /**
@@ -79,7 +82,7 @@ class ContentScript {
 
       return response?.plugins || [];
     } catch (error) {
-      console.error('[PageModifier] Failed to fetch plugins:', error);
+      logger.error('Failed to fetch plugins:', error);
       return [];
     }
   }
@@ -94,7 +97,7 @@ class ContentScript {
 
     // プラグイン機能全体が無効の場合、すべてのプラグインをスキップ
     if (!pluginsEnabled) {
-      console.log('[PageModifier] Plugin system is disabled globally. Skipping all plugins.');
+      logger.info('Plugin system is disabled globally. Skipping all plugins.');
       return;
     }
 
@@ -110,7 +113,7 @@ class ContentScript {
 
       // CSP制約がある場合、カスタムコード実行を含むプラグインをスキップ
       if (!cspAllowsEval && hasCustomCodeExecution(plugin)) {
-        console.log(`[PageModifier] Skipping plugin ${plugin.id}: CSP blocks custom code`);
+        logger.info(`Skipping plugin ${plugin.id}: CSP blocks custom code`);
         blockedPlugins.push(plugin);
         return false;
       }
@@ -127,11 +130,11 @@ class ContentScript {
     for (const plugin of applicablePlugins.slice().reverse()) {
       // プラグイン実行
       try {
-        console.log(`[PageModifier] Executing plugin: ${plugin.name} (${plugin.id})`);
+        logger.info(`Executing plugin: ${plugin.name} (${plugin.id})`);
         const result = await this.pluginEngine.executePlugin(plugin);
 
         if (result.success) {
-          console.log(`[PageModifier] ✅ Plugin ${plugin.id} executed successfully`);
+          logger.info(`✅ Plugin ${plugin.id} executed successfully`);
           this.activePlugins.set(plugin.id, plugin);
 
           // 使用記録を通知
@@ -142,10 +145,10 @@ class ContentScript {
             // エラーは無視（重要でない）
           });
         } else {
-          console.error(`[PageModifier] ❌ Plugin ${plugin.id} failed:`, result);
+          logger.error(`❌ Plugin ${plugin.id} failed:`, result);
         }
       } catch (error) {
-        console.error(`[PageModifier] Failed to execute plugin ${plugin.id}:`, error);
+        logger.error(`Failed to execute plugin ${plugin.id}:`, error);
       }
     }
   }
@@ -168,7 +171,7 @@ class ContentScript {
         const response = event.data;
         if (response.type === 'CSP_CHECK_RESULT' && response.requestId === requestId) {
           window.removeEventListener('message', handleResponse);
-          console.log('[PageModifier] CSP check result:', response.allowsEval);
+          logger.debug('CSP check result:', response.allowsEval);
           resolve(response.allowsEval);
         }
       };
@@ -178,7 +181,7 @@ class ContentScript {
       // タイムアウト設定（1秒）
       setTimeout(() => {
         window.removeEventListener('message', handleResponse);
-        console.warn('[PageModifier] CSP check timeout, assuming CSP blocks eval');
+        logger.warn('CSP check timeout, assuming CSP blocks eval');
         resolve(false); // タイムアウト時は安全のためfalseを返す
       }, 1000);
 
@@ -223,7 +226,7 @@ class ContentScript {
       subtree: true,
     });
 
-    console.log('[PageModifier] MutationObserver started');
+    logger.info('MutationObserver started');
   }
 
   /**
@@ -271,10 +274,10 @@ class ContentScript {
     // アクティブなプラグインを再実行
     // （新しく追加された要素に対してプラグインを適用）
     if (this.activePlugins.size > 0) {
-      console.log('[PageModifier] DOM changed, re-executing plugins...');
+      logger.debug('DOM changed, re-executing plugins...');
       const plugins = Array.from(this.activePlugins.values());
       this.executePlugins(plugins).catch((error) => {
-        console.error('[PageModifier] Failed to re-execute plugins:', error);
+        logger.error('Failed to re-execute plugins:', error);
       });
     }
   }
@@ -284,7 +287,7 @@ class ContentScript {
    */
   private setupMessageListeners(): void {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-      console.log('[PageModifier] Received message:', message);
+      logger.debug('Received message:', message);
 
       switch (message.type) {
         case 'EXECUTE_PLUGIN':
@@ -315,7 +318,7 @@ class ContentScript {
           break;
 
         default:
-          console.warn('[PageModifier] Unknown message type:', message.type);
+          logger.warn('Unknown message type:', message.type);
           sendResponse({ success: false, error: 'Unknown message type' });
       }
 
@@ -327,7 +330,7 @@ class ContentScript {
    * プラグインを手動実行
    */
   private async handleExecutePlugin(plugin: Plugin): Promise<any> {
-    console.log(`[PageModifier] Manually executing plugin: ${plugin.id}`);
+    logger.info(`Manually executing plugin: ${plugin.id}`);
     const result = await this.pluginEngine.executePlugin(plugin);
 
     if (result.success) {
