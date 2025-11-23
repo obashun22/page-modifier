@@ -13,6 +13,8 @@ import type {
 } from '../shared/types';
 import { EventManager } from './event-manager';
 import { showNotification } from './notification-utils';
+import { createLogger } from '../utils/logger';
+import { PluginExecutionError, DOMError, SelectorError } from '../utils/errors';
 
 /** 操作結果 */
 interface OperationResult {
@@ -28,6 +30,8 @@ interface ExecutionResult {
   success: boolean;
   results: OperationResult[];
 }
+
+const logger = createLogger('[PluginEngine]');
 
 /**
  * テンプレート変数を展開（MAIN Worldで評価）
@@ -55,7 +59,7 @@ async function resolveTemplateVariables(template: string): Promise<string> {
       const evaluatedValue = await evaluateTemplateInMainWorld(expression);
       result = result.replace(fullMatch, evaluatedValue);
     } catch (error) {
-      console.warn(`[PluginEngine] Template variable evaluation failed: ${expression}`, error);
+      logger.warn(`Template variable evaluation failed: ${expression}`, error);
       // 失敗した場合は元のテンプレート変数をそのまま残す
     }
   }
@@ -116,7 +120,7 @@ export class PluginEngine {
    * プラグインを実行
    */
   async executePlugin(plugin: Plugin): Promise<ExecutionResult> {
-    console.log(`[PluginEngine] Executing plugin: ${plugin.name} (${plugin.id})`);
+    logger.info(`Executing plugin: ${plugin.name} (${plugin.id})`);
 
     this.currentPluginId = plugin.id;
     const results: OperationResult[] = [];
@@ -125,7 +129,7 @@ export class PluginEngine {
       try {
         // 条件チェック
         if (operation.condition && !this.checkCondition(operation.condition)) {
-          console.log(`[PluginEngine] Skipping operation ${operation.id}: condition not met`);
+          logger.debug(`Skipping operation ${operation.id}: condition not met`);
           continue;
         }
 
@@ -133,7 +137,7 @@ export class PluginEngine {
         const result = await this.executeOperation(operation);
         results.push(result);
       } catch (error) {
-        console.error(`[PluginEngine] Failed to execute operation ${operation.id}:`, error);
+        logger.error(`Failed to execute operation ${operation.id}:`, error);
         results.push({
           operationId: operation.id,
           success: false,
@@ -143,7 +147,7 @@ export class PluginEngine {
     }
 
     const success = results.every((r) => r.success);
-    console.log(`[PluginEngine] Plugin ${plugin.id} execution ${success ? 'succeeded' : 'failed'}`);
+    logger.info(`Plugin ${plugin.id} execution ${success ? 'succeeded' : 'failed'}`);
 
     return {
       pluginId: plugin.id,
@@ -156,7 +160,7 @@ export class PluginEngine {
    * 単一操作を実行
    */
   private async executeOperation(operation: Operation): Promise<OperationResult> {
-    console.log(`[PluginEngine] Executing operation: ${operation.id} (${operation.type})`);
+    logger.debug(`Executing operation: ${operation.id} (${operation.type})`);
 
     // executeは別処理（selectorが不要）
     if (operation.type === 'execute') {
@@ -165,7 +169,7 @@ export class PluginEngine {
       // run: 'once'（デフォルト）の場合、1度だけ実行
       const run = operation.params.run || 'once';
       if (run === 'once' && this.executedOperations.has(operationKey)) {
-        console.log(`[PluginEngine] Skipping execute ${operation.id}: already executed`);
+        logger.debug(`Skipping execute ${operation.id}: already executed`);
         return {
           operationId: operation.id,
           success: true,
@@ -191,7 +195,7 @@ export class PluginEngine {
     const targets = this.resolveSelector(operation.params.selector);
 
     if (targets.length === 0) {
-      throw new Error(`No elements found for selector: ${operation.params.selector}`);
+      throw new SelectorError(`No elements found for selector: ${operation.params.selector}`, operation.params.selector);
     }
 
     let elementsAffected = 0;
@@ -210,7 +214,7 @@ export class PluginEngine {
       default:
         // TypeScript exhaustiveness check
         const _exhaustive: never = operation;
-        throw new Error(`Unknown operation type: ${(_exhaustive as any).type}`);
+        throw new PluginExecutionError(`Unknown operation type: ${(_exhaustive as any).type}`, this.currentPluginId, operation.id);
     }
 
     return {
@@ -260,7 +264,7 @@ export class PluginEngine {
       const func = new Function('document', `return (${code})`);
       return Boolean(func(document));
     } catch (error) {
-      console.error('[PluginEngine] Custom condition evaluation failed:', error);
+      logger.error('Custom condition evaluation failed:', error);
       return false;
     }
   }
@@ -299,7 +303,7 @@ export class PluginEngine {
     }
     if (elementDef.innerHTML) {
       // XSS警告: innerHTMLは潜在的なセキュリティリスク
-      console.warn('[PluginEngine] Using innerHTML - ensure content is trusted');
+      logger.warn('Using innerHTML - ensure content is trusted');
       el.innerHTML = await resolveTemplateVariables(elementDef.innerHTML);
     }
 
@@ -391,10 +395,10 @@ export class PluginEngine {
             window.removeEventListener('message', handler);
 
             if (response.success) {
-              console.log('[PluginEngine] Event code executed successfully');
+              logger.info('Event code executed successfully');
               resolve();
             } else {
-              console.error('[PluginEngine] Event code execution failed:', response.error);
+              logger.error('Event code execution failed:', response.error);
               showNotification(
                 `イベントコードの実行に失敗しました: ${response.error}`,
                 5000,
@@ -408,7 +412,7 @@ export class PluginEngine {
         window.addEventListener('message', handler);
       });
     } catch (error) {
-      console.error('[PluginEngine] Event code execution failed:', error);
+      logger.error('Event code execution failed:', error);
       showNotification('イベントコードの実行に失敗しました', 3000, 'error');
       throw error;
     }
@@ -428,7 +432,7 @@ export class PluginEngine {
     for (const target of targets) {
       // 重複チェック（同じoperation IDを持つ要素が既に存在するか）
       if (this.isDuplicateInsert(target, operation.id)) {
-        console.warn(`[PluginEngine] Duplicate insert detected for operation ${operation.id}`);
+        logger.warn(`Duplicate insert detected for operation ${operation.id}`);
         continue;
       }
 
@@ -529,12 +533,12 @@ export class PluginEngine {
    * カスタムスクリプトを実行（execute operation）
    */
   private async handleExecuteScript(operation: Extract<Operation, { type: 'execute' }>): Promise<void> {
-    console.log(`[PluginEngine] Executing script: ${operation.id}`);
+    logger.info(`Executing script: ${operation.id}`);
 
     // executeEventCodeと同じロジックでスクリプト実行
     await this.executeEventCode(operation.params.code, document.body);
 
-    console.log(`[PluginEngine] Script executed: ${operation.id}`);
+    logger.info(`Script executed: ${operation.id}`);
   }
 }
 
@@ -581,7 +585,7 @@ async function handleStorageRequest(request: StorageRequest): Promise<StorageRes
     switch (operation) {
       case 'get': {
         if (!key) {
-          throw new Error('get operation requires key');
+          throw new StorageError('get operation requires key', 'MISSING_KEY');
         }
         const storageKey = generateStorageKey(scope, key);
         const result = await chrome.storage.local.get(storageKey);
@@ -595,7 +599,7 @@ async function handleStorageRequest(request: StorageRequest): Promise<StorageRes
 
       case 'set': {
         if (!key) {
-          throw new Error('set operation requires key');
+          throw new StorageError('set operation requires key', 'MISSING_KEY');
         }
         const storageKey = generateStorageKey(scope, key);
         await chrome.storage.local.set({ [storageKey]: value });
@@ -608,7 +612,7 @@ async function handleStorageRequest(request: StorageRequest): Promise<StorageRes
 
       case 'remove': {
         if (!key) {
-          throw new Error('remove operation requires key');
+          throw new StorageError('remove operation requires key', 'MISSING_KEY');
         }
         const storageKey = generateStorageKey(scope, key);
         await chrome.storage.local.remove(storageKey);
@@ -635,7 +639,7 @@ async function handleStorageRequest(request: StorageRequest): Promise<StorageRes
       }
 
       default:
-        throw new Error(`Unknown operation: ${operation}`);
+        throw new StorageError(`Unknown operation: ${operation}`, 'UNKNOWN_OPERATION');
     }
   } catch (error) {
     return {
@@ -653,10 +657,10 @@ window.addEventListener('message', async (event) => {
   if (event.data?.type !== 'STORAGE_REQUEST') return;
 
   const request = event.data as StorageRequest;
-  console.log(`[PluginEngine Storage] Received request: ${request.operation} (${request.scope})`);
+  logger.debug(`[Storage] Received request: ${request.operation} (${request.scope})`);
 
   const response = await handleStorageRequest(request);
   window.postMessage(response, '*');
 });
 
-console.log('[PluginEngine Storage] Storage message handler initialized');
+logger.info('Storage message handler initialized');

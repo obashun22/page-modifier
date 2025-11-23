@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PluginSchema } from '../../shared/plugin-schema';
 import type { Plugin } from '../../shared/types';
 import type { ChatItem, ChatMessage, ChatPlugin, ElementInfo } from '../../shared/chat-types';
+import { APIError } from '../../utils/errors';
 
 export type AIResponse =
   | { type: 'text'; content: string }
@@ -55,7 +56,7 @@ class ClaudeAPIClient {
     selectedPlugin?: Plugin | null
   ): Promise<AIResponse> {
     if (!this.client) {
-      throw new Error('APIキーが設定されていません。設定画面でClaude APIキーを入力してください。');
+      throw new APIError('APIキーが設定されていません。設定画面でClaude APIキーを入力してください。', 401);
     }
 
     const systemPrompt = this.buildSystemPrompt();
@@ -81,7 +82,7 @@ class ClaudeAPIClient {
       // レスポンスからテキストを取得
       const content = response.content[0];
       if (content.type !== 'text') {
-        throw new Error('予期しないレスポンス形式です');
+        throw new APIError('予期しないレスポンス形式です', undefined, undefined, { response });
       }
 
       const text = content.text;
@@ -97,21 +98,23 @@ class ClaudeAPIClient {
         return { type: 'text', content: text };
       }
     } catch (error) {
-      console.error('AI応答の取得に失敗:', error);
+      if (error instanceof APIError) {
+        throw error;
+      }
 
       if (error instanceof Error) {
         // APIエラーの詳細を提供
         if (error.message.includes('401')) {
-          throw new Error('APIキーが無効です。設定画面で正しいAPIキーを入力してください。');
+          throw new APIError('APIキーが無効です。設定画面で正しいAPIキーを入力してください。', 401, undefined, { originalError: error.message });
         } else if (error.message.includes('429')) {
-          throw new Error('APIのレート制限に達しました。しばらく待ってから再試行してください。');
+          throw new APIError('APIのレート制限に達しました。しばらく待ってから再試行してください。', 429, undefined, { originalError: error.message });
         } else if (error.message.includes('500')) {
-          throw new Error('Claude APIでエラーが発生しました。後ほど再試行してください。');
+          throw new APIError('Claude APIでエラーが発生しました。後ほど再試行してください。', 500, undefined, { originalError: error.message });
         }
-        throw new Error(`AI応答の取得に失敗しました: ${error.message}`);
+        throw new APIError(`AI応答の取得に失敗しました: ${error.message}`, undefined, undefined, { originalError: error.message });
       }
 
-      throw new Error('AI応答の取得中に予期しないエラーが発生しました');
+      throw new APIError('AI応答の取得中に予期しないエラーが発生しました');
     }
   }
 
@@ -804,14 +807,14 @@ JSONのみを出力してください（説明文は不要）。
       try {
         pluginData = JSON.parse(jsonMatch[1]);
       } catch (error) {
-        throw new Error('JSONのパースに失敗しました');
+        throw new APIError('JSONのパースに失敗しました', undefined, undefined, { text });
       }
     } else {
       // JSONブロックがない場合、全体をパース
       try {
         pluginData = JSON.parse(text);
       } catch (error) {
-        throw new Error('有効なJSONを抽出できませんでした。レスポンス形式が不正です。');
+        throw new APIError('有効なJSONを抽出できませんでした。レスポンス形式が不正です。', undefined, undefined, { text });
       }
     }
 
