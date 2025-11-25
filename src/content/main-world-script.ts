@@ -74,6 +74,22 @@ interface CSPCheckResponse {
   allowsEval: boolean;
 }
 
+interface ChromeAPIRequest {
+  type: 'CHROME_API_REQUEST';
+  requestId: string;
+  api: string;
+  method: string;
+  args: unknown[];
+}
+
+interface ChromeAPIResponse {
+  type: 'CHROME_API_RESPONSE';
+  requestId: string;
+  success: boolean;
+  result?: unknown;
+  error?: string;
+}
+
 logger.info('Script loaded');
 
 // Content Scriptからのメッセージを受信
@@ -132,8 +148,8 @@ window.addEventListener('message', (event) => {
         : null;
 
       // カスタムコードを実行
+      // thisを要素にバインドするため、Functionコンストラクタで関数を生成
       const func = new Function(
-        'element',
         'event',
         'sandbox',
         `
@@ -143,7 +159,10 @@ window.addEventListener('message', (event) => {
       `
       );
 
-      const result = func(element, message.context.event, sandbox);
+      // thisを要素にバインドして実行
+      const result = element
+        ? func.call(element, message.context.event, sandbox)
+        : func(message.context.event, sandbox);
 
       // 成功を返す
       const response: CustomJSResponse = {
@@ -255,10 +274,67 @@ const createStorageAPI = (scope: 'page' | 'global') => {
   };
 };
 
+/**
+ * Chrome API Proxy
+ * Main WorldからContent Script経由でChrome Extension APIにアクセスするためのプロキシ
+ */
+const createChromeAPIProxy = (api: string) => {
+  return new Proxy(
+    {},
+    {
+      get: (_target, method: string) => {
+        return (...args: unknown[]) => {
+          return new Promise((resolve, reject) => {
+            const requestId = `chrome_${Date.now()}_${Math.random()}`;
+
+            const request: ChromeAPIRequest = {
+              type: 'CHROME_API_REQUEST',
+              requestId,
+              api,
+              method,
+              args,
+            };
+
+            // レスポンスハンドラーを登録
+            const handleResponse = (event: MessageEvent) => {
+              if (event.source !== window) return;
+              const response = event.data as ChromeAPIResponse;
+              if (response.type === 'CHROME_API_RESPONSE' && response.requestId === requestId) {
+                window.removeEventListener('message', handleResponse);
+                if (response.success) {
+                  resolve(response.result);
+                } else {
+                  reject(new Error(response.error || 'Chrome API call failed'));
+                }
+              }
+            };
+
+            window.addEventListener('message', handleResponse);
+
+            // タイムアウト設定（5秒）
+            setTimeout(() => {
+              window.removeEventListener('message', handleResponse);
+              reject(new Error('Chrome API call timeout'));
+            }, 5000);
+
+            // Content Scriptにリクエスト送信
+            window.postMessage(request, '*');
+          });
+        };
+      },
+    }
+  );
+};
+
 // グローバルAPIをエクスポート
 (window as any).pluginStorage = {
   page: createStorageAPI('page'),
   global: createStorageAPI('global'),
 };
 
+// Chrome API Proxyをエクスポート
+(window as any).chrome = (window as any).chrome || {};
+(window as any).chrome.runtime = createChromeAPIProxy('runtime');
+
 logger.info('pluginStorage API initialized');
+logger.info('chrome.runtime API proxy initialized');

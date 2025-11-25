@@ -348,12 +348,28 @@ export class PluginEngine {
    */
   private async executeEventCode(
     code: string,
-    _element: HTMLElement,
+    element: HTMLElement,
     event?: UIEvent
   ): Promise<void> {
     try {
       // リクエストIDを生成
       const requestId = `event-code-${Date.now()}-${Math.random()}`;
+
+      // 要素のセレクターを生成
+      // 1. ID属性がある場合はそれを使用
+      // 2. data-plugin-operation属性がある場合はそれを使用
+      // 3. それ以外の場合は一時的なIDを付与
+      let selector: string;
+      if (element.id) {
+        selector = `#${element.id}`;
+      } else if (element.hasAttribute('data-plugin-operation')) {
+        selector = `[data-plugin-operation="${element.getAttribute('data-plugin-operation')}"]`;
+      } else {
+        // 一時的なIDを付与
+        const tempId = `plugin-temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        element.setAttribute('data-temp-id', tempId);
+        selector = `[data-temp-id="${tempId}"]`;
+      }
 
       // MAIN Worldにメッセージを送信
       window.postMessage(
@@ -361,7 +377,7 @@ export class PluginEngine {
           type: 'EXECUTE_CUSTOM_JS',
           requestId,
           code,
-          selector: null,
+          selector,
           context: {
             event: event
               ? {

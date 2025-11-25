@@ -286,6 +286,7 @@ class ContentScript {
    * メッセージリスナー登録
    */
   private setupMessageListeners(): void {
+    // Chrome Runtime メッセージリスナー
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       logger.debug('Received message:', message);
 
@@ -324,6 +325,138 @@ class ContentScript {
 
       return false;
     });
+
+    // Main World からのメッセージリスナー
+    window.addEventListener('message', (event) => {
+      // 同じwindowからのメッセージのみ受け付ける
+      if (event.source !== window) return;
+
+      const message = event.data;
+
+      // STORAGE_REQUEST
+      if (message.type === 'STORAGE_REQUEST') {
+        this.handleStorageRequest(message).catch((error) => {
+          logger.error('Storage request failed:', error);
+        });
+      }
+      // CHROME_API_REQUEST
+      else if (message.type === 'CHROME_API_REQUEST') {
+        this.handleChromeAPIRequest(message).catch((error) => {
+          logger.error('Chrome API request failed:', error);
+        });
+      }
+    });
+  }
+
+  /**
+   * Main WorldからのStorage Requestを処理
+   */
+  private async handleStorageRequest(message: any): Promise<void> {
+    const { requestId, operation, scope, key, value } = message;
+
+    try {
+      let result: any;
+
+      // スコープに応じたキープレフィックス
+      const domain = new URL(location.href).hostname;
+      const prefix = scope === 'page' ? `page:${domain}:` : 'global:';
+
+      switch (operation) {
+        case 'get': {
+          const storageKey = `${prefix}${key}`;
+          const data = await chrome.storage.local.get(storageKey);
+          result = data[storageKey];
+          break;
+        }
+        case 'set': {
+          const storageKey = `${prefix}${key}`;
+          await chrome.storage.local.set({ [storageKey]: value });
+          result = undefined;
+          break;
+        }
+        case 'remove': {
+          const storageKey = `${prefix}${key}`;
+          await chrome.storage.local.remove(storageKey);
+          result = undefined;
+          break;
+        }
+        case 'clear': {
+          // スコープに応じてキーをクリア
+          const allData = await chrome.storage.local.get(null);
+          const keysToRemove = Object.keys(allData).filter((k) => k.startsWith(prefix));
+          if (keysToRemove.length > 0) {
+            await chrome.storage.local.remove(keysToRemove);
+          }
+          result = undefined;
+          break;
+        }
+        default:
+          throw new Error(`Unknown storage operation: ${operation}`);
+      }
+
+      // 成功レスポンスを返す
+      window.postMessage(
+        {
+          type: 'STORAGE_RESPONSE',
+          requestId,
+          success: true,
+          result,
+        },
+        '*'
+      );
+    } catch (error) {
+      // エラーレスポンスを返す
+      window.postMessage(
+        {
+          type: 'STORAGE_RESPONSE',
+          requestId,
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        '*'
+      );
+    }
+  }
+
+  /**
+   * Main WorldからのChrome API Requestを処理
+   */
+  private async handleChromeAPIRequest(message: any): Promise<void> {
+    const { requestId, api, method, args } = message;
+
+    try {
+      let result: any;
+
+      // chrome.runtime のみサポート
+      if (api === 'runtime' && method === 'sendMessage') {
+        // sendMessage(message, callback) のパターンをサポート
+        result = await chrome.runtime.sendMessage(args[0]);
+      } else {
+        throw new Error(`Unsupported Chrome API: ${api}.${method}`);
+      }
+
+      // 成功レスポンスを返す
+      window.postMessage(
+        {
+          type: 'CHROME_API_RESPONSE',
+          requestId,
+          success: true,
+          result,
+        },
+        '*'
+      );
+    } catch (error) {
+      // エラーレスポンスを返す
+      window.postMessage(
+        {
+          type: 'CHROME_API_RESPONSE',
+          requestId,
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        '*'
+      );
+    }
   }
 
   /**
