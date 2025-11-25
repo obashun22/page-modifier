@@ -44,7 +44,7 @@ function App() {
       <div className="p-4 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <h1 className="m-0 text-xl font-semibold text-gray-900 dark:text-gray-100">Page Modifier</h1>
         <p className="mt-1 text-[13px] text-gray-600 dark:text-gray-400">
-          AIを使ってWebページをカスタマイズ
+          AIを使ってウェブページをカスタマイズ
         </p>
       </div>
 
