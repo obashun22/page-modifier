@@ -32,6 +32,21 @@ function App() {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
+  // サイドパネルが閉じられたときにチャット履歴をクリア
+  useEffect(() => {
+    const handlePageHide = () => {
+      // チャット履歴関連のストレージをクリア
+      localStorage.removeItem('page_modifier_chat_history');
+      localStorage.removeItem('page_modifier_chat_scroll_position');
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, []);
+
   // プラグインを編集モードでチャットに持っていく
   const handleEditPlugin = (plugin: Plugin) => {
     setSelectedPluginForEdit(plugin);
