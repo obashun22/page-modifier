@@ -224,9 +224,9 @@ export function parseMatchPattern(pattern: string): ParsedMatchPattern | null {
  *
  * @example
  * convertToMatchPattern('*') // => '<all_urls>'
- * convertToMatchPattern('example.com') // => 'https://example.com/*'
- * convertToMatchPattern('*.example.com') // => 'https://*.example.com/*'
- * convertToMatchPattern('example.com/api/*') // => 'https://example.com/api/*'
+ * convertToMatchPattern('example.com') // => '*://example.com/*'
+ * convertToMatchPattern('*.example.com') // => '*://*.example.com/*'
+ * convertToMatchPattern('example.com/api/*') // => '*://example.com/api/*'
  */
 export function convertToMatchPattern(domainPattern: string): string {
   // 全サイト指定
@@ -235,7 +235,7 @@ export function convertToMatchPattern(domainPattern: string): string {
   }
 
   // ドメインパターンをMatch Patternに変換
-  let pattern = 'https://' + domainPattern;
+  let pattern = '*://' + domainPattern;
 
   // 末尾に/*がなければ追加
   if (!pattern.endsWith('/*')) {

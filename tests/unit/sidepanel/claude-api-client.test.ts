@@ -67,7 +67,7 @@ describe('ClaudeAPIClient - extractPluginJSON', () => {
 {
   "name": "Test Plugin",
   "version": "1.0.0",
-  "targetDomains": ["https://example.com/*"],
+  "targetDomains": ["example.com"],
   "enabled": true,
   "operations": []
 }
@@ -86,7 +86,7 @@ describe('ClaudeAPIClient - extractPluginJSON', () => {
   "id": "${existingId}",
   "name": "Test Plugin",
   "version": "1.0.0",
-  "targetDomains": ["https://example.com/*"],
+  "targetDomains": ["example.com"],
   "enabled": true,
   "operations": []
 }
@@ -103,7 +103,7 @@ describe('ClaudeAPIClient - extractPluginJSON', () => {
   "id": "my-plugin",
   "name": "Test Plugin",
   "version": "1.0.0",
-  "targetDomains": ["https://example.com/*"],
+  "targetDomains": ["example.com"],
   "enabled": true,
   "operations": []
 }
@@ -123,7 +123,7 @@ describe('ClaudeAPIClient - extractPluginJSON', () => {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Test Plugin",
   "version": "1.0.0",
-  "targetDomains": ["https://example.com/*"],
+  "targetDomains": ["example.com"],
   "enabled": true,
   "operations": [
     {
@@ -152,7 +152,7 @@ describe('ClaudeAPIClient - extractPluginJSON', () => {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Test Plugin",
   "version": "1.0.0",
-  "targetDomains": ["https://example.com/*"],
+  "targetDomains": ["example.com"],
   "enabled": true,
   "operations": [
     {
@@ -182,7 +182,7 @@ describe('ClaudeAPIClient - extractPluginJSON', () => {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Test Plugin",
   "version": "1.0.0",
-  "targetDomains": ["https://example.com/*"],
+  "targetDomains": ["example.com"],
   "enabled": true,
   "operations": [
     {
@@ -211,7 +211,7 @@ describe('ClaudeAPIClient - extractPluginJSON', () => {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Test Plugin",
   "version": "1.0.0",
-  "targetDomains": ["https://example.com/*"],
+  "targetDomains": ["example.com"],
   "enabled": true,
   "operations": [
     {
@@ -263,7 +263,7 @@ describe('ClaudeAPIClient - extractPluginJSON', () => {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "name": "Test Plugin",
   "version": "1.0.0",
-  "targetDomains": ["https://example.com/*"],
+  "targetDomains": ["example.com"],
   "enabled": true,
   "operations": []
 }`;

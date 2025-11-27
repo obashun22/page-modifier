@@ -134,7 +134,7 @@ export interface Plugin {
   name: string;                // 表示名
   version: string;             // バージョン（semver）
   description?: string;        // 説明
-  targetDomains: string[];     // Chrome Extension Match Pattern形式（例: "https://example.com/*", "*://*.github.com/*"）
+  targetDomains: string[];     // Chrome Extension Match Pattern形式（例: "*://example.com/*", "*://*.github.com/*"）
                                // 後方互換性のため、ドメイン名のみ（例: "example.com", "*.github.com"）も許可
   enabled: boolean;            // 有効化フラグ
   operations: Operation[];     // 操作の配列

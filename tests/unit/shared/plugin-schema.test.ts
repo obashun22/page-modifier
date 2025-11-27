@@ -134,7 +134,7 @@ describe('PluginSchema', () => {
         id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Test Plugin',
         version: '1.0.0',
-        targetDomains: ['https://www.*.com/*'], // ワイルドカードが中央にある
+        targetDomains: ['www.*.com'], // ワイルドカードが中央にある
         enabled: true,
         operations: [
           {
