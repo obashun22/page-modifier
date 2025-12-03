@@ -147,6 +147,18 @@ window.addEventListener('message', (event) => {
         ? document.querySelector(message.selector)
         : null;
 
+      // イベントオブジェクトを再構成
+      // Content Scriptから送られてきた最小限の情報をもとに、実際のDOM要素を使ってeventを作り直す
+      let reconstructedEvent = message.context.event;
+      if (reconstructedEvent && element) {
+        // 実際のDOM要素を使って完全なeventオブジェクトを作成
+        reconstructedEvent = {
+          ...reconstructedEvent,
+          target: element,        // 実際のDOM要素
+          currentTarget: element, // 実際のDOM要素
+        };
+      }
+
       // カスタムコードを実行
       // thisを要素にバインドするため、Functionコンストラクタで関数を生成
       const func = new Function(
@@ -161,8 +173,8 @@ window.addEventListener('message', (event) => {
 
       // thisを要素にバインドして実行
       const result = element
-        ? func.call(element, message.context.event, sandbox)
-        : func(message.context.event, sandbox);
+        ? func.call(element, reconstructedEvent, sandbox)
+        : func(reconstructedEvent, sandbox);
 
       // 成功を返す
       const response: CustomJSResponse = {
